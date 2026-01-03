@@ -1,0 +1,94 @@
+import { Link } from 'react-router-dom';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { ShoppingCart, Eye } from 'lucide-react';
+import { Product } from '@/data/products';
+import { useCart } from '@/context/CartContext';
+import { toast } from 'sonner';
+
+interface ProductCardProps {
+  product: Product;
+}
+
+const ProductCard = ({ product }: ProductCardProps) => {
+  const { addItem } = useCart();
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    addItem({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      wholesalePrice: product.wholesalePrice,
+      quantity: 1,
+      image: product.image,
+      category: product.category,
+    });
+    
+    toast.success(`${product.name} added to cart!`);
+  };
+
+  return (
+    <Card variant="gradient" className="group overflow-hidden hover:shadow-xl hover:shadow-primary/20 transition-all duration-500">
+      <Link to={`/product/${product.id}`}>
+        <div className="relative aspect-square overflow-hidden bg-muted/30">
+          <img
+            src={product.image}
+            alt={product.name}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          
+          {/* Quick Actions */}
+          <div className="absolute bottom-4 left-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300">
+            <Button
+              variant="glass"
+              size="sm"
+              className="flex-1"
+              onClick={handleAddToCart}
+            >
+              <ShoppingCart className="w-4 h-4 mr-1" />
+              Add
+            </Button>
+            <Button variant="glass" size="icon" className="shrink-0">
+              <Eye className="w-4 h-4" />
+            </Button>
+          </div>
+
+          {/* Wholesale Badge */}
+          <div className="absolute top-3 right-3">
+            <span className="bg-accent/90 text-accent-foreground text-xs font-semibold px-2 py-1 rounded-full">
+              Wholesale Available
+            </span>
+          </div>
+        </div>
+
+        <CardContent className="p-4">
+          <div className="mb-2">
+            <span className="text-xs text-primary font-medium uppercase tracking-wider">
+              {product.subcategory}
+            </span>
+          </div>
+          <h3 className="font-display font-semibold text-foreground mb-2 line-clamp-2 group-hover:text-primary transition-colors">
+            {product.name}
+          </h3>
+          <div className="flex items-baseline gap-2">
+            <span className="text-lg font-bold text-foreground">
+              Ksh {product.price.toLocaleString()}
+            </span>
+            <span className="text-sm text-muted-foreground line-through">
+              Ksh {Math.round(product.price * 1.2).toLocaleString()}
+            </span>
+          </div>
+          <p className="text-xs text-accent mt-1">
+            Wholesale: Ksh {product.wholesalePrice.toLocaleString()}
+          </p>
+        </CardContent>
+      </Link>
+    </Card>
+  );
+};
+
+export default ProductCard;
