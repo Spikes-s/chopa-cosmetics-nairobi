@@ -3,17 +3,19 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { LogOut, Package, ShoppingBag, BarChart3, MessageSquare, Settings } from 'lucide-react';
+import { LogOut, Package, ShoppingBag, BarChart3, MessageSquare, Settings, Users, Home } from 'lucide-react';
 import ProductsManager from '@/components/admin/ProductsManager';
 import OrdersManager from '@/components/admin/OrdersManager';
 import SalesAnalytics from '@/components/admin/SalesAnalytics';
 import MessagesManager from '@/components/admin/MessagesManager';
 import SettingsManager from '@/components/admin/SettingsManager';
+import UsersManager from '@/components/admin/UsersManager';
+import ThemeToggle from '@/components/ThemeToggle';
 
 const AdminDashboard = () => {
   const { user, isAdmin, isLoading, signOut } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('products');
+  const [activeTab, setActiveTab] = useState('dashboard');
 
   useEffect(() => {
     if (!isLoading && (!user || !isAdmin)) {
@@ -39,53 +41,68 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen pt-20 pb-10">
+    <div className="min-h-screen mirage-bg pt-4 pb-10">
       <div className="container mx-auto px-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
           <div>
             <h1 className="text-3xl font-display font-bold gradient-text">Admin Dashboard</h1>
             <p className="text-muted-foreground mt-1">Manage your store</p>
           </div>
-          <Button variant="outline" onClick={handleSignOut} className="gap-2">
-            <LogOut className="w-4 h-4" />
-            Sign Out
-          </Button>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Button variant="outline" onClick={() => navigate('/')} className="gap-2">
+              <Home className="w-4 h-4" />
+              View Store
+            </Button>
+            <Button variant="outline" onClick={handleSignOut} className="gap-2">
+              <LogOut className="w-4 h-4" />
+              Sign Out
+            </Button>
+          </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid grid-cols-2 md:grid-cols-5 gap-2 h-auto bg-muted/50 p-2">
-            <TabsTrigger value="products" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <Package className="w-4 h-4" />
-              <span className="hidden sm:inline">Products</span>
-            </TabsTrigger>
-            <TabsTrigger value="orders" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <ShoppingBag className="w-4 h-4" />
-              <span className="hidden sm:inline">Orders</span>
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+          <TabsList className="flex flex-wrap gap-2 h-auto bg-muted/50 p-2 justify-start">
+            <TabsTrigger value="dashboard" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-4">
               <BarChart3 className="w-4 h-4" />
-              <span className="hidden sm:inline">Analytics</span>
+              <span>Dashboard</span>
             </TabsTrigger>
-            <TabsTrigger value="messages" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <TabsTrigger value="orders" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-4">
+              <ShoppingBag className="w-4 h-4" />
+              <span>Orders</span>
+            </TabsTrigger>
+            <TabsTrigger value="products" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-4">
+              <Package className="w-4 h-4" />
+              <span>Products</span>
+            </TabsTrigger>
+            <TabsTrigger value="users" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-4">
+              <Users className="w-4 h-4" />
+              <span>Users</span>
+            </TabsTrigger>
+            <TabsTrigger value="messages" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-4">
               <MessageSquare className="w-4 h-4" />
-              <span className="hidden sm:inline">Messages</span>
+              <span>Messages</span>
             </TabsTrigger>
-            <TabsTrigger value="settings" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <TabsTrigger value="settings" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-4">
               <Settings className="w-4 h-4" />
-              <span className="hidden sm:inline">Settings</span>
+              <span>Settings</span>
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="products" className="space-y-4">
-            <ProductsManager />
+          <TabsContent value="dashboard" className="space-y-4">
+            <SalesAnalytics />
           </TabsContent>
 
           <TabsContent value="orders" className="space-y-4">
             <OrdersManager />
           </TabsContent>
 
-          <TabsContent value="analytics" className="space-y-4">
-            <SalesAnalytics />
+          <TabsContent value="products" className="space-y-4">
+            <ProductsManager />
+          </TabsContent>
+
+          <TabsContent value="users" className="space-y-4">
+            <UsersManager />
           </TabsContent>
 
           <TabsContent value="messages" className="space-y-4">

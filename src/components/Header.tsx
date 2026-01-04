@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
+import ThemeToggle from '@/components/ThemeToggle';
 
 const Header = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -74,7 +75,10 @@ const Header = () => {
           </form>
 
           {/* Right Actions */}
-          <div className="flex items-center space-x-2 md:space-x-4">
+          <div className="flex items-center space-x-1 md:space-x-2">
+            {/* Theme Toggle */}
+            <ThemeToggle />
+
             {/* Cart */}
             <Link to="/cart" className="relative">
               <Button variant="ghost" size="icon" className="relative">
