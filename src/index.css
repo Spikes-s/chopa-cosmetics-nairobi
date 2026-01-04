@@ -81,6 +81,56 @@
     --input: 270 30% 15%;
     --ring: 280 60% 55%;
   }
+
+  .light {
+    --background: 30 30% 98%;
+    --foreground: 0 0% 15%;
+    
+    --card: 30 25% 96%;
+    --card-foreground: 0 0% 15%;
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 15%;
+    
+    --primary: 340 65% 55%;
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 350 60% 70%;
+    --secondary-foreground: 0 0% 100%;
+    
+    --muted: 30 20% 92%;
+    --muted-foreground: 0 0% 40%;
+    
+    --accent: 210 60% 55%;
+    --accent-foreground: 0 0% 100%;
+    
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --border: 30 15% 85%;
+    --input: 30 20% 90%;
+    --ring: 340 65% 55%;
+
+    /* Light mode gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(340, 65%, 55%) 0%, hsl(350, 60%, 70%) 50%, hsl(210, 60%, 55%) 100%);
+    --gradient-hero: linear-gradient(180deg, hsl(30, 30%, 98%) 0%, hsl(30, 25%, 95%) 50%, hsl(30, 30%, 98%) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(30, 25%, 97%) 0%, hsl(30, 20%, 95%) 100%);
+    --gradient-button: linear-gradient(135deg, hsl(340, 65%, 55%) 0%, hsl(350, 60%, 70%) 100%);
+    --gradient-gold: linear-gradient(135deg, hsl(45, 100%, 50%) 0%, hsl(35, 100%, 45%) 100%);
+    
+    --shadow-glow: 0 0 40px hsl(340, 65%, 55%, 0.2);
+    --shadow-card: 0 10px 40px -10px hsl(340, 65%, 30%, 0.15);
+    --shadow-button: 0 4px 20px hsl(340, 65%, 55%, 0.3);
+
+    --sidebar-background: 30 25% 96%;
+    --sidebar-foreground: 0 0% 15%;
+    --sidebar-primary: 340 65% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 30 20% 92%;
+    --sidebar-accent-foreground: 0 0% 15%;
+    --sidebar-border: 30 15% 85%;
+    --sidebar-ring: 340 65% 55%;
+  }
 }
 
 @layer base {
@@ -127,9 +177,23 @@
   }
 
   .glass-card {
-    background: hsl(270, 40%, 8%, 0.6);
+    background: hsl(var(--card) / 0.8);
     backdrop-filter: blur(20px);
-    border: 1px solid hsl(270, 30%, 25%, 0.5);
+    border: 1px solid hsl(var(--border) / 0.5);
+  }
+
+  .light .glass-card {
+    background: hsl(var(--card) / 0.9);
+    box-shadow: 0 4px 20px hsl(0, 0%, 0%, 0.05);
+  }
+
+  .light .mirage-bg {
+    background: 
+      radial-gradient(ellipse at 20% 20%, hsl(340, 65%, 85%, 0.3) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 80%, hsl(350, 60%, 85%, 0.3) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 50%, hsl(210, 60%, 90%, 0.2) 0%, transparent 60%),
+      hsl(var(--background));
+    background-attachment: fixed;
   }
 
   .glow-effect {

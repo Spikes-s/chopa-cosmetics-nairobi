@@ -260,15 +260,11 @@ const Checkout = () => {
               </div>
 
               <div className="border-t border-border pt-4">
-                <div className="flex justify-between items-center mb-2">
+                <div className="flex justify-between items-center mb-4">
                   <span className="text-muted-foreground">Subtotal</span>
                   <span className="text-foreground">
                     Ksh {totalWithWholesale.toLocaleString()}
                   </span>
-                </div>
-                <div className="flex justify-between items-center mb-4">
-                  <span className="text-muted-foreground">Delivery</span>
-                  <span className="text-accent">FREE</span>
                 </div>
                 <div className="flex justify-between items-center pt-4 border-t border-border">
                   <span className="text-lg font-semibold text-foreground">Total</span>

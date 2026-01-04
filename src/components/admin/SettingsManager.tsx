@@ -3,69 +3,119 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Save, Upload, Image } from 'lucide-react';
+import { Save, Image, MapPin, Phone, Mail, Clock } from 'lucide-react';
+
+interface SiteSettings {
+  logo_url: string;
+  location: string;
+  phone_primary: string;
+  phone_secondary: string;
+  email: string;
+  hours: string;
+  map_url: string;
+}
 
 const SettingsManager = () => {
-  const [logoUrl, setLogoUrl] = useState('');
+  const [settings, setSettings] = useState<SiteSettings>({
+    logo_url: '',
+    location: 'KAKA HOUSE – OTC, along Racecourse Road, opposite Kaka Travellers Sacco',
+    phone_primary: '0715167179',
+    phone_secondary: '0757435912',
+    email: 'info@chopa.co.ke',
+    hours: '7:30 AM – 9:00 PM',
+    map_url: '',
+  });
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetching, setIsFetching] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
     const fetchSettings = async () => {
       const { data } = await supabase
         .from('site_settings')
-        .select('value')
-        .eq('key', 'logo_url')
-        .maybeSingle();
+        .select('key, value');
 
-      if (data?.value) {
-        setLogoUrl(data.value);
+      if (data) {
+        const settingsMap: Record<string, string> = {};
+        data.forEach(item => {
+          if (item.value) settingsMap[item.key] = item.value;
+        });
+
+        setSettings(prev => ({
+          ...prev,
+          logo_url: settingsMap.logo_url || prev.logo_url,
+          location: settingsMap.location || prev.location,
+          phone_primary: settingsMap.phone_primary || prev.phone_primary,
+          phone_secondary: settingsMap.phone_secondary || prev.phone_secondary,
+          email: settingsMap.email || prev.email,
+          hours: settingsMap.hours || prev.hours,
+          map_url: settingsMap.map_url || prev.map_url,
+        }));
       }
+      setIsFetching(false);
     };
 
     fetchSettings();
   }, []);
 
-  const handleSaveLogo = async () => {
-    setIsLoading(true);
-
+  const saveSetting = async (key: string, value: string) => {
     const { data: existing } = await supabase
       .from('site_settings')
       .select('id')
-      .eq('key', 'logo_url')
+      .eq('key', key)
       .maybeSingle();
 
-    let error;
     if (existing) {
-      const result = await supabase
+      await supabase
         .from('site_settings')
-        .update({ value: logoUrl })
-        .eq('key', 'logo_url');
-      error = result.error;
+        .update({ value })
+        .eq('key', key);
     } else {
-      const result = await supabase
+      await supabase
         .from('site_settings')
-        .insert([{ key: 'logo_url', value: logoUrl }]);
-      error = result.error;
+        .insert([{ key, value }]);
     }
+  };
 
-    if (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to save logo URL',
-        variant: 'destructive',
-      });
-    } else {
+  const handleSaveAll = async () => {
+    setIsLoading(true);
+
+    try {
+      await Promise.all([
+        saveSetting('logo_url', settings.logo_url),
+        saveSetting('location', settings.location),
+        saveSetting('phone_primary', settings.phone_primary),
+        saveSetting('phone_secondary', settings.phone_secondary),
+        saveSetting('email', settings.email),
+        saveSetting('hours', settings.hours),
+        saveSetting('map_url', settings.map_url),
+      ]);
+
       toast({
         title: 'Success',
-        description: 'Logo URL saved successfully',
+        description: 'Settings saved successfully',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to save settings',
+        variant: 'destructive',
       });
     }
 
     setIsLoading(false);
   };
+
+  if (isFetching) {
+    return (
+      <div className="flex justify-center py-12">
+        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -86,19 +136,16 @@ const SettingsManager = () => {
               id="logo_url"
               type="url"
               placeholder="https://example.com/logo.png"
-              value={logoUrl}
-              onChange={(e) => setLogoUrl(e.target.value)}
+              value={settings.logo_url}
+              onChange={(e) => setSettings({ ...settings, logo_url: e.target.value })}
             />
-            <p className="text-xs text-muted-foreground">
-              Enter the URL of your logo image. The image should be optimized for web display.
-            </p>
           </div>
 
-          {logoUrl && (
+          {settings.logo_url && (
             <div className="p-4 bg-muted/50 rounded-lg">
               <p className="text-sm text-muted-foreground mb-2">Preview:</p>
               <img
-                src={logoUrl}
+                src={settings.logo_url}
                 alt="Logo Preview"
                 className="max-h-20 object-contain"
                 onError={(e) => {
@@ -107,48 +154,102 @@ const SettingsManager = () => {
               />
             </div>
           )}
-
-          <Button onClick={handleSaveLogo} disabled={isLoading} className="gap-2">
-            <Save className="w-4 h-4" />
-            {isLoading ? 'Saving...' : 'Save Logo'}
-          </Button>
         </CardContent>
       </Card>
 
       <Card className="glass-card">
         <CardHeader>
-          <CardTitle>Store Information</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <MapPin className="w-5 h-5" />
+            Location & Contact
+          </CardTitle>
           <CardDescription>
-            Basic store information and contact details
+            Update your store location and contact information
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-muted-foreground">Store Name</p>
-                <p className="font-medium">CHOPA COSMETICS LIMITED</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Motto</p>
-                <p className="font-medium">"Beauty At Your Proximity"</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Location</p>
-                <p className="font-medium">KAKA HOUSE – OTC, along Racecourse Road</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Opening Hours</p>
-                <p className="font-medium">7:30 AM – 9:00 PM</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">M-Pesa Till Number</p>
-                <p className="font-medium">4623226</p>
-              </div>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="location">Store Location</Label>
+            <Textarea
+              id="location"
+              placeholder="Enter your store address"
+              value={settings.location}
+              onChange={(e) => setSettings({ ...settings, location: e.target.value })}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="phone_primary" className="flex items-center gap-1">
+                <Phone className="w-3 h-3" /> Primary Phone
+              </Label>
+              <Input
+                id="phone_primary"
+                type="tel"
+                placeholder="0712345678"
+                value={settings.phone_primary}
+                onChange={(e) => setSettings({ ...settings, phone_primary: e.target.value })}
+              />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone_secondary" className="flex items-center gap-1">
+                <Phone className="w-3 h-3" /> Secondary Phone
+              </Label>
+              <Input
+                id="phone_secondary"
+                type="tel"
+                placeholder="0712345678"
+                value={settings.phone_secondary}
+                onChange={(e) => setSettings({ ...settings, phone_secondary: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="email" className="flex items-center gap-1">
+              <Mail className="w-3 h-3" /> Email Address
+            </Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="info@example.com"
+              value={settings.email}
+              onChange={(e) => setSettings({ ...settings, email: e.target.value })}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="hours" className="flex items-center gap-1">
+              <Clock className="w-3 h-3" /> Business Hours
+            </Label>
+            <Input
+              id="hours"
+              placeholder="e.g., 7:30 AM – 9:00 PM"
+              value={settings.hours}
+              onChange={(e) => setSettings({ ...settings, hours: e.target.value })}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="map_url">Google Maps Embed URL (optional)</Label>
+            <Input
+              id="map_url"
+              type="url"
+              placeholder="https://www.google.com/maps/embed?..."
+              value={settings.map_url}
+              onChange={(e) => setSettings({ ...settings, map_url: e.target.value })}
+            />
+            <p className="text-xs text-muted-foreground">
+              Paste the embed URL from Google Maps to show a map on the contact page
+            </p>
           </div>
         </CardContent>
       </Card>
+
+      <Button onClick={handleSaveAll} disabled={isLoading} className="gap-2 w-full md:w-auto">
+        <Save className="w-4 h-4" />
+        {isLoading ? 'Saving...' : 'Save All Settings'}
+      </Button>
     </div>
   );
 };

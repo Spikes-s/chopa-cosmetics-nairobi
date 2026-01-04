@@ -6,7 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import { Package, Phone, MapPin, Clock, Gift } from 'lucide-react';
+import { Package, Phone, MapPin, Clock, Gift, Bell } from 'lucide-react';
+import { toast as sonnerToast } from 'sonner';
 
 interface Order {
   id: string;
@@ -30,6 +31,7 @@ interface Order {
 const OrdersManager = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [newOrderIds, setNewOrderIds] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   const fetchOrders = async () => {
@@ -56,9 +58,35 @@ const OrdersManager = () => {
 
     // Subscribe to realtime updates
     const channel = supabase
-      .channel('orders-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
-        fetchOrders();
+      .channel('orders-realtime')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, (payload) => {
+        const newOrder = payload.new as Order;
+        setOrders(prev => [newOrder, ...prev]);
+        setNewOrderIds(prev => new Set([...prev, newOrder.id]));
+        
+        // Show notification
+        sonnerToast.success('New Order Received!', {
+          description: `${newOrder.customer_name} - Ksh ${newOrder.total.toLocaleString()}`,
+          icon: <Bell className="w-4 h-4" />,
+          duration: 10000,
+        });
+
+        // Play notification sound (optional)
+        try {
+          const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleA4MU5nQ16RzGAgwi8rMpHwVDESFx8ajfBkQP4PDv5p3Gw87g8K6lHIbEDuDwrqUchsQO4PCupRyGxA7g8K6lHIbEDuDwrqUchsQO4PCupRyGxA7g8K6lHIbEDuDwrqUchsQO4PCupRyGxA7g8K6lHIbEDuDwrqUchsQO4O/');
+          audio.volume = 0.3;
+          audio.play().catch(() => {});
+        } catch (e) {}
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, (payload) => {
+        const updatedOrder = payload.new as Order;
+        setOrders(prev => prev.map(o => o.id === updatedOrder.id ? updatedOrder : o));
+        
+        if (updatedOrder.payment_status === 'confirmed') {
+          sonnerToast.success('Payment Confirmed!', {
+            description: `${updatedOrder.customer_name} - Ksh ${updatedOrder.total.toLocaleString()}`,
+          });
+        }
       })
       .subscribe();
 
@@ -84,6 +112,12 @@ const OrdersManager = () => {
         title: 'Success',
         description: 'Order updated successfully',
       });
+      // Clear new status when interacted with
+      setNewOrderIds(prev => {
+        const next = new Set(prev);
+        next.delete(orderId);
+        return next;
+      });
     }
   };
 
@@ -104,7 +138,6 @@ const OrdersManager = () => {
         title: 'Success',
         description: 'Reward assigned successfully',
       });
-      fetchOrders();
     }
   };
 
@@ -134,6 +167,10 @@ const OrdersManager = () => {
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold">Orders ({orders.length})</h2>
+      </div>
+
       {orders.length === 0 ? (
         <Card className="glass-card">
           <CardContent className="py-12 text-center">
@@ -142,11 +179,23 @@ const OrdersManager = () => {
         </Card>
       ) : (
         orders.map(order => (
-          <Card key={order.id} className="glass-card">
+          <Card 
+            key={order.id} 
+            className={`glass-card transition-all ${
+              newOrderIds.has(order.id) 
+                ? 'ring-2 ring-green-500 animate-pulse' 
+                : ''
+            }`}
+          >
             <CardContent className="p-4 space-y-4">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
-                  <h3 className="font-semibold">{order.customer_name}</h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold">{order.customer_name}</h3>
+                    {newOrderIds.has(order.id) && (
+                      <Badge className="bg-green-500 text-white animate-bounce">NEW</Badge>
+                    )}
+                  </div>
                   <p className="text-sm text-muted-foreground flex items-center gap-1">
                     <Phone className="w-3 h-3" /> {order.customer_phone}
                   </p>
