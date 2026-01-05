@@ -199,8 +199,13 @@ const OrdersManager = () => {
                   <p className="text-sm text-muted-foreground flex items-center gap-1">
                     <Phone className="w-3 h-3" /> {order.customer_phone}
                   </p>
+                  {order.customer_email && (
+                    <p className="text-sm text-muted-foreground">
+                      ✉️ {order.customer_email}
+                    </p>
+                  )}
                   <p className="text-xs text-muted-foreground mt-1">
-                    {format(new Date(order.created_at), 'PPp')}
+                    ID: {order.id.slice(0, 8)} • {format(new Date(order.created_at), 'PPp')}
                   </p>
                 </div>
                 <div className="text-right">
