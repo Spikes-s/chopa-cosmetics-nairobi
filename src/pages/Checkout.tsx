@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
+import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,28 +10,31 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { Check, Truck, MapPin } from 'lucide-react';
+import { Check, Truck, MapPin, Loader2 } from 'lucide-react';
 
 const Checkout = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { items, totalWithWholesale, clearCart } = useCart();
   const [deliveryMethod, setDeliveryMethod] = useState<'delivery' | 'pickup'>('delivery');
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
+    email: '',
     address: '',
     pickupDate: '',
     pickupTime: '',
     notes: '',
   });
   const [hasPaid, setHasPaid] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (items.length === 0) {
     navigate('/cart');
     return null;
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!hasPaid) {
@@ -37,10 +42,59 @@ const Checkout = () => {
       return;
     }
 
-    // Here you would submit the order to your backend
-    toast.success('Order submitted successfully! We will contact you shortly.');
-    clearCart();
-    navigate('/');
+    if (isSubmitting) return; // Prevent duplicate submissions
+    setIsSubmitting(true);
+
+    try {
+      // Prepare order items with pricing info
+      const orderItems = items.map(item => {
+        const isBraid = item.category.toLowerCase().includes('braid');
+        const wholesaleThreshold = isBraid ? 10 : 6;
+        const isWholesale = item.quantity >= wholesaleThreshold && item.wholesalePrice > 0;
+        
+        return {
+          id: item.id,
+          name: item.name,
+          quantity: item.quantity,
+          price: isWholesale ? item.wholesalePrice : item.price,
+          priceType: isWholesale ? 'wholesale' : 'retail',
+          image: item.image,
+        };
+      });
+
+      // Insert order into database
+      const { error } = await supabase.from('orders').insert({
+        user_id: user?.id || null,
+        customer_name: formData.name,
+        customer_phone: formData.phone,
+        customer_email: formData.email || null,
+        items: orderItems,
+        subtotal: totalWithWholesale,
+        delivery_fee: 0,
+        total: totalWithWholesale,
+        delivery_type: deliveryMethod,
+        delivery_address: deliveryMethod === 'delivery' ? formData.address : null,
+        pickup_date: deliveryMethod === 'pickup' ? formData.pickupDate : null,
+        pickup_time: deliveryMethod === 'pickup' ? formData.pickupTime : null,
+        payment_status: 'pending',
+        order_status: 'pending',
+      });
+
+      if (error) {
+        console.error('Order submission error:', error);
+        toast.error('Failed to submit order. Please try again.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      toast.success('Order submitted successfully! We will contact you shortly.');
+      clearCart();
+      navigate('/');
+    } catch (err) {
+      console.error('Order submission error:', err);
+      toast.error('Failed to submit order. Please try again.');
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -78,6 +132,16 @@ const Checkout = () => {
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     placeholder="e.g., 0712345678"
                     required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="email">Email Address (Optional)</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    placeholder="your@email.com"
                   />
                 </div>
               </CardContent>
@@ -222,9 +286,16 @@ const Checkout = () => {
               variant="gradient"
               size="xl"
               className="w-full"
-              disabled={!hasPaid}
+              disabled={!hasPaid || isSubmitting}
             >
-              Submit Order
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                'Submit Order'
+              )}
             </Button>
           </form>
         </div>

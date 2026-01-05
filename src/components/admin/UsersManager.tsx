@@ -5,12 +5,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import { User, Mail, Phone, Calendar, ShoppingBag, Ban, CheckCircle } from 'lucide-react';
+import { User, Mail, Phone, Calendar, ShoppingBag } from 'lucide-react';
 
 interface UserProfile {
   id: string;
   user_id: string;
   full_name: string | null;
+  email: string | null;
   phone: string | null;
   created_at: string;
   role?: string;
@@ -114,20 +115,25 @@ const UsersManager = () => {
                     <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
                       <User className="w-6 h-6 text-primary" />
                     </div>
-                    <div>
-                      <h3 className="font-semibold text-foreground">
-                        {user.full_name || 'No name provided'}
-                      </h3>
-                      {user.phone && (
-                        <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
-                          <Phone className="w-3 h-3" /> {user.phone}
-                        </p>
-                      )}
-                      <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                        <Calendar className="w-3 h-3" /> 
-                        Joined: {format(new Date(user.created_at), 'PP')}
-                      </p>
-                    </div>
+                                    <div>
+                                      <h3 className="font-semibold text-foreground">
+                                        {user.full_name || 'No name provided'}
+                                      </h3>
+                                      {user.email && (
+                                        <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                                          <Mail className="w-3 h-3" /> {user.email}
+                                        </p>
+                                      )}
+                                      {user.phone && (
+                                        <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                                          <Phone className="w-3 h-3" /> {user.phone}
+                                        </p>
+                                      )}
+                                      <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                                        <Calendar className="w-3 h-3" /> 
+                                        Joined: {format(new Date(user.created_at), 'PP')}
+                                      </p>
+                                    </div>
                   </div>
                   
                   <div className="flex flex-col items-end gap-2">
