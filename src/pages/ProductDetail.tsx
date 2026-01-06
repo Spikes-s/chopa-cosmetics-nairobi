@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { products } from '@/data/products';
+import { products, braidColors, extraLongColors } from '@/data/products';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/context/CartContext';
 import { toast } from 'sonner';
-import { ShoppingCart, Minus, Plus, ArrowLeft, Check } from 'lucide-react';
+import { ShoppingCart, Minus, Plus, ArrowLeft, Check, AlertCircle } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -12,6 +12,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+
+// Braid length options with price adjustments
+const braidLengths = [
+  { value: 'short', label: 'Short', priceMultiplier: 1 },
+  { value: 'long', label: 'Long', priceMultiplier: 1.3 },
+  { value: 'extra-long', label: 'Extra Long', priceMultiplier: 1.6 },
+];
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -22,7 +29,24 @@ const ProductDetail = () => {
   
   const [quantity, setQuantity] = useState(1);
   const [selectedSize, setSelectedSize] = useState(product?.sizes?.[0] || '');
-  const [selectedColor, setSelectedColor] = useState(product?.colors?.[0] || '');
+  const [selectedColor, setSelectedColor] = useState('');
+  const [selectedLength, setSelectedLength] = useState('');
+
+  // Determine if product is a braid
+  const isBraid = product?.category.toLowerCase() === 'braids';
+  
+  // Get available colors based on length for braids
+  const availableColors = useMemo(() => {
+    if (!isBraid) return product?.colors || [];
+    if (selectedLength === 'extra-long') return extraLongColors;
+    return braidColors;
+  }, [isBraid, selectedLength, product?.colors]);
+
+  // Reset color when length changes (for braids)
+  const handleLengthChange = (length: string) => {
+    setSelectedLength(length);
+    setSelectedColor(''); // Reset color selection
+  };
 
   if (!product) {
     return (
@@ -37,18 +61,38 @@ const ProductDetail = () => {
     );
   }
 
-  const isBraid = product.category.toLowerCase().includes('braid');
   const wholesaleThreshold = isBraid ? 10 : 6;
   const isWholesale = quantity >= wholesaleThreshold;
-  const currentPrice = isWholesale ? product.wholesalePrice : product.price;
+  
+  // Calculate price based on length for braids
+  const lengthMultiplier = isBraid && selectedLength 
+    ? braidLengths.find(l => l.value === selectedLength)?.priceMultiplier || 1 
+    : 1;
+  
+  const basePrice = product.price * lengthMultiplier;
+  const baseWholesalePrice = product.wholesalePrice * lengthMultiplier;
+  const currentPrice = isWholesale ? baseWholesalePrice : basePrice;
   const totalPrice = currentPrice * quantity;
 
+  // Validation for braids - must select length and color
+  const canAddToCart = isBraid 
+    ? selectedLength !== '' && selectedColor !== ''
+    : true;
+
   const handleAddToCart = () => {
+    if (!canAddToCart) {
+      toast.error('Please select all required options');
+      return;
+    }
+    const productName = isBraid && selectedLength
+      ? `${product.name} - ${braidLengths.find(l => l.value === selectedLength)?.label}`
+      : product.name;
+
     addItem({
-      id: `${product.id}-${selectedSize}-${selectedColor}`,
-      name: product.name,
-      price: product.price,
-      wholesalePrice: product.wholesalePrice,
+      id: `${product.id}-${selectedLength}-${selectedSize}-${selectedColor}`,
+      name: productName,
+      price: Math.round(basePrice),
+      wholesalePrice: Math.round(baseWholesalePrice),
       quantity,
       size: selectedSize,
       color: selectedColor,
@@ -56,7 +100,7 @@ const ProductDetail = () => {
       category: product.category,
     });
     
-    toast.success(`${product.name} added to cart!`);
+    toast.success(`${productName} added to cart!`);
   };
 
   return (
@@ -132,8 +176,34 @@ const ProductDetail = () => {
 
           {/* Options */}
           <div className="space-y-4 mb-6">
-            {/* Size Selector */}
-            {product.sizes && product.sizes.length > 0 && (
+            {/* Braid Length Selector - Required for braids */}
+            {isBraid && (
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Length <span className="text-destructive">*</span>
+                </label>
+                <Select value={selectedLength} onValueChange={handleLengthChange}>
+                  <SelectTrigger className={`w-full ${!selectedLength && 'border-destructive/50'}`}>
+                    <SelectValue placeholder="Select length (required)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {braidLengths.map((length) => (
+                      <SelectItem key={length.value} value={length.value}>
+                        {length.label} {length.priceMultiplier > 1 && `(+${Math.round((length.priceMultiplier - 1) * 100)}%)`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {!selectedLength && (
+                  <p className="text-xs text-destructive mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" /> Please select a length
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Size Selector - for non-braids */}
+            {!isBraid && product.sizes && product.sizes.length > 0 && (
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
                   Size
@@ -153,24 +223,33 @@ const ProductDetail = () => {
               </div>
             )}
 
-            {/* Color Selector */}
-            {product.colors && product.colors.length > 0 && (
+            {/* Color Selector - Required for braids, optional for others */}
+            {(isBraid || (product.colors && product.colors.length > 0)) && (
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
-                  Color
+                  Color {isBraid && <span className="text-destructive">*</span>}
                 </label>
-                <Select value={selectedColor} onValueChange={setSelectedColor}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select color" />
+                <Select 
+                  value={selectedColor} 
+                  onValueChange={setSelectedColor}
+                  disabled={isBraid && !selectedLength}
+                >
+                  <SelectTrigger className={`w-full ${isBraid && !selectedColor && selectedLength && 'border-destructive/50'}`}>
+                    <SelectValue placeholder={isBraid && !selectedLength ? "Select length first" : "Select color"} />
                   </SelectTrigger>
-                  <SelectContent>
-                    {product.colors.map((color) => (
+                  <SelectContent className="max-h-60">
+                    {availableColors.map((color) => (
                       <SelectItem key={color} value={color}>
                         {color}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+                {isBraid && selectedLength && !selectedColor && (
+                  <p className="text-xs text-destructive mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" /> Please select a color
+                  </p>
+                )}
               </div>
             )}
 
@@ -221,10 +300,17 @@ const ProductDetail = () => {
             size="xl"
             className="w-full"
             onClick={handleAddToCart}
+            disabled={!canAddToCart}
           >
             <ShoppingCart className="w-5 h-5 mr-2" />
-            Add to Cart
+            {canAddToCart ? 'Add to Cart' : 'Select Options Above'}
           </Button>
+          
+          {isBraid && !canAddToCart && (
+            <p className="text-sm text-muted-foreground text-center mt-2">
+              Please select both length and color to add to cart
+            </p>
+          )}
         </div>
       </div>
     </div>

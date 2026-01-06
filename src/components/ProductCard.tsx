@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ShoppingCart, Eye } from 'lucide-react';
@@ -12,10 +12,20 @@ interface ProductCardProps {
 
 const ProductCard = ({ product }: ProductCardProps) => {
   const { addItem } = useCart();
+  const navigate = useNavigate();
+  
+  // Check if this is a braid product
+  const isBraid = product.category.toLowerCase() === 'braids';
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    // For braids, redirect to product detail page
+    if (isBraid) {
+      navigate(`/product/${product.id}`);
+      return;
+    }
     
     addItem({
       id: product.id,
@@ -49,8 +59,17 @@ const ProductCard = ({ product }: ProductCardProps) => {
               className="flex-1"
               onClick={handleAddToCart}
             >
-              <ShoppingCart className="w-4 h-4 mr-1" />
-              Add
+              {isBraid ? (
+                <>
+                  <Eye className="w-4 h-4 mr-1" />
+                  Select Options
+                </>
+              ) : (
+                <>
+                  <ShoppingCart className="w-4 h-4 mr-1" />
+                  Add
+                </>
+              )}
             </Button>
             <Button variant="glass" size="icon" className="shrink-0">
               <Eye className="w-4 h-4" />

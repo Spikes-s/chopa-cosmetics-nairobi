@@ -125,18 +125,17 @@ const ChatWidget = () => {
     setIsSending(false);
   };
 
-  // Don't show widget for non-logged-in users or admins
-  if (!user) {
-    return null;
-  }
+  // Show widget for all users (logged in gets full chat, others see login prompt)
+  // Always render the floating button for visibility
 
   return (
     <>
-      {/* Floating button */}
+      {/* Floating button - always visible and fixed */}
       {!isOpen && (
         <button
           onClick={handleOpenChat}
-          className="fixed bottom-6 left-6 z-50 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-all hover:scale-105 flex items-center justify-center"
+          className="fixed bottom-6 left-6 z-[9999] w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-all hover:scale-105 flex items-center justify-center animate-pulse-glow"
+          style={{ position: 'fixed' }}
         >
           <MessageCircle className="w-6 h-6" />
           {hasUnread && (
@@ -150,11 +149,12 @@ const ChatWidget = () => {
       {/* Chat window */}
       {isOpen && (
         <div 
-          className={`fixed left-6 z-50 transition-all duration-300 ${
+          className={`fixed left-6 z-[9999] transition-all duration-300 ${
             isMinimized 
               ? 'bottom-6 w-64' 
               : 'bottom-6 w-80 sm:w-96'
           }`}
+          style={{ position: 'fixed' }}
         >
           <Card className="glass-card border-primary/20 shadow-2xl overflow-hidden">
             {/* Header */}
@@ -187,69 +187,96 @@ const ChatWidget = () => {
 
             {!isMinimized && (
               <CardContent className="p-0">
-                {/* Messages area */}
-                <div className="h-72 overflow-y-auto p-3 space-y-3">
-                  {messages.length === 0 ? (
-                    <div className="h-full flex items-center justify-center text-center">
-                      <div>
-                        <MessageCircle className="w-10 h-10 mx-auto mb-2 text-muted-foreground/50" />
-                        <p className="text-sm text-muted-foreground">
-                          Hi! 👋 How can we help you today?
-                        </p>
-                        <p className="text-xs text-muted-foreground/70 mt-1">
-                          Send us a message and we'll reply shortly.
-                        </p>
-                      </div>
-                    </div>
-                  ) : (
-                    messages.map((msg) => (
-                      <div
-                        key={msg.id}
-                        className={`flex ${
-                          msg.sender_type === 'customer' ? 'justify-end' : 'justify-start'
-                        }`}
+                {/* Show login prompt if not authenticated */}
+                {!user ? (
+                  <div className="h-72 flex items-center justify-center p-6 text-center">
+                    <div>
+                      <MessageCircle className="w-10 h-10 mx-auto mb-3 text-muted-foreground/50" />
+                      <p className="text-sm text-foreground font-medium mb-2">
+                        Sign in to chat with us!
+                      </p>
+                      <p className="text-xs text-muted-foreground mb-4">
+                        Create an account or log in to start a conversation with our support team.
+                      </p>
+                      <Button 
+                        variant="default" 
+                        size="sm"
+                        onClick={() => {
+                          setIsOpen(false);
+                          window.location.href = '/auth';
+                        }}
                       >
-                        <div
-                          className={`max-w-[80%] rounded-lg px-3 py-2 ${
-                            msg.sender_type === 'customer'
-                              ? 'bg-primary text-primary-foreground'
-                              : 'bg-muted text-foreground'
-                          }`}
-                        >
-                          <p className="text-sm break-words">{msg.message}</p>
-                          <p className={`text-xs mt-1 ${
-                            msg.sender_type === 'customer' 
-                              ? 'text-primary-foreground/70' 
-                              : 'text-muted-foreground'
-                          }`}>
-                            {format(new Date(msg.created_at), 'HH:mm')}
-                          </p>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                  <div ref={messagesEndRef} />
-                </div>
-
-                {/* Input area */}
-                <form onSubmit={handleSendMessage} className="p-3 border-t border-border/50">
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Type a message..."
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      disabled={isSending}
-                      className="flex-1 text-sm"
-                    />
-                    <Button 
-                      type="submit" 
-                      size="icon" 
-                      disabled={!newMessage.trim() || isSending}
-                    >
-                      <Send className="w-4 h-4" />
-                    </Button>
+                        Sign In / Sign Up
+                      </Button>
+                    </div>
                   </div>
-                </form>
+                ) : (
+                  <>
+                    {/* Messages area */}
+                    <div className="h-72 overflow-y-auto p-3 space-y-3">
+                      {messages.length === 0 ? (
+                        <div className="h-full flex items-center justify-center text-center">
+                          <div>
+                            <MessageCircle className="w-10 h-10 mx-auto mb-2 text-muted-foreground/50" />
+                            <p className="text-sm text-muted-foreground">
+                              Hi! 👋 How can we help you today?
+                            </p>
+                            <p className="text-xs text-muted-foreground/70 mt-1">
+                              Send us a message and we'll reply shortly.
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        messages.map((msg) => (
+                          <div
+                            key={msg.id}
+                            className={`flex ${
+                              msg.sender_type === 'customer' ? 'justify-end' : 'justify-start'
+                            }`}
+                          >
+                            <div
+                              className={`max-w-[80%] rounded-lg px-3 py-2 ${
+                                msg.sender_type === 'customer'
+                                  ? 'bg-primary text-primary-foreground'
+                                  : 'bg-muted text-foreground'
+                              }`}
+                            >
+                              <p className="text-sm break-words">{msg.message}</p>
+                              <p className={`text-xs mt-1 ${
+                                msg.sender_type === 'customer' 
+                                  ? 'text-primary-foreground/70' 
+                                  : 'text-muted-foreground'
+                              }`}>
+                                {format(new Date(msg.created_at), 'HH:mm')}
+                              </p>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                      <div ref={messagesEndRef} />
+                    </div>
+
+                    {/* Input area */}
+                    <form onSubmit={handleSendMessage} className="p-3 border-t border-border/50">
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Type a message..."
+                          value={newMessage}
+                          onChange={(e) => setNewMessage(e.target.value)}
+                          disabled={isSending}
+                          className="flex-1 text-sm"
+                        />
+                        <Button 
+                          type="submit" 
+                          size="icon" 
+                          disabled={!newMessage.trim() || isSending}
+                        >
+                          <Send className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </form>
+                  </>
+                )}
               </CardContent>
             )}
           </Card>
