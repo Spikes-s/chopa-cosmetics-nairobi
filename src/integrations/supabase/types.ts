@@ -52,11 +52,13 @@ export type Database = {
           delivery_type: string
           id: string
           items: Json
+          mpesa_code: string | null
           order_status: string
           payment_status: string
           pickup_date: string | null
           pickup_time: string | null
           reward_type: string | null
+          status_history: Json | null
           subtotal: number
           total: number
           updated_at: string
@@ -72,11 +74,13 @@ export type Database = {
           delivery_type: string
           id?: string
           items: Json
+          mpesa_code?: string | null
           order_status?: string
           payment_status?: string
           pickup_date?: string | null
           pickup_time?: string | null
           reward_type?: string | null
+          status_history?: Json | null
           subtotal: number
           total: number
           updated_at?: string
@@ -92,11 +96,13 @@ export type Database = {
           delivery_type?: string
           id?: string
           items?: Json
+          mpesa_code?: string | null
           order_status?: string
           payment_status?: string
           pickup_date?: string | null
           pickup_time?: string | null
           reward_type?: string | null
+          status_history?: Json | null
           subtotal?: number
           total?: number
           updated_at?: string
@@ -235,6 +241,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      reduce_stock: {
+        Args: { product_id: string; quantity_sold: number }
+        Returns: undefined
       }
     }
     Enums: {

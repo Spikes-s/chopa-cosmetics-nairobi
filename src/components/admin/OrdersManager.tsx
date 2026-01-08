@@ -26,6 +26,8 @@ interface Order {
   order_status: string;
   reward_type: string | null;
   created_at: string;
+  mpesa_code?: string | null;
+  status_history?: any;
 }
 
 const OrdersManager = () => {
@@ -96,9 +98,22 @@ const OrdersManager = () => {
   }, []);
 
   const updateOrderStatus = async (orderId: string, field: 'payment_status' | 'order_status', value: string) => {
+    // Get current order to update status history
+    const currentOrder = orders.find(o => o.id === orderId);
+    const statusHistory = Array.isArray(currentOrder?.status_history) ? currentOrder.status_history : [];
+    
+    const newHistoryEntry = {
+      field,
+      value,
+      timestamp: new Date().toISOString(),
+    };
+
     const { error } = await supabase
       .from('orders')
-      .update({ [field]: value })
+      .update({ 
+        [field]: value,
+        status_history: [...statusHistory, newHistoryEntry]
+      })
       .eq('id', orderId);
 
     if (error) {
@@ -145,16 +160,25 @@ const OrdersManager = () => {
     switch (status) {
       case 'confirmed':
       case 'completed':
+      case 'paid':
         return 'bg-green-500/20 text-green-400 border-green-500/30';
       case 'pending':
-      case 'processing':
+      case 'pending_payment':
         return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
+      case 'processing':
+      case 'ready_for_pickup':
+      case 'out_for_delivery':
+        return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
       case 'failed':
       case 'cancelled':
         return 'bg-red-500/20 text-red-400 border-red-500/30';
       default:
         return 'bg-muted text-muted-foreground';
     }
+  };
+
+  const formatStatus = (status: string) => {
+    return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
 
   if (isLoading) {
@@ -210,12 +234,17 @@ const OrdersManager = () => {
                 </div>
                 <div className="text-right">
                   <p className="text-lg font-bold">Ksh {order.total.toLocaleString()}</p>
-                  <div className="flex gap-2 mt-1">
+                  {order.mpesa_code && (
+                    <p className="text-xs text-accent font-mono mt-1">
+                      M-Pesa: {order.mpesa_code}
+                    </p>
+                  )}
+                  <div className="flex gap-2 mt-1 justify-end">
                     <Badge className={getStatusColor(order.payment_status)}>
-                      {order.payment_status}
+                      {formatStatus(order.payment_status)}
                     </Badge>
                     <Badge className={getStatusColor(order.order_status)}>
-                      {order.order_status}
+                      {formatStatus(order.order_status)}
                     </Badge>
                   </div>
                 </div>
@@ -256,11 +285,12 @@ const OrdersManager = () => {
                     value={order.payment_status}
                     onValueChange={(value) => updateOrderStatus(order.id, 'payment_status', value)}
                   >
-                    <SelectTrigger className="w-32 h-8">
+                    <SelectTrigger className="w-36 h-8">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="pending">Pending Payment</SelectItem>
+                      <SelectItem value="paid">Paid</SelectItem>
                       <SelectItem value="confirmed">Confirmed</SelectItem>
                       <SelectItem value="failed">Failed</SelectItem>
                     </SelectContent>
@@ -273,12 +303,14 @@ const OrdersManager = () => {
                     value={order.order_status}
                     onValueChange={(value) => updateOrderStatus(order.id, 'order_status', value)}
                   >
-                    <SelectTrigger className="w-32 h-8">
+                    <SelectTrigger className="w-40 h-8">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="pending">Pending</SelectItem>
                       <SelectItem value="processing">Processing</SelectItem>
+                      <SelectItem value="ready_for_pickup">Ready for Pickup</SelectItem>
+                      <SelectItem value="out_for_delivery">Out for Delivery</SelectItem>
                       <SelectItem value="completed">Completed</SelectItem>
                       <SelectItem value="cancelled">Cancelled</SelectItem>
                     </SelectContent>
