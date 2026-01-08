@@ -25,6 +25,7 @@ const Checkout = () => {
     pickupDate: '',
     pickupTime: '',
     notes: '',
+    mpesaCode: '',
   });
   const [hasPaid, setHasPaid] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -39,6 +40,11 @@ const Checkout = () => {
 
     if (!hasPaid) {
       toast.error('Please confirm your payment before submitting');
+      return;
+    }
+
+    if (!formData.mpesaCode.trim()) {
+      toast.error('Please enter your M-Pesa transaction code');
       return;
     }
 
@@ -62,8 +68,8 @@ const Checkout = () => {
         };
       });
 
-      // Insert order into database
-      const { error } = await supabase.from('orders').insert({
+      // Insert order into database with MPesa code
+      const { data: orderData, error } = await supabase.from('orders').insert({
         user_id: user?.id || null,
         customer_name: formData.name,
         customer_phone: formData.phone,
@@ -78,13 +84,24 @@ const Checkout = () => {
         pickup_time: deliveryMethod === 'pickup' ? formData.pickupTime : null,
         payment_status: 'pending',
         order_status: 'pending',
-      });
+        mpesa_code: formData.mpesaCode.trim().toUpperCase(),
+      }).select();
 
       if (error) {
         console.error('Order submission error:', error);
         toast.error('Failed to submit order. Please try again.');
         setIsSubmitting(false);
         return;
+      }
+
+      // Reduce stock for each item
+      for (const item of items) {
+        await supabase.rpc('reduce_stock', { 
+          product_id: item.id, 
+          quantity_sold: item.quantity 
+        }).then(({ error: stockError }) => {
+          if (stockError) console.error('Stock update error:', stockError);
+        });
       }
 
       toast.success('Order submitted successfully! We will contact you shortly.');
@@ -259,8 +276,25 @@ const Checkout = () => {
                     Till Number: 4623226
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    Please pay the exact amount shown in the order summary, then click "I Have Paid" below.
+                    Please pay the exact amount shown in the order summary, then enter your transaction code below.
                   </p>
+                </div>
+
+                <div className="space-y-4 mb-6">
+                  <div>
+                    <Label htmlFor="mpesaCode">M-Pesa Transaction Code</Label>
+                    <Input
+                      id="mpesaCode"
+                      value={formData.mpesaCode}
+                      onChange={(e) => setFormData({ ...formData, mpesaCode: e.target.value.toUpperCase() })}
+                      placeholder="e.g., SJK7XXXXXX"
+                      className="uppercase"
+                      required
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Enter the transaction code from your M-Pesa confirmation message
+                    </p>
+                  </div>
                 </div>
 
                 <Button
@@ -268,6 +302,7 @@ const Checkout = () => {
                   variant={hasPaid ? 'gold' : 'outline'}
                   className="w-full"
                   onClick={() => setHasPaid(!hasPaid)}
+                  disabled={!formData.mpesaCode.trim()}
                 >
                   {hasPaid ? (
                     <>

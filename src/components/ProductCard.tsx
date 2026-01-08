@@ -21,6 +21,12 @@ const ProductCard = ({ product }: ProductCardProps) => {
     e.preventDefault();
     e.stopPropagation();
     
+    // Check if out of stock
+    if (product.inStock === false) {
+      toast.error('This product is currently out of stock');
+      return;
+    }
+    
     // For braids, redirect to product detail page
     if (isBraid) {
       navigate(`/product/${product.id}`);
@@ -76,11 +82,17 @@ const ProductCard = ({ product }: ProductCardProps) => {
             </Button>
           </div>
 
-          {/* Wholesale Badge */}
-          <div className="absolute top-3 right-3">
-            <span className="bg-accent/90 text-accent-foreground text-xs font-semibold px-2 py-1 rounded-full">
-              Wholesale Available
-            </span>
+          {/* Status Badges */}
+          <div className="absolute top-3 right-3 flex flex-col gap-1">
+            {product.inStock === false ? (
+              <span className="bg-destructive text-destructive-foreground text-xs font-semibold px-2 py-1 rounded-full">
+                Out of Stock
+              </span>
+            ) : product.wholesalePrice > 0 && (
+              <span className="bg-accent/90 text-accent-foreground text-xs font-semibold px-2 py-1 rounded-full">
+                Wholesale Available
+              </span>
+            )}
           </div>
         </div>
 

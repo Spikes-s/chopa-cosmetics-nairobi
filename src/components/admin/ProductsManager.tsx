@@ -24,6 +24,7 @@ interface Product {
   image_url: string | null;
   variations: any;
   in_stock: boolean | null;
+  stock_quantity: number | null;
 }
 
 const ProductsManager = () => {
@@ -36,6 +37,8 @@ const ProductsManager = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
+  const LOW_STOCK_THRESHOLD = 5;
+
   // Form state
   const [formData, setFormData] = useState({
     name: '',
@@ -47,6 +50,7 @@ const ProductsManager = () => {
     wholesale_min_qty: '6',
     image_url: '',
     in_stock: true,
+    stock_quantity: '0',
   });
 
   const fetchProducts = async () => {
@@ -83,6 +87,7 @@ const ProductsManager = () => {
       wholesale_min_qty: '6',
       image_url: '',
       in_stock: true,
+      stock_quantity: '0',
     });
     setEditingProduct(null);
   };
@@ -99,9 +104,20 @@ const ProductsManager = () => {
       wholesale_min_qty: product.wholesale_min_qty?.toString() || '6',
       image_url: product.image_url || '',
       in_stock: product.in_stock ?? true,
+      stock_quantity: product.stock_quantity?.toString() || '0',
     });
     setIsDialogOpen(true);
   };
+
+  const getStockStatus = (product: Product) => {
+    const qty = product.stock_quantity ?? 0;
+    if (qty === 0) return { label: 'Out of Stock', className: 'bg-destructive text-destructive-foreground' };
+    if (qty <= LOW_STOCK_THRESHOLD) return { label: 'Low Stock', className: 'bg-orange-500 text-white' };
+    return { label: 'In Stock', className: 'bg-green-500 text-white' };
+  };
+
+  // Check for low stock products and show alert
+  const lowStockProducts = products.filter(p => (p.stock_quantity ?? 0) > 0 && (p.stock_quantity ?? 0) <= LOW_STOCK_THRESHOLD);
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this product?')) return;
@@ -201,6 +217,7 @@ const ProductsManager = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    const stockQty = parseInt(formData.stock_quantity) || 0;
     const productData = {
       name: formData.name,
       description: formData.description || null,
@@ -210,7 +227,8 @@ const ProductsManager = () => {
       wholesale_price: formData.wholesale_price ? parseFloat(formData.wholesale_price) : null,
       wholesale_min_qty: parseInt(formData.wholesale_min_qty) || 6,
       image_url: formData.image_url || null,
-      in_stock: formData.in_stock,
+      in_stock: stockQty > 0,
+      stock_quantity: stockQty,
     };
 
     if (editingProduct) {
@@ -448,13 +466,19 @@ const ProductsManager = () => {
                 </div>
               </div>
 
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="in_stock"
-                  checked={formData.in_stock}
-                  onCheckedChange={(checked) => setFormData({ ...formData, in_stock: checked })}
+              <div className="space-y-2">
+                <Label htmlFor="stock_quantity">Stock Quantity</Label>
+                <Input
+                  id="stock_quantity"
+                  type="number"
+                  min="0"
+                  value={formData.stock_quantity}
+                  onChange={(e) => setFormData({ ...formData, stock_quantity: e.target.value })}
+                  required
                 />
-                <Label htmlFor="in_stock">In Stock</Label>
+                <p className="text-xs text-muted-foreground">
+                  Stock status updates automatically (Low stock: ≤5 units)
+                </p>
               </div>
 
               <Button type="submit" className="w-full" disabled={isUploading}>
@@ -464,6 +488,20 @@ const ProductsManager = () => {
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* Low Stock Alert */}
+      {lowStockProducts.length > 0 && (
+        <Card className="border-orange-500 bg-orange-50 dark:bg-orange-950/20">
+          <CardContent className="p-4">
+            <p className="font-semibold text-orange-700 dark:text-orange-400">
+              ⚠️ Low Stock Alert: {lowStockProducts.length} product(s) need restocking
+            </p>
+            <p className="text-sm text-orange-600 dark:text-orange-300 mt-1">
+              {lowStockProducts.map(p => p.name).join(', ')}
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {isLoading ? (
         <div className="flex justify-center py-12">
@@ -491,13 +529,19 @@ const ProductsManager = () => {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold truncate">{product.name}</h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold truncate">{product.name}</h3>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${getStockStatus(product).className}`}>
+                        {getStockStatus(product).label}
+                      </span>
+                    </div>
                     <p className="text-sm text-muted-foreground">{product.category} • {product.subcategory}</p>
                     <div className="flex gap-4 mt-1">
                       <span className="text-sm">Retail: Ksh {product.retail_price}</span>
                       {product.wholesale_price && (
                         <span className="text-sm text-accent">Wholesale: Ksh {product.wholesale_price}</span>
                       )}
+                      <span className="text-sm text-muted-foreground">Stock: {product.stock_quantity ?? 0}</span>
                     </div>
                   </div>
                   <div className="flex gap-2">

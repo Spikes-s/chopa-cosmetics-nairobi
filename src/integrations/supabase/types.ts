@@ -114,6 +114,7 @@ export type Database = {
           in_stock: boolean | null
           name: string
           retail_price: number
+          stock_quantity: number | null
           subcategory: string | null
           updated_at: string
           variations: Json | null
@@ -129,6 +130,7 @@ export type Database = {
           in_stock?: boolean | null
           name: string
           retail_price: number
+          stock_quantity?: number | null
           subcategory?: string | null
           updated_at?: string
           variations?: Json | null
@@ -144,6 +146,7 @@ export type Database = {
           in_stock?: boolean | null
           name?: string
           retail_price?: number
+          stock_quantity?: number | null
           subcategory?: string | null
           updated_at?: string
           variations?: Json | null
