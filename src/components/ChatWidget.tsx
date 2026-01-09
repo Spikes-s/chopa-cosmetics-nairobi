@@ -134,12 +134,12 @@ const ChatWidget = () => {
       {!isOpen && (
         <button
           onClick={handleOpenChat}
-          className="fixed bottom-6 left-6 z-[9999] w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-all hover:scale-105 flex items-center justify-center animate-pulse-glow"
-          style={{ position: 'fixed' }}
+          className="fixed bottom-6 left-6 z-[9999] w-14 h-14 rounded-full bg-red-600 text-white shadow-lg hover:bg-red-700 transition-all hover:scale-105 flex items-center justify-center"
+          style={{ position: 'fixed', boxShadow: '0 0 20px rgba(220, 38, 38, 0.5)' }}
         >
           <MessageCircle className="w-6 h-6" />
           {hasUnread && (
-            <span className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
+            <span className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-400 text-black text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
               !
             </span>
           )}
