@@ -83,53 +83,59 @@
   }
 
   .light {
-    --background: 30 40% 96%;
-    --foreground: 280 30% 15%;
+    /* Nude pink background */
+    --background: 10 50% 92%;
+    --foreground: 0 0% 5%;
     
-    --card: 30 35% 94%;
-    --card-foreground: 280 30% 15%;
+    --card: 10 45% 94%;
+    --card-foreground: 0 0% 5%;
     
-    --popover: 30 30% 98%;
-    --popover-foreground: 280 30% 15%;
+    --popover: 10 40% 96%;
+    --popover-foreground: 0 0% 5%;
     
-    --primary: 340 65% 50%;
+    /* Hot pink primary */
+    --primary: 330 100% 50%;
     --primary-foreground: 0 0% 100%;
     
-    --secondary: 350 50% 65%;
-    --secondary-foreground: 280 30% 15%;
+    /* Flamingo pink secondary */
+    --secondary: 350 85% 60%;
+    --secondary-foreground: 0 0% 5%;
     
-    --muted: 30 25% 90%;
-    --muted-foreground: 280 20% 35%;
+    /* Rose pink muted */
+    --muted: 350 40% 88%;
+    --muted-foreground: 330 80% 45%;
     
-    --accent: 210 50% 50%;
+    /* Red accent */
+    --accent: 0 85% 50%;
     --accent-foreground: 0 0% 100%;
     
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
     
-    --border: 340 20% 85%;
-    --input: 30 25% 92%;
-    --ring: 340 65% 50%;
+    /* Rose pink border */
+    --border: 350 50% 80%;
+    --input: 10 40% 90%;
+    --ring: 330 100% 50%;
 
-    /* Light mode gradients - soft creamy tones */
-    --gradient-primary: linear-gradient(135deg, hsl(340, 65%, 50%) 0%, hsl(350, 50%, 65%) 50%, hsl(210, 50%, 50%) 100%);
-    --gradient-hero: linear-gradient(180deg, hsl(30, 40%, 96%) 0%, hsl(30, 35%, 94%) 50%, hsl(30, 40%, 96%) 100%);
-    --gradient-card: linear-gradient(145deg, hsl(30, 35%, 95%) 0%, hsl(30, 30%, 93%) 100%);
-    --gradient-button: linear-gradient(135deg, hsl(340, 65%, 50%) 0%, hsl(350, 50%, 65%) 100%);
-    --gradient-gold: linear-gradient(135deg, hsl(45, 100%, 50%) 0%, hsl(35, 100%, 45%) 100%);
+    /* Light mode gradients - nude pink and rose tones */
+    --gradient-primary: linear-gradient(135deg, hsl(330, 100%, 50%) 0%, hsl(350, 85%, 60%) 50%, hsl(0, 85%, 50%) 100%);
+    --gradient-hero: linear-gradient(180deg, hsl(10, 50%, 92%) 0%, hsl(350, 40%, 90%) 50%, hsl(10, 50%, 92%) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(10, 45%, 95%) 0%, hsl(350, 35%, 93%) 100%);
+    --gradient-button: linear-gradient(135deg, hsl(330, 100%, 50%) 0%, hsl(350, 85%, 60%) 100%);
+    --gradient-gold: linear-gradient(135deg, hsl(50, 100%, 50%) 0%, hsl(45, 100%, 45%) 100%);
     
-    --shadow-glow: 0 0 40px hsl(340, 65%, 50%, 0.15);
-    --shadow-card: 0 10px 40px -10px hsl(340, 65%, 30%, 0.1);
-    --shadow-button: 0 4px 20px hsl(340, 65%, 50%, 0.25);
+    --shadow-glow: 0 0 40px hsl(330, 100%, 50%, 0.2);
+    --shadow-card: 0 10px 40px -10px hsl(350, 60%, 50%, 0.15);
+    --shadow-button: 0 4px 20px hsl(330, 100%, 50%, 0.3);
 
-    --sidebar-background: 30 35% 94%;
-    --sidebar-foreground: 280 30% 15%;
-    --sidebar-primary: 340 65% 50%;
+    --sidebar-background: 10 45% 94%;
+    --sidebar-foreground: 0 0% 5%;
+    --sidebar-primary: 330 100% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 30 25% 90%;
-    --sidebar-accent-foreground: 280 30% 15%;
-    --sidebar-border: 340 20% 85%;
-    --sidebar-ring: 340 65% 50%;
+    --sidebar-accent: 350 40% 88%;
+    --sidebar-accent-foreground: 0 0% 5%;
+    --sidebar-border: 350 50% 80%;
+    --sidebar-ring: 330 100% 50%;
   }
 }
 
@@ -189,17 +195,23 @@
 
   .light .mirage-bg {
     background: 
-      /* Soft pink flower patterns */
-      radial-gradient(circle at 10% 20%, hsl(340, 70%, 85%, 0.25) 0%, transparent 25%),
-      radial-gradient(circle at 85% 15%, hsl(350, 60%, 88%, 0.2) 0%, transparent 20%),
-      radial-gradient(circle at 70% 60%, hsl(340, 65%, 82%, 0.18) 0%, transparent 22%),
-      radial-gradient(circle at 20% 70%, hsl(350, 55%, 85%, 0.22) 0%, transparent 25%),
-      radial-gradient(circle at 45% 85%, hsl(340, 60%, 87%, 0.15) 0%, transparent 18%),
-      radial-gradient(circle at 90% 80%, hsl(345, 65%, 84%, 0.2) 0%, transparent 20%),
-      radial-gradient(circle at 5% 50%, hsl(350, 50%, 86%, 0.18) 0%, transparent 22%),
-      radial-gradient(circle at 60% 30%, hsl(340, 55%, 88%, 0.15) 0%, transparent 18%),
-      /* Base creamy gradient */
-      radial-gradient(ellipse at 50% 50%, hsl(30, 45%, 97%) 0%, hsl(30, 40%, 95%) 100%);
+      /* Rose petal patterns - soft and feminine */
+      radial-gradient(ellipse at 8% 15%, hsl(350, 80%, 85%, 0.4) 0%, transparent 18%),
+      radial-gradient(ellipse at 15% 25%, hsl(340, 70%, 80%, 0.35) 0%, transparent 15%),
+      radial-gradient(ellipse at 85% 10%, hsl(355, 75%, 82%, 0.38) 0%, transparent 16%),
+      radial-gradient(ellipse at 92% 20%, hsl(345, 65%, 78%, 0.32) 0%, transparent 14%),
+      radial-gradient(ellipse at 75% 55%, hsl(350, 70%, 83%, 0.35) 0%, transparent 20%),
+      radial-gradient(ellipse at 65% 65%, hsl(340, 60%, 80%, 0.3) 0%, transparent 16%),
+      radial-gradient(ellipse at 25% 70%, hsl(355, 75%, 85%, 0.4) 0%, transparent 18%),
+      radial-gradient(ellipse at 18% 80%, hsl(345, 65%, 82%, 0.32) 0%, transparent 14%),
+      radial-gradient(ellipse at 50% 85%, hsl(350, 70%, 84%, 0.35) 0%, transparent 17%),
+      radial-gradient(ellipse at 40% 90%, hsl(340, 60%, 80%, 0.28) 0%, transparent 15%),
+      radial-gradient(ellipse at 90% 75%, hsl(355, 80%, 86%, 0.38) 0%, transparent 16%),
+      radial-gradient(ellipse at 5% 50%, hsl(350, 65%, 83%, 0.32) 0%, transparent 18%),
+      radial-gradient(ellipse at 60% 25%, hsl(345, 70%, 81%, 0.3) 0%, transparent 14%),
+      radial-gradient(ellipse at 35% 40%, hsl(350, 60%, 85%, 0.25) 0%, transparent 20%),
+      /* Nude pink base */
+      radial-gradient(ellipse at 50% 50%, hsl(10, 50%, 94%) 0%, hsl(10, 45%, 91%) 100%);
     background-attachment: fixed;
   }
 
