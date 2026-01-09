@@ -11,12 +11,14 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Check, Truck, MapPin, Loader2 } from 'lucide-react';
+import DeliveryLocationSelect, { DELIVERY_LOCATIONS } from '@/components/DeliveryLocationSelect';
 
 const Checkout = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { items, totalWithWholesale, clearCart } = useCart();
   const [deliveryMethod, setDeliveryMethod] = useState<'delivery' | 'pickup'>('delivery');
+  const [deliveryLocation, setDeliveryLocation] = useState('cbd');
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -29,6 +31,10 @@ const Checkout = () => {
   });
   const [hasPaid, setHasPaid] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const selectedLocation = DELIVERY_LOCATIONS.find(l => l.id === deliveryLocation);
+  const deliveryFee = deliveryMethod === 'delivery' ? (selectedLocation?.price || 0) : 0;
+  const totalWithDelivery = totalWithWholesale + deliveryFee;
 
   if (items.length === 0) {
     navigate('/cart');
@@ -68,7 +74,7 @@ const Checkout = () => {
         };
       });
 
-      // Insert order into database with MPesa code
+      // Insert order into database with MPesa code and delivery fee
       const { data: orderData, error } = await supabase.from('orders').insert({
         user_id: user?.id || null,
         customer_name: formData.name,
@@ -76,10 +82,10 @@ const Checkout = () => {
         customer_email: formData.email || null,
         items: orderItems,
         subtotal: totalWithWholesale,
-        delivery_fee: 0,
-        total: totalWithWholesale,
+        delivery_fee: deliveryFee,
+        total: totalWithDelivery,
         delivery_type: deliveryMethod,
-        delivery_address: deliveryMethod === 'delivery' ? formData.address : null,
+        delivery_address: deliveryMethod === 'delivery' ? `${selectedLocation?.name} - ${formData.address}` : null,
         pickup_date: deliveryMethod === 'pickup' ? formData.pickupDate : null,
         pickup_time: deliveryMethod === 'pickup' ? formData.pickupTime : null,
         payment_status: 'pending',
@@ -103,8 +109,9 @@ const Checkout = () => {
               customerEmail: formData.email,
               orderId: orderData[0].id,
               items: orderItems,
-              total: totalWithWholesale,
+              total: totalWithDelivery,
               deliveryType: deliveryMethod,
+              deliveryFee: deliveryFee,
               mpesaCode: formData.mpesaCode,
               emailType: 'order_placed',
             },
@@ -217,12 +224,19 @@ const Checkout = () => {
                 {deliveryMethod === 'delivery' && (
                   <div className="mt-6 space-y-4 animate-fade-in">
                     <div>
-                      <Label htmlFor="address">Delivery Address</Label>
+                      <Label className="text-sm font-medium mb-2 block">Delivery Location</Label>
+                      <DeliveryLocationSelect 
+                        value={deliveryLocation} 
+                        onChange={setDeliveryLocation} 
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="address">Detailed Address</Label>
                       <Textarea
                         id="address"
                         value={formData.address}
                         onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                        placeholder="Enter your full delivery address"
+                        placeholder="Building name, floor, street, landmarks..."
                         required
                       />
                     </div>
@@ -377,16 +391,24 @@ const Checkout = () => {
               </div>
 
               <div className="border-t border-border pt-4">
-                <div className="flex justify-between items-center mb-4">
+                <div className="flex justify-between items-center mb-2">
                   <span className="text-muted-foreground">Subtotal</span>
                   <span className="text-foreground">
                     Ksh {totalWithWholesale.toLocaleString()}
                   </span>
                 </div>
+                {deliveryMethod === 'delivery' && (
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-muted-foreground">Delivery ({selectedLocation?.name.replace(' (Free Delivery)', '')})</span>
+                    <span className={deliveryFee === 0 ? 'text-accent font-medium' : 'text-foreground'}>
+                      {deliveryFee === 0 ? 'FREE' : `Ksh ${deliveryFee.toLocaleString()}`}
+                    </span>
+                  </div>
+                )}
                 <div className="flex justify-between items-center pt-4 border-t border-border">
                   <span className="text-lg font-semibold text-foreground">Total</span>
                   <span className="text-2xl font-bold gradient-text">
-                    Ksh {totalWithWholesale.toLocaleString()}
+                    Ksh {totalWithDelivery.toLocaleString()}
                   </span>
                 </div>
               </div>

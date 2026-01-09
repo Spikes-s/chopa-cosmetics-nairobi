@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import { Package, Phone, MapPin, Clock, Gift, Bell } from 'lucide-react';
+import { Package, Phone, MapPin, Clock, Gift, Bell, CheckCircle, Archive } from 'lucide-react';
 import { toast as sonnerToast } from 'sonner';
 
 interface Order {
@@ -28,12 +29,14 @@ interface Order {
   created_at: string;
   mpesa_code?: string | null;
   status_history?: any;
+  completed_at?: string | null;
 }
 
 const OrdersManager = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [newOrderIds, setNewOrderIds] = useState<Set<string>>(new Set());
+  const [activeTab, setActiveTab] = useState('active');
   const { toast } = useToast();
 
   const fetchOrders = async () => {
@@ -188,6 +191,66 @@ const OrdersManager = () => {
     }
   };
 
+  const completeOrder = async (orderId: string) => {
+    const currentOrder = orders.find(o => o.id === orderId);
+    const statusHistory = Array.isArray(currentOrder?.status_history) ? currentOrder.status_history : [];
+    
+    const completedAt = new Date().toISOString();
+    const newHistoryEntry = {
+      field: 'order_status',
+      value: 'completed',
+      timestamp: completedAt,
+    };
+
+    const { error } = await supabase
+      .from('orders')
+      .update({ 
+        order_status: 'completed',
+        payment_status: currentOrder?.payment_status === 'pending' ? 'confirmed' : currentOrder?.payment_status,
+        status_history: [...statusHistory, newHistoryEntry],
+      })
+      .eq('id', orderId);
+
+    if (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to complete order',
+        variant: 'destructive',
+      });
+    } else {
+      toast({
+        title: 'Order Completed',
+        description: 'Order has been moved to completed orders',
+      });
+
+      // Send completion email if customer has email
+      if (currentOrder?.customer_email) {
+        try {
+          await supabase.functions.invoke('send-order-email', {
+            body: {
+              customerName: currentOrder.customer_name,
+              customerEmail: currentOrder.customer_email,
+              orderId: currentOrder.id,
+              items: Array.isArray(currentOrder.items) ? currentOrder.items : [],
+              total: currentOrder.total,
+              deliveryType: currentOrder.delivery_type,
+              emailType: 'order_completed',
+            },
+          });
+        } catch (emailError) {
+          console.error('Email notification error:', emailError);
+        }
+      }
+
+      // Clear new status
+      setNewOrderIds(prev => {
+        const next = new Set(prev);
+        next.delete(orderId);
+        return next;
+      });
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'confirmed':
@@ -213,6 +276,10 @@ const OrdersManager = () => {
     return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
 
+  // Separate active and completed orders
+  const activeOrders = orders.filter(o => o.order_status !== 'completed');
+  const completedOrders = orders.filter(o => o.order_status === 'completed');
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-12">
@@ -221,158 +288,210 @@ const OrdersManager = () => {
     );
   }
 
+  const renderOrderCard = (order: Order, isCompletedView: boolean = false) => (
+    <Card 
+      key={order.id} 
+      className={`glass-card transition-all ${
+        newOrderIds.has(order.id) 
+          ? 'ring-2 ring-green-500 animate-pulse' 
+          : ''
+      }`}
+    >
+      <CardContent className="p-4 space-y-4">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold">{order.customer_name}</h3>
+              {newOrderIds.has(order.id) && (
+                <Badge className="bg-green-500 text-white animate-bounce">NEW</Badge>
+              )}
+              {isCompletedView && (
+                <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                  <CheckCircle className="w-3 h-3 mr-1" /> Completed
+                </Badge>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground flex items-center gap-1">
+              <Phone className="w-3 h-3" /> {order.customer_phone}
+            </p>
+            {order.customer_email && (
+              <p className="text-sm text-muted-foreground">
+                ✉️ {order.customer_email}
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground mt-1">
+              ID: {order.id.slice(0, 8)} • {format(new Date(order.created_at), 'PPp')}
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-lg font-bold">Ksh {order.total.toLocaleString()}</p>
+            {order.delivery_fee > 0 && (
+              <p className="text-xs text-muted-foreground">
+                (incl. Ksh {order.delivery_fee} delivery)
+              </p>
+            )}
+            {order.mpesa_code && (
+              <p className="text-xs text-accent font-mono mt-1">
+                M-Pesa: {order.mpesa_code}
+              </p>
+            )}
+            <div className="flex gap-2 mt-1 justify-end">
+              <Badge className={getStatusColor(order.payment_status)}>
+                {formatStatus(order.payment_status)}
+              </Badge>
+              <Badge className={getStatusColor(order.order_status)}>
+                {formatStatus(order.order_status)}
+              </Badge>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+          <div>
+            <p className="text-muted-foreground mb-1 flex items-center gap-1">
+              <Package className="w-3 h-3" /> Items
+            </p>
+            <ul className="space-y-1">
+              {Array.isArray(order.items) && order.items.map((item: any, idx: number) => (
+                <li key={idx}>
+                  {item.quantity}x {item.name} - Ksh {item.price}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            {order.delivery_type === 'delivery' ? (
+              <p className="flex items-start gap-1">
+                <MapPin className="w-3 h-3 mt-1" />
+                <span>{order.delivery_address || 'No address provided'}</span>
+              </p>
+            ) : (
+              <p className="flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                Pickup: {order.pickup_date} at {order.pickup_time}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {!isCompletedView && (
+          <div className="flex flex-wrap gap-4 pt-2 border-t border-border/50">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Payment:</span>
+              <Select
+                value={order.payment_status}
+                onValueChange={(value) => updateOrderStatus(order.id, 'payment_status', value)}
+              >
+                <SelectTrigger className="w-36 h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pending Payment</SelectItem>
+                  <SelectItem value="paid">Paid</SelectItem>
+                  <SelectItem value="confirmed">Confirmed</SelectItem>
+                  <SelectItem value="failed">Failed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Order:</span>
+              <Select
+                value={order.order_status}
+                onValueChange={(value) => updateOrderStatus(order.id, 'order_status', value)}
+              >
+                <SelectTrigger className="w-40 h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="processing">Processing</SelectItem>
+                  <SelectItem value="ready_for_pickup">Ready for Pickup</SelectItem>
+                  <SelectItem value="out_for_delivery">Out for Delivery</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {order.total >= 50000 && (
+              <div className="flex items-center gap-2">
+                <Gift className="w-4 h-4 text-accent" />
+                <Select
+                  value={order.reward_type || ''}
+                  onValueChange={(value) => setReward(order.id, value)}
+                >
+                  <SelectTrigger className="w-40 h-8">
+                    <SelectValue placeholder="Assign Reward" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="free_delivery">Free Delivery</SelectItem>
+                    <SelectItem value="apron">Branded Apron</SelectItem>
+                    <SelectItem value="gift_bag">Gift Bag</SelectItem>
+                    <SelectItem value="discount_voucher">Discount Voucher</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <Button
+              onClick={() => completeOrder(order.id)}
+              size="sm"
+              className="bg-green-600 hover:bg-green-700 text-white ml-auto"
+            >
+              <CheckCircle className="w-4 h-4 mr-1" />
+              Complete Order
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Orders ({orders.length})</h2>
-      </div>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="active" className="flex items-center gap-2">
+            <Package className="w-4 h-4" />
+            Active Orders ({activeOrders.length})
+          </TabsTrigger>
+          <TabsTrigger value="completed" className="flex items-center gap-2">
+            <Archive className="w-4 h-4" />
+            Completed Orders ({completedOrders.length})
+          </TabsTrigger>
+        </TabsList>
 
-      {orders.length === 0 ? (
-        <Card className="glass-card">
-          <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground">No orders yet.</p>
-          </CardContent>
-        </Card>
-      ) : (
-        orders.map(order => (
-          <Card 
-            key={order.id} 
-            className={`glass-card transition-all ${
-              newOrderIds.has(order.id) 
-                ? 'ring-2 ring-green-500 animate-pulse' 
-                : ''
-            }`}
-          >
-            <CardContent className="p-4 space-y-4">
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-semibold">{order.customer_name}</h3>
-                    {newOrderIds.has(order.id) && (
-                      <Badge className="bg-green-500 text-white animate-bounce">NEW</Badge>
-                    )}
-                  </div>
-                  <p className="text-sm text-muted-foreground flex items-center gap-1">
-                    <Phone className="w-3 h-3" /> {order.customer_phone}
-                  </p>
-                  {order.customer_email && (
-                    <p className="text-sm text-muted-foreground">
-                      ✉️ {order.customer_email}
-                    </p>
-                  )}
-                  <p className="text-xs text-muted-foreground mt-1">
-                    ID: {order.id.slice(0, 8)} • {format(new Date(order.created_at), 'PPp')}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-lg font-bold">Ksh {order.total.toLocaleString()}</p>
-                  {order.mpesa_code && (
-                    <p className="text-xs text-accent font-mono mt-1">
-                      M-Pesa: {order.mpesa_code}
-                    </p>
-                  )}
-                  <div className="flex gap-2 mt-1 justify-end">
-                    <Badge className={getStatusColor(order.payment_status)}>
-                      {formatStatus(order.payment_status)}
-                    </Badge>
-                    <Badge className={getStatusColor(order.order_status)}>
-                      {formatStatus(order.order_status)}
-                    </Badge>
-                  </div>
-                </div>
-              </div>
+        <TabsContent value="active" className="space-y-4 mt-4">
+          {activeOrders.length === 0 ? (
+            <Card className="glass-card">
+              <CardContent className="py-12 text-center">
+                <p className="text-muted-foreground">No active orders.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            activeOrders.map(order => renderOrderCard(order, false))
+          )}
+        </TabsContent>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="text-muted-foreground mb-1 flex items-center gap-1">
-                    <Package className="w-3 h-3" /> Items
-                  </p>
-                  <ul className="space-y-1">
-                    {Array.isArray(order.items) && order.items.map((item: any, idx: number) => (
-                      <li key={idx}>
-                        {item.quantity}x {item.name} - Ksh {item.price}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div>
-                  {order.delivery_type === 'delivery' ? (
-                    <p className="flex items-start gap-1">
-                      <MapPin className="w-3 h-3 mt-1" />
-                      <span>{order.delivery_address || 'No address provided'}</span>
-                    </p>
-                  ) : (
-                    <p className="flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      Pickup: {order.pickup_date} at {order.pickup_time}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-4 pt-2 border-t border-border/50">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">Payment:</span>
-                  <Select
-                    value={order.payment_status}
-                    onValueChange={(value) => updateOrderStatus(order.id, 'payment_status', value)}
-                  >
-                    <SelectTrigger className="w-36 h-8">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pending">Pending Payment</SelectItem>
-                      <SelectItem value="paid">Paid</SelectItem>
-                      <SelectItem value="confirmed">Confirmed</SelectItem>
-                      <SelectItem value="failed">Failed</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">Order:</span>
-                  <Select
-                    value={order.order_status}
-                    onValueChange={(value) => updateOrderStatus(order.id, 'order_status', value)}
-                  >
-                    <SelectTrigger className="w-40 h-8">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="processing">Processing</SelectItem>
-                      <SelectItem value="ready_for_pickup">Ready for Pickup</SelectItem>
-                      <SelectItem value="out_for_delivery">Out for Delivery</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {order.total >= 50000 && (
-                  <div className="flex items-center gap-2">
-                    <Gift className="w-4 h-4 text-accent" />
-                    <Select
-                      value={order.reward_type || ''}
-                      onValueChange={(value) => setReward(order.id, value)}
-                    >
-                      <SelectTrigger className="w-40 h-8">
-                        <SelectValue placeholder="Assign Reward" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="free_delivery">Free Delivery</SelectItem>
-                        <SelectItem value="apron">Branded Apron</SelectItem>
-                        <SelectItem value="gift_bag">Gift Bag</SelectItem>
-                        <SelectItem value="discount_voucher">Discount Voucher</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ))
-      )}
+        <TabsContent value="completed" className="space-y-4 mt-4">
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 border border-border mb-4">
+            <Archive className="w-4 h-4 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">
+              Completed orders are archived and read-only. Once an order is completed, it cannot be edited unless restored by a super admin.
+            </p>
+          </div>
+          
+          {completedOrders.length === 0 ? (
+            <Card className="glass-card">
+              <CardContent className="py-12 text-center">
+                <p className="text-muted-foreground">No completed orders yet.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            completedOrders.map(order => renderOrderCard(order, true))
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
