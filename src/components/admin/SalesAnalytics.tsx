@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
-import { format, subDays, startOfWeek, startOfMonth, startOfYear, eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval } from 'date-fns';
-import { TrendingUp, Package, ShoppingBag, DollarSign } from 'lucide-react';
+import { format, subDays, startOfWeek, startOfMonth, startOfYear, eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval, parseISO, addMonths, isBefore } from 'date-fns';
+import { TrendingUp, Package, ShoppingBag, DollarSign, AlertTriangle, Calendar } from 'lucide-react';
 
 interface Order {
   total: number;
@@ -12,26 +12,73 @@ interface Order {
   order_status: string;
 }
 
+interface Product {
+  id: string;
+  name: string;
+  expiry_date: string | null;
+  stock_quantity: number | null;
+}
+
 const SalesAnalytics = () => {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('daily');
 
   useEffect(() => {
-    const fetchOrders = async () => {
-      const { data, error } = await supabase
-        .from('orders')
-        .select('total, created_at, order_status')
-        .eq('payment_status', 'confirmed');
+    const fetchData = async () => {
+      const [ordersRes, productsRes] = await Promise.all([
+        supabase
+          .from('orders')
+          .select('total, created_at, order_status')
+          .eq('payment_status', 'confirmed'),
+        supabase
+          .from('products')
+          .select('id, name, expiry_date, stock_quantity')
+      ]);
 
-      if (!error && data) {
-        setOrders(data);
+      if (!ordersRes.error && ordersRes.data) {
+        setOrders(ordersRes.data);
+      }
+      if (!productsRes.error && productsRes.data) {
+        setProducts(productsRes.data);
       }
       setIsLoading(false);
     };
 
-    fetchOrders();
+    fetchData();
   }, []);
+
+  // Product alerts
+  const productAlerts = useMemo(() => {
+    const today = new Date();
+    const twoMonthsFromNow = addMonths(today, 2);
+    const LOW_STOCK_THRESHOLD = 5;
+    
+    const expiringSoon: Product[] = [];
+    const expired: Product[] = [];
+    const lowStock: Product[] = [];
+
+    products.forEach(product => {
+      // Check expiry
+      if (product.expiry_date) {
+        const expiryDate = parseISO(product.expiry_date);
+        if (isBefore(expiryDate, today)) {
+          expired.push(product);
+        } else if (isBefore(expiryDate, twoMonthsFromNow)) {
+          expiringSoon.push(product);
+        }
+      }
+      
+      // Check low stock
+      const qty = product.stock_quantity ?? 0;
+      if (qty > 0 && qty <= LOW_STOCK_THRESHOLD) {
+        lowStock.push(product);
+      }
+    });
+
+    return { expiringSoon, expired, lowStock };
+  }, [products]);
 
   const completedOrders = orders.filter(o => o.order_status === 'completed');
   const totalRevenue = orders.reduce((sum, o) => sum + Number(o.total), 0);
@@ -149,6 +196,48 @@ const SalesAnalytics = () => {
 
   return (
     <div className="space-y-6">
+      {/* Product Alerts */}
+      {productAlerts.expired.length > 0 && (
+        <Card className="border-destructive bg-red-50 dark:bg-red-950/20">
+          <CardContent className="p-4">
+            <p className="font-semibold text-destructive flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4" />
+              ⛔ Expired Products: {productAlerts.expired.length} product(s) have expired
+            </p>
+            <p className="text-sm text-red-600 dark:text-red-300 mt-1">
+              {productAlerts.expired.map(p => p.name).join(', ')}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {productAlerts.expiringSoon.length > 0 && (
+        <Card className="border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20">
+          <CardContent className="p-4">
+            <p className="font-semibold text-yellow-700 dark:text-yellow-400 flex items-center gap-2">
+              <Calendar className="w-4 h-4" />
+              ⚠️ Expiring Soon: {productAlerts.expiringSoon.length} product(s) expire within 2 months
+            </p>
+            <p className="text-sm text-yellow-600 dark:text-yellow-300 mt-1">
+              {productAlerts.expiringSoon.map(p => p.name).join(', ')}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {productAlerts.lowStock.length > 0 && (
+        <Card className="border-orange-500 bg-orange-50 dark:bg-orange-950/20">
+          <CardContent className="p-4">
+            <p className="font-semibold text-orange-700 dark:text-orange-400">
+              ⚠️ Low Stock Alert: {productAlerts.lowStock.length} product(s) need restocking
+            </p>
+            <p className="text-sm text-orange-600 dark:text-orange-300 mt-1">
+              {productAlerts.lowStock.map(p => p.name).join(', ')}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="glass-card">

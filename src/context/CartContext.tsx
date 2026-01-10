@@ -5,6 +5,7 @@ interface CartItem {
   name: string;
   price: number;
   wholesalePrice: number;
+  wholesaleMinQty?: number; // Admin-defined threshold
   quantity: number;
   size?: string;
   color?: string;
@@ -21,6 +22,7 @@ interface CartContextType {
   totalItems: number;
   subtotal: number;
   totalWithWholesale: number;
+  getItemWholesaleThreshold: (item: CartItem) => number;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -74,12 +76,21 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
 
-  // Calculate prices with wholesale logic
-  const calculateItemPrice = (item: CartItem) => {
+  // Get wholesale threshold - uses admin-defined value, falls back to category defaults
+  const getItemWholesaleThreshold = (item: CartItem) => {
+    if (item.wholesaleMinQty && item.wholesaleMinQty > 0) {
+      return item.wholesaleMinQty;
+    }
+    // Fallback to category-based defaults
     const isBraid = item.category.toLowerCase().includes('braid');
-    const wholesaleThreshold = isBraid ? 10 : 6;
+    return isBraid ? 10 : 6;
+  };
+
+  // Calculate prices with wholesale logic using product-specific thresholds
+  const calculateItemPrice = (item: CartItem) => {
+    const wholesaleThreshold = getItemWholesaleThreshold(item);
     
-    if (item.quantity >= wholesaleThreshold) {
+    if (item.quantity >= wholesaleThreshold && item.wholesalePrice > 0) {
       return item.wholesalePrice * item.quantity;
     }
     return item.price * item.quantity;
@@ -99,6 +110,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         totalItems,
         subtotal,
         totalWithWholesale,
+        getItemWholesaleThreshold,
       }}
     >
       {children}

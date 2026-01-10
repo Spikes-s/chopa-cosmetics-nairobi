@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,8 +9,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Pencil, Trash2, Search, Upload, Image, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Upload, Image, X, AlertTriangle, Calendar } from 'lucide-react';
 import { categories } from '@/data/products';
+import { format, parseISO, differenceInDays, addMonths, isBefore } from 'date-fns';
 
 interface Product {
   id: string;
@@ -25,6 +26,7 @@ interface Product {
   variations: any;
   in_stock: boolean | null;
   stock_quantity: number | null;
+  expiry_date: string | null;
 }
 
 const ProductsManager = () => {
@@ -51,6 +53,7 @@ const ProductsManager = () => {
     image_url: '',
     in_stock: true,
     stock_quantity: '0',
+    expiry_date: '',
   });
 
   const fetchProducts = async () => {
@@ -88,6 +91,7 @@ const ProductsManager = () => {
       image_url: '',
       in_stock: true,
       stock_quantity: '0',
+      expiry_date: '',
     });
     setEditingProduct(null);
   };
@@ -105,6 +109,7 @@ const ProductsManager = () => {
       image_url: product.image_url || '',
       in_stock: product.in_stock ?? true,
       stock_quantity: product.stock_quantity?.toString() || '0',
+      expiry_date: product.expiry_date || '',
     });
     setIsDialogOpen(true);
   };
@@ -118,6 +123,44 @@ const ProductsManager = () => {
 
   // Check for low stock products and show alert
   const lowStockProducts = products.filter(p => (p.stock_quantity ?? 0) > 0 && (p.stock_quantity ?? 0) <= LOW_STOCK_THRESHOLD);
+
+  // Check for expiring/expired products
+  const expiryAlerts = useMemo(() => {
+    const today = new Date();
+    const twoMonthsFromNow = addMonths(today, 2);
+    
+    const expiringSoon: Product[] = [];
+    const expired: Product[] = [];
+
+    products.forEach(product => {
+      if (product.expiry_date) {
+        const expiryDate = parseISO(product.expiry_date);
+        if (isBefore(expiryDate, today)) {
+          expired.push(product);
+        } else if (isBefore(expiryDate, twoMonthsFromNow)) {
+          expiringSoon.push(product);
+        }
+      }
+    });
+
+    return { expiringSoon, expired };
+  }, [products]);
+
+  const getExpiryStatus = (product: Product) => {
+    if (!product.expiry_date) return null;
+    
+    const today = new Date();
+    const expiryDate = parseISO(product.expiry_date);
+    const daysUntilExpiry = differenceInDays(expiryDate, today);
+
+    if (daysUntilExpiry < 0) {
+      return { label: 'Expired', className: 'bg-destructive text-destructive-foreground', days: daysUntilExpiry };
+    }
+    if (daysUntilExpiry <= 60) {
+      return { label: `Expires in ${daysUntilExpiry} days`, className: 'bg-orange-500 text-white', days: daysUntilExpiry };
+    }
+    return { label: `Expires ${format(expiryDate, 'MMM d, yyyy')}`, className: 'bg-green-500/20 text-green-600', days: daysUntilExpiry };
+  };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this product?')) return;
@@ -229,6 +272,7 @@ const ProductsManager = () => {
       image_url: formData.image_url || null,
       in_stock: stockQty > 0,
       stock_quantity: stockQty,
+      expiry_date: formData.expiry_date || null,
     };
 
     if (editingProduct) {
@@ -466,19 +510,34 @@ const ProductsManager = () => {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="stock_quantity">Stock Quantity</Label>
-                <Input
-                  id="stock_quantity"
-                  type="number"
-                  min="0"
-                  value={formData.stock_quantity}
-                  onChange={(e) => setFormData({ ...formData, stock_quantity: e.target.value })}
-                  required
-                />
-                <p className="text-xs text-muted-foreground">
-                  Stock status updates automatically (Low stock: ≤5 units)
-                </p>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="stock_quantity">Stock Quantity</Label>
+                  <Input
+                    id="stock_quantity"
+                    type="number"
+                    min="0"
+                    value={formData.stock_quantity}
+                    onChange={(e) => setFormData({ ...formData, stock_quantity: e.target.value })}
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Low stock: ≤5 units
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="expiry_date">Expiry Date</Label>
+                  <Input
+                    id="expiry_date"
+                    type="date"
+                    value={formData.expiry_date}
+                    onChange={(e) => setFormData({ ...formData, expiry_date: e.target.value })}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Alert when 2 months away
+                  </p>
+                </div>
               </div>
 
               <Button type="submit" className="w-full" disabled={isUploading}>
@@ -498,6 +557,36 @@ const ProductsManager = () => {
             </p>
             <p className="text-sm text-orange-600 dark:text-orange-300 mt-1">
               {lowStockProducts.map(p => p.name).join(', ')}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Expired Products Alert */}
+      {expiryAlerts.expired.length > 0 && (
+        <Card className="border-destructive bg-red-50 dark:bg-red-950/20">
+          <CardContent className="p-4">
+            <p className="font-semibold text-destructive flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4" />
+              ⛔ Expired Products: {expiryAlerts.expired.length} product(s) have expired
+            </p>
+            <p className="text-sm text-red-600 dark:text-red-300 mt-1">
+              {expiryAlerts.expired.map(p => `${p.name} (expired ${format(parseISO(p.expiry_date!), 'MMM d, yyyy')})`).join(', ')}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Expiring Soon Alert */}
+      {expiryAlerts.expiringSoon.length > 0 && (
+        <Card className="border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20">
+          <CardContent className="p-4">
+            <p className="font-semibold text-yellow-700 dark:text-yellow-400 flex items-center gap-2">
+              <Calendar className="w-4 h-4" />
+              ⚠️ Expiring Soon: {expiryAlerts.expiringSoon.length} product(s) expire within 2 months
+            </p>
+            <p className="text-sm text-yellow-600 dark:text-yellow-300 mt-1">
+              {expiryAlerts.expiringSoon.map(p => `${p.name} (${format(parseISO(p.expiry_date!), 'MMM d, yyyy')})`).join(', ')}
             </p>
           </CardContent>
         </Card>
@@ -536,12 +625,25 @@ const ProductsManager = () => {
                       </span>
                     </div>
                     <p className="text-sm text-muted-foreground">{product.category} • {product.subcategory}</p>
-                    <div className="flex gap-4 mt-1">
+                    <div className="flex flex-wrap gap-2 mt-1">
                       <span className="text-sm">Retail: Ksh {product.retail_price}</span>
                       {product.wholesale_price && (
-                        <span className="text-sm text-accent">Wholesale: Ksh {product.wholesale_price}</span>
+                        <span className="text-sm text-accent">
+                          Wholesale: Ksh {product.wholesale_price} (min qty: {product.wholesale_min_qty || 6})
+                        </span>
                       )}
                       <span className="text-sm text-muted-foreground">Stock: {product.stock_quantity ?? 0}</span>
+                      {(() => {
+                        const expiryStatus = getExpiryStatus(product);
+                        if (expiryStatus) {
+                          return (
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${expiryStatus.className}`}>
+                              {expiryStatus.label}
+                            </span>
+                          );
+                        }
+                        return null;
+                      })()}
                     </div>
                   </div>
                   <div className="flex gap-2">

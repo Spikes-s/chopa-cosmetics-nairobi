@@ -7,7 +7,7 @@ import { Trash2, Minus, Plus, ShoppingBag, ArrowRight } from 'lucide-react';
 import DeliveryLocationSelect, { DELIVERY_LOCATIONS } from '@/components/DeliveryLocationSelect';
 
 const Cart = () => {
-  const { items, removeItem, updateQuantity, totalWithWholesale, clearCart } = useCart();
+  const { items, removeItem, updateQuantity, totalWithWholesale, clearCart, getItemWholesaleThreshold } = useCart();
   const [deliveryLocation, setDeliveryLocation] = useState('cbd');
   
   const selectedLocation = DELIVERY_LOCATIONS.find(l => l.id === deliveryLocation);
@@ -36,10 +36,9 @@ const Cart = () => {
   }
 
   const getItemPrice = (item: typeof items[0]) => {
-    const isBraid = item.category.toLowerCase().includes('braid');
-    const wholesaleThreshold = isBraid ? 10 : 6;
+    const wholesaleThreshold = getItemWholesaleThreshold(item);
     
-    if (item.quantity >= wholesaleThreshold) {
+    if (item.quantity >= wholesaleThreshold && item.wholesalePrice > 0) {
       return item.wholesalePrice;
     }
     return item.price;
@@ -61,9 +60,8 @@ const Cart = () => {
         <div className="lg:col-span-2 space-y-4">
           {items.map((item) => {
             const currentPrice = getItemPrice(item);
-            const isBraid = item.category.toLowerCase().includes('braid');
-            const wholesaleThreshold = isBraid ? 10 : 6;
-            const isWholesale = item.quantity >= wholesaleThreshold;
+            const wholesaleThreshold = getItemWholesaleThreshold(item);
+            const isWholesale = item.quantity >= wholesaleThreshold && item.wholesalePrice > 0;
 
             return (
               <Card key={item.id} variant="glass">

@@ -1,13 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
-import { Package, Phone, MapPin, Clock, Gift, Bell, CheckCircle, Archive } from 'lucide-react';
+import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
+import { Package, Phone, MapPin, Clock, Gift, Bell, CheckCircle, Archive, Search, X } from 'lucide-react';
 import { toast as sonnerToast } from 'sonner';
 
 interface Order {
@@ -38,6 +40,13 @@ const OrdersManager = () => {
   const [newOrderIds, setNewOrderIds] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState('active');
   const { toast } = useToast();
+
+  // Search/filter state for completed orders
+  const [searchQuery, setSearchQuery] = useState('');
+  const [minAmount, setMinAmount] = useState('');
+  const [maxAmount, setMaxAmount] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
 
   const fetchOrders = async () => {
     setIsLoading(true);
@@ -278,7 +287,46 @@ const OrdersManager = () => {
 
   // Separate active and completed orders
   const activeOrders = orders.filter(o => o.order_status !== 'completed');
-  const completedOrders = orders.filter(o => o.order_status === 'completed');
+  const allCompletedOrders = orders.filter(o => o.order_status === 'completed');
+
+  // Filtered completed orders based on search criteria
+  const completedOrders = useMemo(() => {
+    return allCompletedOrders.filter(order => {
+      // Search by customer name
+      if (searchQuery && !order.customer_name.toLowerCase().includes(searchQuery.toLowerCase())) {
+        return false;
+      }
+
+      // Filter by amount range
+      if (minAmount && order.total < parseFloat(minAmount)) {
+        return false;
+      }
+      if (maxAmount && order.total > parseFloat(maxAmount)) {
+        return false;
+      }
+
+      // Filter by date range
+      if (dateFrom || dateTo) {
+        const orderDate = parseISO(order.created_at);
+        if (dateFrom && orderDate < startOfDay(parseISO(dateFrom))) {
+          return false;
+        }
+        if (dateTo && orderDate > endOfDay(parseISO(dateTo))) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [allCompletedOrders, searchQuery, minAmount, maxAmount, dateFrom, dateTo]);
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setMinAmount('');
+    setMaxAmount('');
+    setDateFrom('');
+    setDateTo('');
+  };
 
   if (isLoading) {
     return (
@@ -474,7 +522,86 @@ const OrdersManager = () => {
         </TabsContent>
 
         <TabsContent value="completed" className="space-y-4 mt-4">
-          <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 border border-border mb-4">
+          {/* Search and Filter Section */}
+          <Card className="glass-card">
+            <CardContent className="p-4 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <Search className="w-4 h-4" />
+                  Search & Filter Completed Orders
+                </h3>
+                {(searchQuery || minAmount || maxAmount || dateFrom || dateTo) && (
+                  <Button variant="ghost" size="sm" onClick={clearFilters} className="text-muted-foreground">
+                    <X className="w-4 h-4 mr-1" />
+                    Clear Filters
+                  </Button>
+                )}
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Customer Name Search */}
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Customer Name</Label>
+                  <div className="relative">
+                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search by name..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-8"
+                    />
+                  </div>
+                </div>
+
+                {/* Amount Range */}
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Amount Range (Ksh)</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="number"
+                      placeholder="Min"
+                      value={minAmount}
+                      onChange={(e) => setMinAmount(e.target.value)}
+                      className="w-1/2"
+                    />
+                    <Input
+                      type="number"
+                      placeholder="Max"
+                      value={maxAmount}
+                      onChange={(e) => setMaxAmount(e.target.value)}
+                      className="w-1/2"
+                    />
+                  </div>
+                </div>
+
+                {/* Date From */}
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">From Date</Label>
+                  <Input
+                    type="date"
+                    value={dateFrom}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                  />
+                </div>
+
+                {/* Date To */}
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">To Date</Label>
+                  <Input
+                    type="date"
+                    value={dateTo}
+                    onChange={(e) => setDateTo(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <p className="text-xs text-muted-foreground">
+                Showing {completedOrders.length} of {allCompletedOrders.length} completed orders
+              </p>
+            </CardContent>
+          </Card>
+
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 border border-border">
             <Archive className="w-4 h-4 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">
               Completed orders are archived and read-only. Once an order is completed, it cannot be edited unless restored by a super admin.
