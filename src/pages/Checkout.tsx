@@ -54,44 +54,39 @@ const Checkout = () => {
       return;
     }
 
+    // Client-side phone validation (Kenyan format)
+    const phoneRegex = /^(?:\+254|0)[17]\d{8}$/;
+    if (!phoneRegex.test(formData.phone.trim())) {
+      toast.error('Please enter a valid Kenyan phone number (e.g., 0712345678)');
+      return;
+    }
+
     if (isSubmitting) return; // Prevent duplicate submissions
     setIsSubmitting(true);
 
     try {
-      // Prepare order items with pricing info
-      const orderItems = items.map(item => {
-        const isBraid = item.category.toLowerCase().includes('braid');
-        const wholesaleThreshold = isBraid ? 10 : 6;
-        const isWholesale = item.quantity >= wholesaleThreshold && item.wholesalePrice > 0;
-        
-        return {
-          id: item.id,
-          name: item.name,
-          quantity: item.quantity,
-          price: isWholesale ? item.wholesalePrice : item.price,
-          priceType: isWholesale ? 'wholesale' : 'retail',
-          image: item.image,
-        };
-      });
+      // Prepare order items with ONLY IDs and quantities (no prices - server will calculate)
+      const orderItems = items.map(item => ({
+        id: item.id,
+        quantity: item.quantity,
+      }));
 
-      // Insert order into database with MPesa code and delivery fee
-      const { data: orderData, error } = await supabase.from('orders').insert({
-        user_id: user?.id || null,
-        customer_name: formData.name,
-        customer_phone: formData.phone,
-        customer_email: formData.email || null,
-        items: orderItems,
-        subtotal: totalWithWholesale,
-        delivery_fee: deliveryFee,
-        total: totalWithDelivery,
-        delivery_type: deliveryMethod,
-        delivery_address: deliveryMethod === 'delivery' ? `${selectedLocation?.name} - ${formData.address}` : null,
-        pickup_date: deliveryMethod === 'pickup' ? formData.pickupDate : null,
-        pickup_time: deliveryMethod === 'pickup' ? formData.pickupTime : null,
-        payment_status: 'pending',
-        order_status: 'pending',
-        mpesa_code: formData.mpesaCode.trim().toUpperCase(),
-      }).select();
+      // Call secure edge function for server-side validation and order creation
+      const { data: result, error } = await supabase.functions.invoke('validate-order', {
+        body: {
+          user_id: user?.id || null,
+          customer_name: formData.name.trim(),
+          customer_phone: formData.phone.trim(),
+          customer_email: formData.email.trim() || undefined,
+          items: orderItems,
+          mpesa_code: formData.mpesaCode.trim(),
+          delivery_type: deliveryMethod,
+          delivery_address: deliveryMethod === 'delivery' ? `${selectedLocation?.name} - ${formData.address}` : undefined,
+          delivery_fee: deliveryFee,
+          pickup_date: deliveryMethod === 'pickup' ? formData.pickupDate : undefined,
+          pickup_time: deliveryMethod === 'pickup' ? formData.pickupTime : undefined,
+        },
+      });
 
       if (error) {
         console.error('Order submission error:', error);
@@ -100,26 +95,22 @@ const Checkout = () => {
         return;
       }
 
-      // Send order confirmation email if email provided
-      if (formData.email && orderData?.[0]?.id) {
-        try {
-          await supabase.functions.invoke('send-order-email', {
-            body: {
-              customerName: formData.name,
-              customerEmail: formData.email,
-              orderId: orderData[0].id,
-              items: orderItems,
-              total: totalWithDelivery,
-              deliveryType: deliveryMethod,
-              deliveryFee: deliveryFee,
-              mpesaCode: formData.mpesaCode,
-              emailType: 'order_placed',
-            },
-          });
-        } catch (emailError) {
-          console.error('Email notification error:', emailError);
-          // Don't fail the order if email fails
-        }
+      if (!result.success) {
+        console.error('Order validation error:', result.error);
+        toast.error(result.error || 'Failed to validate order. Please try again.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Store order token for guest order tracking
+      if (result.order_token) {
+        const existingTokens = JSON.parse(sessionStorage.getItem('order_tokens') || '[]');
+        existingTokens.push({ 
+          orderId: result.order.id, 
+          token: result.order_token,
+          createdAt: new Date().toISOString()
+        });
+        sessionStorage.setItem('order_tokens', JSON.stringify(existingTokens));
       }
 
       toast.success('Order submitted successfully! We will contact you shortly.');

@@ -54,6 +54,7 @@ export type Database = {
           items: Json
           mpesa_code: string | null
           order_status: string
+          order_token: string | null
           payment_status: string
           pickup_date: string | null
           pickup_time: string | null
@@ -76,6 +77,7 @@ export type Database = {
           items: Json
           mpesa_code?: string | null
           order_status?: string
+          order_token?: string | null
           payment_status?: string
           pickup_date?: string | null
           pickup_time?: string | null
@@ -98,6 +100,7 @@ export type Database = {
           items?: Json
           mpesa_code?: string | null
           order_status?: string
+          order_token?: string | null
           payment_status?: string
           pickup_date?: string | null
           pickup_time?: string | null
@@ -238,6 +241,38 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_guest_order: {
+        Args: { _order_id: string; _order_token: string }
+        Returns: {
+          created_at: string
+          customer_email: string | null
+          customer_name: string
+          customer_phone: string
+          delivery_address: string | null
+          delivery_fee: number | null
+          delivery_type: string
+          id: string
+          items: Json
+          mpesa_code: string | null
+          order_status: string
+          order_token: string | null
+          payment_status: string
+          pickup_date: string | null
+          pickup_time: string | null
+          reward_type: string | null
+          status_history: Json | null
+          subtotal: number
+          total: number
+          updated_at: string
+          user_id: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "orders"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
