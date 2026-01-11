@@ -15,7 +15,8 @@ const THEME_KEY = 'chopa-theme';
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const [theme, setThemeState] = useState<Theme>(() => {
     const stored = localStorage.getItem(THEME_KEY);
-    return (stored as Theme) || 'dark';
+    // Default to light mode for new users
+    return (stored as Theme) || 'light';
   });
 
   useEffect(() => {
