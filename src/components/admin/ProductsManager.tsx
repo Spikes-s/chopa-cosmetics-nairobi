@@ -23,6 +23,8 @@ interface Product {
   wholesale_price: number | null;
   wholesale_min_qty: number | null;
   image_url: string | null;
+  additional_images: string[] | null;
+  barcode: string | null;
   variations: any;
   in_stock: boolean | null;
   stock_quantity: number | null;
@@ -36,7 +38,9 @@ const ProductsManager = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadingAdditional, setUploadingAdditional] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const additionalFileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const LOW_STOCK_THRESHOLD = 5;
@@ -51,6 +55,8 @@ const ProductsManager = () => {
     wholesale_price: '',
     wholesale_min_qty: '6',
     image_url: '',
+    additional_images: [] as string[],
+    barcode: '',
     in_stock: true,
     stock_quantity: '0',
     expiry_date: '',
@@ -89,6 +95,8 @@ const ProductsManager = () => {
       wholesale_price: '',
       wholesale_min_qty: '6',
       image_url: '',
+      additional_images: [],
+      barcode: '',
       in_stock: true,
       stock_quantity: '0',
       expiry_date: '',
@@ -107,6 +115,8 @@ const ProductsManager = () => {
       wholesale_price: product.wholesale_price?.toString() || '',
       wholesale_min_qty: product.wholesale_min_qty?.toString() || '6',
       image_url: product.image_url || '',
+      additional_images: product.additional_images || [],
+      barcode: product.barcode || '',
       in_stock: product.in_stock ?? true,
       stock_quantity: product.stock_quantity?.toString() || '0',
       expiry_date: product.expiry_date || '',
@@ -257,6 +267,69 @@ const ProductsManager = () => {
     setFormData({ ...formData, image_url: '' });
   };
 
+  // Handle additional image upload
+  const handleAdditionalImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploadingAdditional(true);
+
+    try {
+      const uploadedUrls: string[] = [];
+
+      for (const file of Array.from(files)) {
+        // Validate file type
+        if (!file.type.startsWith('image/')) continue;
+        // Validate file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) continue;
+
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+        const filePath = `products/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('product-images')
+          .upload(filePath, file);
+
+        if (!uploadError) {
+          const { data: { publicUrl } } = supabase.storage
+            .from('product-images')
+            .getPublicUrl(filePath);
+          uploadedUrls.push(publicUrl);
+        }
+      }
+
+      if (uploadedUrls.length > 0) {
+        setFormData({ 
+          ...formData, 
+          additional_images: [...formData.additional_images, ...uploadedUrls] 
+        });
+        toast({
+          title: 'Success',
+          description: `${uploadedUrls.length} image(s) uploaded successfully`,
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: 'Upload Failed',
+        description: error.message || 'Failed to upload images',
+        variant: 'destructive',
+      });
+    } finally {
+      setUploadingAdditional(false);
+      if (additionalFileInputRef.current) {
+        additionalFileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const removeAdditionalImage = (index: number) => {
+    setFormData({
+      ...formData,
+      additional_images: formData.additional_images.filter((_, i) => i !== index)
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -270,6 +343,8 @@ const ProductsManager = () => {
       wholesale_price: formData.wholesale_price ? parseFloat(formData.wholesale_price) : null,
       wholesale_min_qty: parseInt(formData.wholesale_min_qty) || 6,
       image_url: formData.image_url || null,
+      additional_images: formData.additional_images.length > 0 ? formData.additional_images : [],
+      barcode: formData.barcode || null,
       in_stock: stockQty > 0,
       stock_quantity: stockQty,
       expiry_date: formData.expiry_date || null,
@@ -508,6 +583,59 @@ const ProductsManager = () => {
                     className="text-sm"
                   />
                 </div>
+              </div>
+
+              {/* Additional Images */}
+              <div className="space-y-2">
+                <Label>Additional Images</Label>
+                <div className="flex flex-wrap gap-2">
+                  {formData.additional_images.map((url, index) => (
+                    <div key={index} className="relative w-16 h-16 rounded overflow-hidden bg-muted">
+                      <img src={url} alt={`Additional ${index + 1}`} className="w-full h-full object-cover" />
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="destructive"
+                        className="absolute top-0 right-0 h-5 w-5"
+                        onClick={() => removeAdditionalImage(index)}
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    className="w-16 h-16 border-2 border-dashed rounded flex items-center justify-center hover:border-primary/50"
+                    onClick={() => additionalFileInputRef.current?.click()}
+                    disabled={uploadingAdditional}
+                  >
+                    {uploadingAdditional ? (
+                      <div className="animate-spin w-4 h-4 border-2 border-primary border-t-transparent rounded-full" />
+                    ) : (
+                      <Plus className="w-4 h-4 text-muted-foreground" />
+                    )}
+                  </button>
+                </div>
+                <input
+                  ref={additionalFileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={handleAdditionalImageUpload}
+                  disabled={uploadingAdditional}
+                />
+              </div>
+
+              {/* Barcode */}
+              <div className="space-y-2">
+                <Label htmlFor="barcode">Barcode (for POS scanning)</Label>
+                <Input
+                  id="barcode"
+                  value={formData.barcode}
+                  onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
+                  placeholder="Enter barcode or SKU"
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-4">

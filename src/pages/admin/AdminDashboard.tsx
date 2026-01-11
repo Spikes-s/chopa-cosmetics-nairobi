@@ -3,13 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { LogOut, Package, ShoppingBag, BarChart3, MessageSquare, Settings, Users, Home } from 'lucide-react';
+import { LogOut, Package, ShoppingBag, BarChart3, MessageSquare, Settings, Users, Home, Monitor } from 'lucide-react';
 import ProductsManager from '@/components/admin/ProductsManager';
 import OrdersManager from '@/components/admin/OrdersManager';
 import SalesAnalytics from '@/components/admin/SalesAnalytics';
 import MessagesManager from '@/components/admin/MessagesManager';
 import SettingsManager from '@/components/admin/SettingsManager';
 import UsersManager from '@/components/admin/UsersManager';
+import POSSystem from '@/components/admin/POSSystem';
 import ThemeToggle from '@/components/ThemeToggle';
 
 const AdminDashboard = () => {
@@ -63,6 +64,10 @@ const AdminDashboard = () => {
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="flex flex-wrap gap-2 h-auto bg-muted/50 p-2 justify-start">
+            <TabsTrigger value="pos" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-4">
+              <Monitor className="w-4 h-4" />
+              <span>POS</span>
+            </TabsTrigger>
             <TabsTrigger value="dashboard" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-4">
               <BarChart3 className="w-4 h-4" />
               <span>Dashboard</span>
@@ -88,6 +93,10 @@ const AdminDashboard = () => {
               <span>Settings</span>
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="pos" className="space-y-4">
+            <POSSystem />
+          </TabsContent>
 
           <TabsContent value="dashboard" className="space-y-4">
             <SalesAnalytics />

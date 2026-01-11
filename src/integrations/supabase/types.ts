@@ -43,6 +43,8 @@ export type Database = {
       }
       orders: {
         Row: {
+          cashier_id: string | null
+          change_given: number | null
           created_at: string
           customer_email: string | null
           customer_name: string
@@ -50,22 +52,30 @@ export type Database = {
           delivery_address: string | null
           delivery_fee: number | null
           delivery_type: string
+          discount_amount: number | null
+          discount_type: string | null
           id: string
           items: Json
           mpesa_code: string | null
           order_status: string
           order_token: string | null
+          payment_method: string | null
           payment_status: string
           pickup_date: string | null
           pickup_time: string | null
+          receipt_number: string | null
           reward_type: string | null
+          sales_channel: string | null
           status_history: Json | null
           subtotal: number
+          tax_amount: number | null
           total: number
           updated_at: string
           user_id: string | null
         }
         Insert: {
+          cashier_id?: string | null
+          change_given?: number | null
           created_at?: string
           customer_email?: string | null
           customer_name: string
@@ -73,22 +83,30 @@ export type Database = {
           delivery_address?: string | null
           delivery_fee?: number | null
           delivery_type: string
+          discount_amount?: number | null
+          discount_type?: string | null
           id?: string
           items: Json
           mpesa_code?: string | null
           order_status?: string
           order_token?: string | null
+          payment_method?: string | null
           payment_status?: string
           pickup_date?: string | null
           pickup_time?: string | null
+          receipt_number?: string | null
           reward_type?: string | null
+          sales_channel?: string | null
           status_history?: Json | null
           subtotal: number
+          tax_amount?: number | null
           total: number
           updated_at?: string
           user_id?: string | null
         }
         Update: {
+          cashier_id?: string | null
+          change_given?: number | null
           created_at?: string
           customer_email?: string | null
           customer_name?: string
@@ -96,17 +114,23 @@ export type Database = {
           delivery_address?: string | null
           delivery_fee?: number | null
           delivery_type?: string
+          discount_amount?: number | null
+          discount_type?: string | null
           id?: string
           items?: Json
           mpesa_code?: string | null
           order_status?: string
           order_token?: string | null
+          payment_method?: string | null
           payment_status?: string
           pickup_date?: string | null
           pickup_time?: string | null
+          receipt_number?: string | null
           reward_type?: string | null
+          sales_channel?: string | null
           status_history?: Json | null
           subtotal?: number
+          tax_amount?: number | null
           total?: number
           updated_at?: string
           user_id?: string | null
@@ -115,6 +139,8 @@ export type Database = {
       }
       products: {
         Row: {
+          additional_images: string[] | null
+          barcode: string | null
           category: string
           created_at: string
           description: string | null
@@ -132,6 +158,8 @@ export type Database = {
           wholesale_price: number | null
         }
         Insert: {
+          additional_images?: string[] | null
+          barcode?: string | null
           category: string
           created_at?: string
           description?: string | null
@@ -149,6 +177,8 @@ export type Database = {
           wholesale_price?: number | null
         }
         Update: {
+          additional_images?: string[] | null
+          barcode?: string | null
           category?: string
           created_at?: string
           description?: string | null
@@ -244,6 +274,8 @@ export type Database = {
       get_guest_order: {
         Args: { _order_id: string; _order_token: string }
         Returns: {
+          cashier_id: string | null
+          change_given: number | null
           created_at: string
           customer_email: string | null
           customer_name: string
@@ -251,17 +283,23 @@ export type Database = {
           delivery_address: string | null
           delivery_fee: number | null
           delivery_type: string
+          discount_amount: number | null
+          discount_type: string | null
           id: string
           items: Json
           mpesa_code: string | null
           order_status: string
           order_token: string | null
+          payment_method: string | null
           payment_status: string
           pickup_date: string | null
           pickup_time: string | null
+          receipt_number: string | null
           reward_type: string | null
+          sales_channel: string | null
           status_history: Json | null
           subtotal: number
+          tax_amount: number | null
           total: number
           updated_at: string
           user_id: string | null
