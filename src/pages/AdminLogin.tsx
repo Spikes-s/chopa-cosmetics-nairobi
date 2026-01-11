@@ -50,18 +50,8 @@ const AdminLogin = () => {
     }
   };
 
-  const setupAdminIfNeeded = async () => {
-    // Only try to setup admin with correct credentials
-    if (email === 'admin@chopa.co.ke' && password === 'Spikey-420') {
-      try {
-        await supabase.functions.invoke('setup-admin', {
-          body: { email, password }
-        });
-      } catch (err) {
-        console.log('Admin setup check completed');
-      }
-    }
-  };
+  // Admin authentication is handled entirely through Supabase Auth
+  // No setup function needed - admin user is created via backend
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,9 +61,7 @@ const AdminLogin = () => {
     setIsLoading(true);
 
     try {
-      // First, ensure admin is set up
-      await setupAdminIfNeeded();
-      
+      // Authenticate directly with Supabase Auth
       const { error } = await signIn(email, password);
       
       if (error) {
