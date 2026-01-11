@@ -2,3 +2,9 @@ project_id = "yhwrcbiemftwbklgvfzi"
 
 [functions.setup-admin]
 verify_jwt = false
+
+[functions.validate-order]
+verify_jwt = false
+
+[functions.send-order-email]
+verify_jwt = false

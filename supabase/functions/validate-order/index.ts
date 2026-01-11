@@ -67,11 +67,12 @@ const validateRequest = (body: any): { valid: boolean; error?: string; data?: Or
     if (typeof body.customer_email !== 'string') {
       return { valid: false, error: 'Invalid email format' };
     }
-    customerEmail = body.customer_email.trim();
+    const trimmedEmail = body.customer_email.trim();
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(customerEmail) || customerEmail.length > 255) {
+    if (!emailRegex.test(trimmedEmail) || trimmedEmail.length > 255) {
       return { valid: false, error: 'Invalid email format' };
     }
+    customerEmail = trimmedEmail;
   }
 
   // Validate mpesa_code
@@ -118,10 +119,11 @@ const validateRequest = (body: any): { valid: boolean; error?: string; data?: Or
     if (!body.delivery_address || typeof body.delivery_address !== 'string') {
       return { valid: false, error: 'Delivery address is required for delivery orders' };
     }
-    deliveryAddress = body.delivery_address.trim();
-    if (deliveryAddress.length < 5 || deliveryAddress.length > 500) {
+    const trimmedAddress = body.delivery_address.trim();
+    if (trimmedAddress.length < 5 || trimmedAddress.length > 500) {
       return { valid: false, error: 'Delivery address must be between 5 and 500 characters' };
     }
+    deliveryAddress = trimmedAddress;
   }
 
   // Validate delivery_fee
