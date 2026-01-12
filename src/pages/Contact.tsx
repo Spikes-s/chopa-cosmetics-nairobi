@@ -1,166 +1,130 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { toast } from 'sonner';
-import { Phone, MapPin, Clock, Send } from 'lucide-react';
+import { Phone, MapPin, Clock, Mail, ExternalLink } from 'lucide-react';
+import PhoneContactDialog from '@/components/PhoneContactDialog';
 
 const Contact = () => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    message: '',
-  });
+  const [selectedContact, setSelectedContact] = useState<{ phone: string; name: string } | null>(null);
+  const [mapLocation, setMapLocation] = useState('https://maps.app.goo.gl/example');
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    toast.success('Message sent! We will get back to you soon.');
-    setFormData({ name: '', email: '', phone: '', message: '' });
-  };
+  useEffect(() => {
+    const fetchMapLocation = async () => {
+      const { data } = await supabase
+        .from('site_settings')
+        .select('value')
+        .eq('key', 'map_location')
+        .single();
+      if (data?.value) setMapLocation(data.value);
+    };
+    fetchMapLocation();
+  }, []);
+
+  const contacts = [
+    { name: 'James (Manager)', phone: '0715167179' },
+    { name: 'Pius (Manager)', phone: '0757435912' },
+    { name: 'Mark (Developer)', phone: '0759829850' },
+  ];
 
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* Page Header */}
       <div className="text-center mb-12">
         <h1 className="text-4xl md:text-5xl font-display font-bold text-foreground mb-4">
           Contact Us
         </h1>
         <p className="text-muted-foreground max-w-2xl mx-auto">
-          Have questions? We'd love to hear from you. Send us a message and we'll respond as soon as possible.
+          Have questions? Reach out to us via phone, WhatsApp, or visit our stores.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
-        {/* Contact Info */}
-        <div className="space-y-6">
-          <Card variant="gradient">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Phone className="w-5 h-5 text-primary" />
-                Phone Numbers
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex justify-between items-center p-3 rounded-lg bg-muted/50">
-                <div>
-                  <p className="font-medium text-foreground">James (Manager)</p>
-                  <p className="text-accent">0715167179</p>
-                </div>
-                <Button asChild variant="outline" size="sm">
-                  <a href="tel:0715167179">Call</a>
-                </Button>
-              </div>
-              <div className="flex justify-between items-center p-3 rounded-lg bg-muted/50">
-                <div>
-                  <p className="font-medium text-foreground">Pius (Manager)</p>
-                  <p className="text-accent">0757435912</p>
-                </div>
-                <Button asChild variant="outline" size="sm">
-                  <a href="tel:0757435912">Call</a>
-                </Button>
-              </div>
-              <div className="flex justify-between items-center p-3 rounded-lg bg-muted/50">
-                <div>
-                  <p className="font-medium text-foreground">Mark (Developer)</p>
-                  <p className="text-accent">0759829850</p>
-                </div>
-                <Button asChild variant="outline" size="sm">
-                  <a href="tel:0759829850">Call</a>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card variant="glass">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-primary" />
-                Our Locations
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="p-4 rounded-lg bg-muted/30">
-                <p className="font-semibold text-foreground mb-1">Main Branch</p>
-                <p className="text-muted-foreground text-sm">
-                  KAKA HOUSE – OTC, along Racecourse Road, opposite Kaka Travellers Sacco
-                </p>
-              </div>
-              <div className="p-4 rounded-lg bg-muted/30">
-                <p className="font-semibold text-foreground mb-1">Thika Branch</p>
-                <p className="text-muted-foreground text-sm">
-                  Opposite Family Bank
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card variant="glass">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="w-5 h-5 text-primary" />
-                Opening Hours
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex justify-between items-center p-4 rounded-lg bg-accent/10">
-                <span className="text-foreground">Every Day</span>
-                <span className="font-bold text-accent">7:30 AM – 9:00 PM</span>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Contact Form */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+        {/* Phone Numbers */}
         <Card variant="gradient">
           <CardHeader>
-            <CardTitle>Send us a Message</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Phone className="w-5 h-5 text-primary" />
+              Phone Numbers
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Input
-                  placeholder="Your Name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
-                />
+          <CardContent className="space-y-3">
+            {contacts.map((contact) => (
+              <button
+                key={contact.phone}
+                onClick={() => setSelectedContact(contact)}
+                className="w-full flex justify-between items-center p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+              >
+                <div className="text-left">
+                  <p className="font-medium text-foreground">{contact.name}</p>
+                  <p className="text-accent">{contact.phone}</p>
+                </div>
+                <Phone className="w-4 h-4 text-primary" />
+              </button>
+            ))}
+          </CardContent>
+        </Card>
+
+        {/* Locations */}
+        <Card variant="glass">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MapPin className="w-5 h-5 text-primary" />
+              Our Locations
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="p-4 rounded-lg bg-muted/30">
+              <p className="font-semibold text-foreground mb-1">Main Branch</p>
+              <p className="text-muted-foreground text-sm">
+                KAKA HOUSE – OTC, along Racecourse Road, opposite Kaka Travellers Sacco
+              </p>
+            </div>
+            <div className="p-4 rounded-lg bg-muted/30">
+              <p className="font-semibold text-foreground mb-1">Thika Branch</p>
+              <p className="text-muted-foreground text-sm">Opposite Family Bank</p>
+            </div>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => window.open(mapLocation, '_blank')}
+            >
+              <ExternalLink className="w-4 h-4 mr-2" />
+              View in Maps
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Hours & Email */}
+        <Card variant="glass">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="w-5 h-5 text-primary" />
+              Opening Hours
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="p-4 rounded-lg bg-accent/10 border border-accent/20">
+              <span className="text-foreground block mb-1">Every Day</span>
+              <span className="font-bold text-accent text-lg">7:30 AM – 9:00 PM</span>
+            </div>
+            <div className="p-4 rounded-lg bg-muted/30">
+              <div className="flex items-center gap-2 mb-1">
+                <Mail className="w-4 h-4 text-primary" />
+                <span className="font-semibold text-foreground">Email</span>
               </div>
-              <div>
-                <Input
-                  type="email"
-                  placeholder="Your Email (Optional)"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                />
-              </div>
-              <div>
-                <Input
-                  type="tel"
-                  placeholder="Your Phone Number"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  required
-                />
-              </div>
-              <div>
-                <Textarea
-                  placeholder="Your Message"
-                  value={formData.message}
-                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                  rows={5}
-                  required
-                />
-              </div>
-              <Button type="submit" variant="gradient" size="lg" className="w-full">
-                <Send className="w-4 h-4 mr-2" />
-                Send Message
-              </Button>
-            </form>
+              <p className="text-muted-foreground text-sm">info@chopacosmetics.co.ke</p>
+            </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Phone Contact Dialog */}
+      <PhoneContactDialog
+        isOpen={!!selectedContact}
+        onClose={() => setSelectedContact(null)}
+        phoneNumber={selectedContact?.phone || ''}
+        contactName={selectedContact?.name || ''}
+      />
     </div>
   );
 };

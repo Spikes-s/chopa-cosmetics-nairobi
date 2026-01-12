@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      announcements: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string
+          is_active: boolean | null
+          message: string
+          sent_to_email: boolean | null
+          target_audience: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          message: string
+          sent_to_email?: boolean | null
+          target_audience?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          message?: string
+          sent_to_email?: boolean | null
+          target_audience?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       chat_messages: {
         Row: {
           created_at: string
@@ -142,6 +178,7 @@ export type Database = {
           additional_images: string[] | null
           barcode: string | null
           category: string
+          cost_price: number | null
           created_at: string
           description: string | null
           expiry_date: string | null
@@ -161,6 +198,7 @@ export type Database = {
           additional_images?: string[] | null
           barcode?: string | null
           category: string
+          cost_price?: number | null
           created_at?: string
           description?: string | null
           expiry_date?: string | null
@@ -180,6 +218,7 @@ export type Database = {
           additional_images?: string[] | null
           barcode?: string | null
           category?: string
+          cost_price?: number | null
           created_at?: string
           description?: string | null
           expiry_date?: string | null
@@ -227,6 +266,30 @@ export type Database = {
         }
         Relationships: []
       }
+      site_controls: {
+        Row: {
+          id: string
+          key: string
+          updated_at: string | null
+          updated_by: string | null
+          value: string | null
+        }
+        Insert: {
+          id?: string
+          key: string
+          updated_at?: string | null
+          updated_by?: string | null
+          value?: string | null
+        }
+        Update: {
+          id?: string
+          key?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          value?: string | null
+        }
+        Relationships: []
+      }
       site_settings: {
         Row: {
           id: string
@@ -265,6 +328,47 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      vouchers: {
+        Row: {
+          created_at: string | null
+          id: string
+          notes: string | null
+          product_id: string | null
+          quantity: number
+          received_by: string | null
+          source_name: string
+          voucher_name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          product_id?: string | null
+          quantity?: number
+          received_by?: string | null
+          source_name: string
+          voucher_name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          product_id?: string | null
+          quantity?: number
+          received_by?: string | null
+          source_name?: string
+          voucher_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vouchers_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
