@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import ProductCard from '@/components/ProductCard';
 import CategoryCard from '@/components/CategoryCard';
+import HamburgerCategoryMenu from '@/components/HamburgerCategoryMenu';
 import { products, categories } from '@/data/products';
 import { ArrowRight, Sparkles, Truck, Shield, Gift } from 'lucide-react';
 
@@ -11,6 +12,11 @@ const Index = () => {
 
   return (
     <div>
+      {/* Hamburger Menu - Home Page Only */}
+      <div className="fixed top-20 right-4 z-50 md:hidden">
+        <HamburgerCategoryMenu />
+      </div>
+
       {/* Hero Section */}
       <section className="relative min-h-[80vh] flex items-center justify-center overflow-hidden">
         {/* Animated Background Elements */}
