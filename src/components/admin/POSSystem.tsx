@@ -815,8 +815,8 @@ const POSSystem = () => {
 
       {/* Receipt Dialog */}
       <Dialog open={showReceiptDialog} onOpenChange={setShowReceiptDialog}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
+        <DialogContent className="max-w-sm print:max-w-full print:shadow-none print:border-none">
+          <DialogHeader className="print:hidden">
             <DialogTitle className="flex items-center gap-2">
               <Receipt className="w-5 h-5" />
               Receipt
@@ -824,7 +824,7 @@ const POSSystem = () => {
           </DialogHeader>
 
           {lastOrder && (
-            <div className="space-y-4 text-sm" id="receipt">
+            <div className="space-y-4 text-sm print:text-xs print:space-y-2" id="receipt">
               {/* Header */}
               <div className="text-center border-b pb-3">
                 <h3 className="font-bold text-lg">CHOPA BEAUTY</h3>
@@ -916,15 +916,33 @@ const POSSystem = () => {
             </div>
           )}
 
-          <div className="flex gap-2 mt-4">
+          <div className="flex gap-2 mt-4 print:hidden">
             <Button variant="outline" className="flex-1 gap-2" onClick={printReceipt}>
               <Printer className="w-4 h-4" />
-              Print
+              Print Receipt
             </Button>
-            <Button className="flex-1" onClick={() => setShowReceiptDialog(false)}>
-              Done
+            <Button 
+              variant="secondary" 
+              className="flex-1 gap-2" 
+              onClick={() => {
+                const receiptContent = document.getElementById('receipt');
+                if (receiptContent) {
+                  const blob = new Blob([receiptContent.outerHTML], { type: 'text/html' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `receipt-${lastOrder?.receipt_number || lastOrder?.id?.slice(0, 8)}.html`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }
+              }}
+            >
+              Save PDF
             </Button>
           </div>
+          <Button className="w-full print:hidden" onClick={() => setShowReceiptDialog(false)}>
+            Done
+          </Button>
         </DialogContent>
       </Dialog>
     </div>

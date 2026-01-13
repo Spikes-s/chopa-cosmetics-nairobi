@@ -174,14 +174,24 @@ const validateRequest = (body: any): { valid: boolean; error?: string; data?: Or
 };
 
 const handler = async (req: Request): Promise<Response> => {
+  console.log('validate-order function called');
+  
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('Missing environment variables');
+      return new Response(
+        JSON.stringify({ success: false, error: 'Server configuration error' }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
     
     // Create service role client for database operations
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -312,6 +322,8 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('Order created successfully:', createdOrder.id);
 
+    console.log('Order created successfully:', createdOrder.id);
+
     return new Response(
       JSON.stringify({ 
         success: true, 
@@ -322,9 +334,9 @@ const handler = async (req: Request): Promise<Response> => {
     );
 
   } catch (error: any) {
-    console.error('Error in validate-order function:', error);
+    console.error('Error in validate-order function:', error.message, error.stack);
     return new Response(
-      JSON.stringify({ error: error.message || 'An error occurred' }),
+      JSON.stringify({ success: false, error: error.message || 'An error occurred processing your order' }),
       { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }

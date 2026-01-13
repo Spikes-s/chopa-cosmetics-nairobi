@@ -8,10 +8,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Pencil, Trash2, Search, Upload, Image, X, AlertTriangle, Calendar } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Upload, Image, X, AlertTriangle, Calendar, Palette } from 'lucide-react';
 import { categories } from '@/data/products';
 import { format, parseISO, differenceInDays, addMonths, isBefore } from 'date-fns';
+import { UNIVERSAL_COLORS, EXTRA_COLORS, ALL_COLORS, ColorType, getColorsByType } from '@/data/hairColors';
 
 interface Product {
   id: string;
@@ -54,12 +57,15 @@ const ProductsManager = () => {
     retail_price: '',
     wholesale_price: '',
     wholesale_min_qty: '6',
+    cost_price: '',
     image_url: '',
     additional_images: [] as string[],
     barcode: '',
     in_stock: true,
     stock_quantity: '0',
     expiry_date: '',
+    color_type: 'both' as ColorType,
+    available_colors: [] as string[],
   });
 
   const fetchProducts = async () => {
@@ -94,18 +100,22 @@ const ProductsManager = () => {
       retail_price: '',
       wholesale_price: '',
       wholesale_min_qty: '6',
+      cost_price: '',
       image_url: '',
       additional_images: [],
       barcode: '',
       in_stock: true,
       stock_quantity: '0',
       expiry_date: '',
+      color_type: 'both' as ColorType,
+      available_colors: [],
     });
     setEditingProduct(null);
   };
 
   const handleEdit = (product: Product) => {
     setEditingProduct(product);
+    const variations = product.variations as any;
     setFormData({
       name: product.name,
       description: product.description || '',
@@ -114,12 +124,15 @@ const ProductsManager = () => {
       retail_price: product.retail_price.toString(),
       wholesale_price: product.wholesale_price?.toString() || '',
       wholesale_min_qty: product.wholesale_min_qty?.toString() || '6',
+      cost_price: '',
       image_url: product.image_url || '',
       additional_images: product.additional_images || [],
       barcode: product.barcode || '',
       in_stock: product.in_stock ?? true,
       stock_quantity: product.stock_quantity?.toString() || '0',
       expiry_date: product.expiry_date || '',
+      color_type: (variations?.colorType as ColorType) || 'both',
+      available_colors: (variations?.availableColors as string[]) || [],
     });
     setIsDialogOpen(true);
   };

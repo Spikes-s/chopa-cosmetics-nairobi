@@ -71,6 +71,8 @@ const Checkout = () => {
         quantity: item.quantity,
       }));
 
+      console.log('Submitting order with items:', orderItems);
+
       // Call secure edge function for server-side validation and order creation
       const { data: result, error } = await supabase.functions.invoke('validate-order', {
         body: {
@@ -88,9 +90,11 @@ const Checkout = () => {
         },
       });
 
+      console.log('Order response:', result, error);
+
       if (error) {
         console.error('Order submission error:', error);
-        toast.error('Failed to submit order. Please try again.');
+        toast.error(error.message || 'Failed to submit order. Please try again.');
         setIsSubmitting(false);
         return;
       }
