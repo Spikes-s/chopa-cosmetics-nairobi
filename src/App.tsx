@@ -13,6 +13,8 @@ import ScrollToTop from "@/components/ScrollToTop";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ChatWidget from "@/components/ChatWidget";
+import TermsAcceptanceModal from "@/components/TermsAcceptanceModal";
+import { useTermsAcceptance } from "@/hooks/useTermsAcceptance";
 import Index from "./pages/Index";
 import Products from "./pages/Products";
 import ProductDetail from "./pages/ProductDetail";
@@ -21,6 +23,7 @@ import Checkout from "./pages/Checkout";
 import Categories from "./pages/Categories";
 import Contact from "./pages/Contact";
 import Auth from "./pages/Auth";
+import Terms from "./pages/Terms";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import NotFound from "./pages/NotFound";
@@ -34,6 +37,7 @@ const AppContent = () => {
   const [showLoading, setShowLoading] = useState(false);
   const [isFirstVisit, setIsFirstVisit] = useState(true);
   const location = useLocation();
+  const { needsAcceptance, isLoading: termsLoading, markAsAccepted } = useTermsAcceptance();
 
   useEffect(() => {
     // Check if this is the first visit in this session
@@ -57,6 +61,7 @@ const AppContent = () => {
   }
 
   const isAdminRoute = location.pathname.startsWith('/admin');
+  const isTermsPage = location.pathname === '/terms';
 
   return (
     <div className="min-h-screen mirage-bg">
@@ -72,6 +77,7 @@ const AppContent = () => {
           <Route path="/categories" element={<Categories />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/terms" element={<Terms />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="*" element={<NotFound />} />
@@ -79,6 +85,14 @@ const AppContent = () => {
       </main>
       {!isAdminRoute && <Footer />}
       {!isAdminRoute && <ChatWidget />}
+      
+      {/* Terms acceptance modal - only show if not on terms page and not loading */}
+      {!termsLoading && !isTermsPage && !isAdminRoute && (
+        <TermsAcceptanceModal 
+          open={needsAcceptance} 
+          onAccepted={markAsAccepted} 
+        />
+      )}
     </div>
   );
 };
