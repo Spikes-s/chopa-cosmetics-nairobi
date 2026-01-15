@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
-import { Mail, Chrome } from 'lucide-react';
+import { Mail, Loader2 } from 'lucide-react';
 
 const authSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -16,6 +16,16 @@ const authSchema = z.object({
   fullName: z.string().min(2, 'Name must be at least 2 characters').optional(),
   phone: z.string().min(10, 'Phone number must be at least 10 digits').optional(),
 });
+
+// Google icon component
+const GoogleIcon = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+  </svg>
+);
 
 const Auth = () => {
   const [searchParams] = useSearchParams();
@@ -26,6 +36,7 @@ const Auth = () => {
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [needsPhone, setNeedsPhone] = useState(false);
   
@@ -46,15 +57,24 @@ const Auth = () => {
     if (user) {
       // Check if user needs to add phone number (Google sign-up)
       const checkProfile = async () => {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('phone')
-          .eq('user_id', user.id)
-          .single();
-        
-        if (!profile?.phone) {
-          setNeedsPhone(true);
-        } else {
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('phone')
+            .eq('user_id', user.id)
+            .single();
+          
+          // Check if this is a Google user by looking at the provider
+          const isGoogleUser = user.app_metadata?.provider === 'google' || 
+                               user.app_metadata?.providers?.includes('google');
+          
+          if (isGoogleUser && !profile?.phone) {
+            setNeedsPhone(true);
+          } else {
+            navigate('/');
+          }
+        } catch (err) {
+          console.error('Error checking profile:', err);
           navigate('/');
         }
       };
@@ -86,30 +106,37 @@ const Auth = () => {
   };
 
   const handleGoogleSignUp = async () => {
-    setIsLoading(true);
+    setIsGoogleLoading(true);
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/auth`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
         },
       });
       
       if (error) {
+        console.error('Google auth error:', error);
         toast({
           title: 'Google Sign-In Failed',
-          description: error.message,
+          description: error.message || 'Unable to connect to Google. Please try again.',
           variant: 'destructive',
         });
+        setIsGoogleLoading(false);
       }
+      // Note: No need to set loading false on success as page will redirect
     } catch (err) {
+      console.error('Google auth exception:', err);
       toast({
         title: 'Error',
-        description: 'Failed to sign in with Google',
+        description: 'Failed to sign in with Google. Please check your connection and try again.',
         variant: 'destructive',
       });
-    } finally {
-      setIsLoading(false);
+      setIsGoogleLoading(false);
     }
   };
 
@@ -135,9 +162,10 @@ const Auth = () => {
       });
       navigate('/');
     } catch (err) {
+      console.error('Phone update error:', err);
       toast({
         title: 'Error',
-        description: 'Failed to save phone number',
+        description: 'Failed to save phone number. Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -239,7 +267,12 @@ const Auth = () => {
                 )}
               </div>
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'Saving...' : 'Complete Registration'}
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : 'Complete Registration'}
               </Button>
             </form>
           </CardContent>
@@ -264,16 +297,16 @@ const Auth = () => {
           <CardContent className="space-y-4">
             <Button
               variant="outline"
-              className="w-full h-14 text-left justify-start gap-4"
+              className="w-full h-14 text-left justify-start gap-4 hover:bg-muted/50 transition-colors"
               onClick={() => {
                 setSignupMethod('email');
                 setMode('signup');
               }}
             >
-              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
                 <Mail className="w-5 h-5 text-primary" />
               </div>
-              <div>
+              <div className="flex-1 min-w-0">
                 <p className="font-semibold">Sign up with Email</p>
                 <p className="text-xs text-muted-foreground">Create account with email & password</p>
               </div>
@@ -281,15 +314,21 @@ const Auth = () => {
 
             <Button
               variant="outline"
-              className="w-full h-14 text-left justify-start gap-4"
+              className="w-full h-14 text-left justify-start gap-4 hover:bg-muted/50 transition-colors"
               onClick={handleGoogleSignUp}
-              disabled={isLoading}
+              disabled={isGoogleLoading}
             >
-              <div className="w-10 h-10 rounded-full bg-secondary/20 flex items-center justify-center">
-                <Chrome className="w-5 h-5 text-secondary" />
+              <div className="w-10 h-10 rounded-full bg-background flex items-center justify-center flex-shrink-0 border">
+                {isGoogleLoading ? (
+                  <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                ) : (
+                  <GoogleIcon className="w-5 h-5" />
+                )}
               </div>
-              <div>
-                <p className="font-semibold">Sign up with Google</p>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold">
+                  {isGoogleLoading ? 'Connecting to Google...' : 'Sign up with Google'}
+                </p>
                 <p className="text-xs text-muted-foreground">Quick sign-up with your Google account</p>
               </div>
             </Button>
@@ -391,28 +430,37 @@ const Auth = () => {
             </div>
 
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Please wait...' : mode === 'login' ? 'Sign In' : 'Create Account'}
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Please wait...
+                </>
+              ) : mode === 'login' ? 'Sign In' : 'Create Account'}
             </Button>
           </form>
 
           {mode === 'login' && (
-            <div className="my-4 flex items-center gap-4">
-              <div className="flex-1 h-px bg-border" />
-              <span className="text-xs text-muted-foreground">OR</span>
-              <div className="flex-1 h-px bg-border" />
-            </div>
-          )}
+            <>
+              <div className="my-4 flex items-center gap-4">
+                <div className="flex-1 h-px bg-border" />
+                <span className="text-xs text-muted-foreground">OR</span>
+                <div className="flex-1 h-px bg-border" />
+              </div>
 
-          {mode === 'login' && (
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={handleGoogleSignUp}
-              disabled={isLoading}
-            >
-              <Chrome className="w-4 h-4 mr-2" />
-              Sign in with Google
-            </Button>
+              <Button
+                variant="outline"
+                className="w-full h-11 hover:bg-muted/50 transition-colors"
+                onClick={handleGoogleSignUp}
+                disabled={isGoogleLoading}
+              >
+                {isGoogleLoading ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <GoogleIcon className="w-5 h-5 mr-2" />
+                )}
+                {isGoogleLoading ? 'Connecting...' : 'Sign in with Google'}
+              </Button>
+            </>
           )}
 
           <div className="mt-6 text-center">
