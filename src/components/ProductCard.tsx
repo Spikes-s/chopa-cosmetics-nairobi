@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ShoppingCart, Eye } from 'lucide-react';
-import { Product } from '@/data/products';
+import { Product, isHairExtension } from '@/data/products';
 import { useCart } from '@/context/CartContext';
 import { toast } from 'sonner';
 
@@ -14,8 +14,8 @@ const ProductCard = ({ product }: ProductCardProps) => {
   const { addItem } = useCart();
   const navigate = useNavigate();
   
-  // Check if this is a braid product
-  const isBraid = product.category.toLowerCase() === 'braids';
+  // Check if this is a hair extension product (requires color selection)
+  const isExtension = isHairExtension(product);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -27,8 +27,8 @@ const ProductCard = ({ product }: ProductCardProps) => {
       return;
     }
     
-    // For braids, redirect to product detail page
-    if (isBraid) {
+    // For hair extensions, redirect to product detail page to select color
+    if (isExtension) {
       navigate(`/product/${product.id}`);
       return;
     }
@@ -65,10 +65,10 @@ const ProductCard = ({ product }: ProductCardProps) => {
               className="flex-1"
               onClick={handleAddToCart}
             >
-              {isBraid ? (
+              {isExtension ? (
                 <>
                   <Eye className="w-4 h-4 mr-1" />
-                  Select Options
+                  Select Color
                 </>
               ) : (
                 <>

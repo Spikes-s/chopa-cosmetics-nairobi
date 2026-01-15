@@ -1,5 +1,6 @@
-// Universal and Extra Colors for Hair Extensions
+// Hair Extension Color System - Reusable Color Groups
 
+// UNIVERSAL COLORS - Natural and common tones
 export const UNIVERSAL_COLORS = [
   { id: '1', name: '1', hex: '#000000' },
   { id: '2', name: '2', hex: '#1a1a1a' },
@@ -19,6 +20,7 @@ export const UNIVERSAL_COLORS = [
   { id: '613', name: '613', hex: '#faf0be' },
 ] as const;
 
+// EXTRA COLORS - Vibrant and fashion shades
 export const EXTRA_COLORS = [
   { id: 'blue', name: 'Blue', hex: '#0066cc' },
   { id: '1/blue', name: '1/Blue', hex: '#001a33' },
@@ -40,22 +42,36 @@ export const EXTRA_COLORS = [
   { id: '1/hot-pink', name: '1/Hot Pink', hex: '#4d1f36' },
 ] as const;
 
+// Type definitions
 export type UniversalColor = typeof UNIVERSAL_COLORS[number];
 export type ExtraColor = typeof EXTRA_COLORS[number];
 export type HairColor = UniversalColor | ExtraColor;
 
+// Combined array of all colors
 export const ALL_COLORS = [...UNIVERSAL_COLORS, ...EXTRA_COLORS];
 
+// Color type for product assignment
 export type ColorType = 'universal' | 'extra' | 'both';
 
-export const getColorsByType = (type: ColorType): typeof ALL_COLORS => {
+// Get colors by type - used by admin to assign color groups per product
+export const getColorsByType = (type: ColorType): readonly HairColor[] => {
   switch (type) {
     case 'universal':
-      return [...UNIVERSAL_COLORS];
+      return UNIVERSAL_COLORS;
     case 'extra':
-      return [...EXTRA_COLORS];
+      return EXTRA_COLORS;
     case 'both':
     default:
       return ALL_COLORS;
   }
+};
+
+// Get color names for display (string array)
+export const getColorNamesByType = (type: ColorType): string[] => {
+  return getColorsByType(type).map(c => c.name);
+};
+
+// Find color by id or name
+export const findColor = (idOrName: string): HairColor | undefined => {
+  return ALL_COLORS.find(c => c.id === idOrName || c.name === idOrName);
 };
