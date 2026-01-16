@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { LogOut, Package, ShoppingBag, BarChart3, MessageSquare, Settings, Users, Home, Monitor } from 'lucide-react';
+import { LogOut, Package, ShoppingBag, BarChart3, MessageSquare, Settings, Users, Home, Monitor, RotateCcw } from 'lucide-react';
 import ProductsManager from '@/components/admin/ProductsManager';
 import OrdersManager from '@/components/admin/OrdersManager';
 import SalesAnalytics from '@/components/admin/SalesAnalytics';
@@ -11,6 +11,7 @@ import MessagesManager from '@/components/admin/MessagesManager';
 import SettingsManager from '@/components/admin/SettingsManager';
 import UsersManager from '@/components/admin/UsersManager';
 import POSSystem from '@/components/admin/POSSystem';
+import ReturnsManager from '@/components/admin/ReturnsManager';
 import ThemeToggle from '@/components/ThemeToggle';
 
 const AdminDashboard = () => {
@@ -76,6 +77,10 @@ const AdminDashboard = () => {
               <ShoppingBag className="w-4 h-4" />
               <span>Orders</span>
             </TabsTrigger>
+            <TabsTrigger value="returns" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-4">
+              <RotateCcw className="w-4 h-4" />
+              <span>Returns</span>
+            </TabsTrigger>
             <TabsTrigger value="products" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-4">
               <Package className="w-4 h-4" />
               <span>Products</span>
@@ -104,6 +109,10 @@ const AdminDashboard = () => {
 
           <TabsContent value="orders" className="space-y-4">
             <OrdersManager />
+          </TabsContent>
+
+          <TabsContent value="returns" className="space-y-4">
+            <ReturnsManager />
           </TabsContent>
 
           <TabsContent value="products" className="space-y-4">

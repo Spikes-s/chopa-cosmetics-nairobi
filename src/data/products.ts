@@ -13,6 +13,7 @@ export interface Product {
   colors?: string[];
   colorType?: 'universal' | 'extra' | 'both'; // For hair extensions
   inStock: boolean;
+  stockQuantity?: number; // Default stock level
 }
 
 export interface Category {
@@ -29,7 +30,7 @@ export const categories: Category[] = [
     name: 'Hair Extensions',
     slug: 'hair-extensions',
     image: '/placeholder.svg',
-    subcategories: ['Braids'],
+    subcategories: ['Braids', 'Crotchets', 'Weaves', 'Wigs', 'Brazilian Wool', 'Extensions'],
   },
   {
     id: '2',
@@ -103,545 +104,116 @@ export const categories: Category[] = [
   },
 ];
 
-// Helper to get universal colors
-const universalColors = getColorNamesByType('universal');
+// All braids use BOTH color sets (universal + extra)
 const allColors = getColorNamesByType('both');
+
+// Standard pricing: Ksh 55 for all braids
+// Exception: Avvis Braids and Star Braids are Ksh 65
+const STANDARD_PRICE = 55;
+const PREMIUM_PRICE = 65;
+const DEFAULT_STOCK = 1000;
+
+// Helper to create braid product
+const createBraid = (
+  id: string,
+  name: string,
+  description: string,
+  isPremium: boolean = false
+): Product => ({
+  id,
+  name,
+  description,
+  price: isPremium ? PREMIUM_PRICE : STANDARD_PRICE,
+  wholesalePrice: isPremium ? 50 : 45, // Wholesale slightly below retail
+  category: 'Hair Extensions',
+  subcategory: 'Braids',
+  image: '/placeholder.svg',
+  colors: allColors,
+  colorType: 'both',
+  inStock: true,
+  stockQuantity: DEFAULT_STOCK,
+});
 
 // ============= HAIR EXTENSIONS - BRAIDS =============
 // All braid products with Long and Short variants
+// Pricing: Ksh 55 for all, except Avvis & Star Braids which are Ksh 65
 
 const braidProducts: Product[] = [
   // Rwandese Braids (Olivia)
-  {
-    id: 'braid-rwandese-short',
-    name: 'Rwandese Braids (Olivia) – Short',
-    description: 'Authentic Rwandese braids from Olivia collection. Short length for elegant styling.',
-    price: 350,
-    wholesalePrice: 280,
-    category: 'Hair Extensions',
-    subcategory: 'Braids',
-    image: '/placeholder.svg',
-    colors: universalColors,
-    colorType: 'universal',
-    inStock: true,
-  },
-  {
-    id: 'braid-rwandese-long',
-    name: 'Rwandese Braids (Olivia) – Long',
-    description: 'Authentic Rwandese braids from Olivia collection. Long length for dramatic looks.',
-    price: 450,
-    wholesalePrice: 360,
-    category: 'Hair Extensions',
-    subcategory: 'Braids',
-    image: '/placeholder.svg',
-    colors: universalColors,
-    colorType: 'universal',
-    inStock: true,
-  },
+  createBraid('braid-rwandese-short', 'Rwandese Braids (Olivia) – Short', 'Authentic Rwandese braids from Olivia collection. Short length for elegant styling.'),
+  createBraid('braid-rwandese-long', 'Rwandese Braids (Olivia) – Long', 'Authentic Rwandese braids from Olivia collection. Long length for dramatic looks.'),
 
   // Jibambe Braids (Angels)
-  {
-    id: 'braid-jibambe-short',
-    name: 'Jibambe Braids (Angels) – Short',
-    description: 'Beautiful Jibambe braids from Angels collection. Short length.',
-    price: 350,
-    wholesalePrice: 280,
-    category: 'Hair Extensions',
-    subcategory: 'Braids',
-    image: '/placeholder.svg',
-    colors: universalColors,
-    colorType: 'universal',
-    inStock: true,
-  },
-  {
-    id: 'braid-jibambe-long',
-    name: 'Jibambe Braids (Angels) – Long',
-    description: 'Beautiful Jibambe braids from Angels collection. Long length.',
-    price: 450,
-    wholesalePrice: 360,
-    category: 'Hair Extensions',
-    subcategory: 'Braids',
-    image: '/placeholder.svg',
-    colors: universalColors,
-    colorType: 'universal',
-    inStock: true,
-  },
+  createBraid('braid-jibambe-short', 'Jibambe Braids (Angels) – Short', 'Beautiful Jibambe braids from Angels collection. Short length.'),
+  createBraid('braid-jibambe-long', 'Jibambe Braids (Angels) – Long', 'Beautiful Jibambe braids from Angels collection. Long length.'),
 
-  // Avvis Braids (Angels)
-  {
-    id: 'braid-avvis-short',
-    name: 'Avvis Braids (Angels) – Short',
-    description: 'Premium quality Avvis braids by Angels. Short length.',
-    price: 350,
-    wholesalePrice: 280,
-    category: 'Hair Extensions',
-    subcategory: 'Braids',
-    image: '/placeholder.svg',
-    colors: universalColors,
-    colorType: 'universal',
-    inStock: true,
-  },
-  {
-    id: 'braid-avvis-long',
-    name: 'Avvis Braids (Angels) – Long',
-    description: 'Premium quality Avvis braids by Angels. Long length.',
-    price: 450,
-    wholesalePrice: 360,
-    category: 'Hair Extensions',
-    subcategory: 'Braids',
-    image: '/placeholder.svg',
-    colors: universalColors,
-    colorType: 'universal',
-    inStock: true,
-  },
+  // Avvis Braids (Angels) - PREMIUM Ksh 65
+  createBraid('braid-avvis-short', 'Avvis Braids (Angels) – Short', 'Premium quality Avvis braids by Angels. Short length.', true),
+  createBraid('braid-avvis-long', 'Avvis Braids (Angels) – Long', 'Premium quality Avvis braids by Angels. Long length.', true),
 
   // Malkia Braids (Afro Prima)
-  {
-    id: 'braid-malkia-short',
-    name: 'Malkia Braids (Afro Prima) – Short',
-    description: 'Royal Malkia braids from Afro Prima. Short length.',
-    price: 380,
-    wholesalePrice: 300,
-    category: 'Hair Extensions',
-    subcategory: 'Braids',
-    image: '/placeholder.svg',
-    colors: universalColors,
-    colorType: 'universal',
-    inStock: true,
-  },
-  {
-    id: 'braid-malkia-long',
-    name: 'Malkia Braids (Afro Prima) – Long',
-    description: 'Royal Malkia braids from Afro Prima. Long length.',
-    price: 480,
-    wholesalePrice: 380,
-    category: 'Hair Extensions',
-    subcategory: 'Braids',
-    image: '/placeholder.svg',
-    colors: universalColors,
-    colorType: 'universal',
-    inStock: true,
-  },
+  createBraid('braid-malkia-short', 'Malkia Braids (Afro Prima) – Short', 'Royal Malkia braids from Afro Prima. Short length.'),
+  createBraid('braid-malkia-long', 'Malkia Braids (Afro Prima) – Long', 'Royal Malkia braids from Afro Prima. Long length.'),
 
-  // Star Braids (Sistar)
-  {
-    id: 'braid-star-short',
-    name: 'Star Braids (Sistar) – Short',
-    description: 'Trendy Star braids from Sistar brand. Short length.',
-    price: 350,
-    wholesalePrice: 280,
-    category: 'Hair Extensions',
-    subcategory: 'Braids',
-    image: '/placeholder.svg',
-    colors: universalColors,
-    colorType: 'universal',
-    inStock: true,
-  },
-  {
-    id: 'braid-star-long',
-    name: 'Star Braids (Sistar) – Long',
-    description: 'Trendy Star braids from Sistar brand. Long length.',
-    price: 450,
-    wholesalePrice: 360,
-    category: 'Hair Extensions',
-    subcategory: 'Braids',
-    image: '/placeholder.svg',
-    colors: universalColors,
-    colorType: 'universal',
-    inStock: true,
-  },
+  // Star Braids (Sistar) - PREMIUM Ksh 65
+  createBraid('braid-star-short', 'Star Braids (Sistar) – Short', 'Trendy Star braids from Sistar brand. Short length.', true),
+  createBraid('braid-star-long', 'Star Braids (Sistar) – Long', 'Trendy Star braids from Sistar brand. Long length.', true),
 
   // Jumbo Braids
-  {
-    id: 'braid-jumbo-short',
-    name: 'Jumbo Braids – Short',
-    description: 'Classic Jumbo braids for bold styling. Short length.',
-    price: 300,
-    wholesalePrice: 240,
-    category: 'Hair Extensions',
-    subcategory: 'Braids',
-    image: '/placeholder.svg',
-    colors: allColors,
-    colorType: 'both',
-    inStock: true,
-  },
-  {
-    id: 'braid-jumbo-long',
-    name: 'Jumbo Braids – Long',
-    description: 'Classic Jumbo braids for bold styling. Long length.',
-    price: 400,
-    wholesalePrice: 320,
-    category: 'Hair Extensions',
-    subcategory: 'Braids',
-    image: '/placeholder.svg',
-    colors: allColors,
-    colorType: 'both',
-    inStock: true,
-  },
+  createBraid('braid-jumbo-short', 'Jumbo Braids – Short', 'Classic Jumbo braids for bold styling. Short length.'),
+  createBraid('braid-jumbo-long', 'Jumbo Braids – Long', 'Classic Jumbo braids for bold styling. Long length.'),
 
   // Lagos Jumbo
-  {
-    id: 'braid-lagos-jumbo-short',
-    name: 'Lagos Jumbo – Short',
-    description: 'Premium Lagos Jumbo braids. Short length.',
-    price: 320,
-    wholesalePrice: 260,
-    category: 'Hair Extensions',
-    subcategory: 'Braids',
-    image: '/placeholder.svg',
-    colors: allColors,
-    colorType: 'both',
-    inStock: true,
-  },
-  {
-    id: 'braid-lagos-jumbo-long',
-    name: 'Lagos Jumbo – Long',
-    description: 'Premium Lagos Jumbo braids. Long length.',
-    price: 420,
-    wholesalePrice: 340,
-    category: 'Hair Extensions',
-    subcategory: 'Braids',
-    image: '/placeholder.svg',
-    colors: allColors,
-    colorType: 'both',
-    inStock: true,
-  },
+  createBraid('braid-lagos-jumbo-short', 'Lagos Jumbo – Short', 'Premium Lagos Jumbo braids. Short length.'),
+  createBraid('braid-lagos-jumbo-long', 'Lagos Jumbo – Long', 'Premium Lagos Jumbo braids. Long length.'),
 
   // Bonjour Curl
-  {
-    id: 'braid-bonjour-curl-short',
-    name: 'Bonjour Curl – Short',
-    description: 'Elegant Bonjour Curl braids. Short length.',
-    price: 400,
-    wholesalePrice: 320,
-    category: 'Hair Extensions',
-    subcategory: 'Braids',
-    image: '/placeholder.svg',
-    colors: universalColors,
-    colorType: 'universal',
-    inStock: true,
-  },
-  {
-    id: 'braid-bonjour-curl-long',
-    name: 'Bonjour Curl – Long',
-    description: 'Elegant Bonjour Curl braids. Long length.',
-    price: 500,
-    wholesalePrice: 400,
-    category: 'Hair Extensions',
-    subcategory: 'Braids',
-    image: '/placeholder.svg',
-    colors: universalColors,
-    colorType: 'universal',
-    inStock: true,
-  },
+  createBraid('braid-bonjour-curl-short', 'Bonjour Curl – Short', 'Elegant Bonjour Curl braids. Short length.'),
+  createBraid('braid-bonjour-curl-long', 'Bonjour Curl – Long', 'Elegant Bonjour Curl braids. Long length.'),
 
   // Bonsoir Curls
-  {
-    id: 'braid-bonsoir-curls-short',
-    name: 'Bonsoir Curls – Short',
-    description: 'Luxurious Bonsoir Curls. Short length.',
-    price: 400,
-    wholesalePrice: 320,
-    category: 'Hair Extensions',
-    subcategory: 'Braids',
-    image: '/placeholder.svg',
-    colors: universalColors,
-    colorType: 'universal',
-    inStock: true,
-  },
-  {
-    id: 'braid-bonsoir-curls-long',
-    name: 'Bonsoir Curls – Long',
-    description: 'Luxurious Bonsoir Curls. Long length.',
-    price: 500,
-    wholesalePrice: 400,
-    category: 'Hair Extensions',
-    subcategory: 'Braids',
-    image: '/placeholder.svg',
-    colors: universalColors,
-    colorType: 'universal',
-    inStock: true,
-  },
+  createBraid('braid-bonsoir-curls-short', 'Bonsoir Curls – Short', 'Luxurious Bonsoir Curls. Short length.'),
+  createBraid('braid-bonsoir-curls-long', 'Bonsoir Curls – Long', 'Luxurious Bonsoir Curls. Long length.'),
 
   // Princess Curl
-  {
-    id: 'braid-princess-curl-short',
-    name: 'Princess Curl – Short',
-    description: 'Beautiful Princess Curl braids. Short length.',
-    price: 380,
-    wholesalePrice: 300,
-    category: 'Hair Extensions',
-    subcategory: 'Braids',
-    image: '/placeholder.svg',
-    colors: universalColors,
-    colorType: 'universal',
-    inStock: true,
-  },
-  {
-    id: 'braid-princess-curl-long',
-    name: 'Princess Curl – Long',
-    description: 'Beautiful Princess Curl braids. Long length.',
-    price: 480,
-    wholesalePrice: 380,
-    category: 'Hair Extensions',
-    subcategory: 'Braids',
-    image: '/placeholder.svg',
-    colors: universalColors,
-    colorType: 'universal',
-    inStock: true,
-  },
+  createBraid('braid-princess-curl-short', 'Princess Curl – Short', 'Beautiful Princess Curl braids. Short length.'),
+  createBraid('braid-princess-curl-long', 'Princess Curl – Long', 'Beautiful Princess Curl braids. Long length.'),
 
   // Ponytail
-  {
-    id: 'braid-ponytail-short',
-    name: 'Ponytail – Short',
-    description: 'Stylish Ponytail extension. Short length.',
-    price: 350,
-    wholesalePrice: 280,
-    category: 'Hair Extensions',
-    subcategory: 'Braids',
-    image: '/placeholder.svg',
-    colors: universalColors,
-    colorType: 'universal',
-    inStock: true,
-  },
-  {
-    id: 'braid-ponytail-long',
-    name: 'Ponytail – Long',
-    description: 'Stylish Ponytail extension. Long length.',
-    price: 450,
-    wholesalePrice: 360,
-    category: 'Hair Extensions',
-    subcategory: 'Braids',
-    image: '/placeholder.svg',
-    colors: universalColors,
-    colorType: 'universal',
-    inStock: true,
-  },
+  createBraid('braid-ponytail-short', 'Ponytail – Short', 'Stylish Ponytail extension. Short length.'),
+  createBraid('braid-ponytail-long', 'Ponytail – Long', 'Stylish Ponytail extension. Long length.'),
 
   // Pony Curl
-  {
-    id: 'braid-pony-curl-short',
-    name: 'Pony Curl – Short',
-    description: 'Elegant Pony Curl braids. Short length.',
-    price: 380,
-    wholesalePrice: 300,
-    category: 'Hair Extensions',
-    subcategory: 'Braids',
-    image: '/placeholder.svg',
-    colors: universalColors,
-    colorType: 'universal',
-    inStock: true,
-  },
-  {
-    id: 'braid-pony-curl-long',
-    name: 'Pony Curl – Long',
-    description: 'Elegant Pony Curl braids. Long length.',
-    price: 480,
-    wholesalePrice: 380,
-    category: 'Hair Extensions',
-    subcategory: 'Braids',
-    image: '/placeholder.svg',
-    colors: universalColors,
-    colorType: 'universal',
-    inStock: true,
-  },
+  createBraid('braid-pony-curl-short', 'Pony Curl – Short', 'Elegant Pony Curl braids. Short length.'),
+  createBraid('braid-pony-curl-long', 'Pony Curl – Long', 'Elegant Pony Curl braids. Long length.'),
 
   // Pony Braid
-  {
-    id: 'braid-pony-braid-short',
-    name: 'Pony Braid – Short',
-    description: 'Classic Pony Braid. Short length.',
-    price: 350,
-    wholesalePrice: 280,
-    category: 'Hair Extensions',
-    subcategory: 'Braids',
-    image: '/placeholder.svg',
-    colors: universalColors,
-    colorType: 'universal',
-    inStock: true,
-  },
-  {
-    id: 'braid-pony-braid-long',
-    name: 'Pony Braid – Long',
-    description: 'Classic Pony Braid. Long length.',
-    price: 450,
-    wholesalePrice: 360,
-    category: 'Hair Extensions',
-    subcategory: 'Braids',
-    image: '/placeholder.svg',
-    colors: universalColors,
-    colorType: 'universal',
-    inStock: true,
-  },
+  createBraid('braid-pony-braid-short', 'Pony Braid – Short', 'Classic Pony Braid. Short length.'),
+  createBraid('braid-pony-braid-long', 'Pony Braid – Long', 'Classic Pony Braid. Long length.'),
 
   // Daisy
-  {
-    id: 'braid-daisy-short',
-    name: 'Daisy – Short',
-    description: 'Fresh Daisy braids. Short length.',
-    price: 350,
-    wholesalePrice: 280,
-    category: 'Hair Extensions',
-    subcategory: 'Braids',
-    image: '/placeholder.svg',
-    colors: universalColors,
-    colorType: 'universal',
-    inStock: true,
-  },
-  {
-    id: 'braid-daisy-long',
-    name: 'Daisy – Long',
-    description: 'Fresh Daisy braids. Long length.',
-    price: 450,
-    wholesalePrice: 360,
-    category: 'Hair Extensions',
-    subcategory: 'Braids',
-    image: '/placeholder.svg',
-    colors: universalColors,
-    colorType: 'universal',
-    inStock: true,
-  },
+  createBraid('braid-daisy-short', 'Daisy – Short', 'Fresh Daisy braids. Short length.'),
+  createBraid('braid-daisy-long', 'Daisy – Long', 'Fresh Daisy braids. Long length.'),
 
   // Konjo
-  {
-    id: 'braid-konjo-short',
-    name: 'Konjo – Short',
-    description: 'Premium Konjo braids. Short length.',
-    price: 380,
-    wholesalePrice: 300,
-    category: 'Hair Extensions',
-    subcategory: 'Braids',
-    image: '/placeholder.svg',
-    colors: universalColors,
-    colorType: 'universal',
-    inStock: true,
-  },
-  {
-    id: 'braid-konjo-long',
-    name: 'Konjo – Long',
-    description: 'Premium Konjo braids. Long length.',
-    price: 480,
-    wholesalePrice: 380,
-    category: 'Hair Extensions',
-    subcategory: 'Braids',
-    image: '/placeholder.svg',
-    colors: universalColors,
-    colorType: 'universal',
-    inStock: true,
-  },
+  createBraid('braid-konjo-short', 'Konjo – Short', 'Premium Konjo braids. Short length.'),
+  createBraid('braid-konjo-long', 'Konjo – Long', 'Premium Konjo braids. Long length.'),
 
   // Spanish Bulk
-  {
-    id: 'braid-spanish-bulk-short',
-    name: 'Spanish Bulk – Short',
-    description: 'Quality Spanish Bulk braids. Short length.',
-    price: 320,
-    wholesalePrice: 260,
-    category: 'Hair Extensions',
-    subcategory: 'Braids',
-    image: '/placeholder.svg',
-    colors: universalColors,
-    colorType: 'universal',
-    inStock: true,
-  },
-  {
-    id: 'braid-spanish-bulk-long',
-    name: 'Spanish Bulk – Long',
-    description: 'Quality Spanish Bulk braids. Long length.',
-    price: 420,
-    wholesalePrice: 340,
-    category: 'Hair Extensions',
-    subcategory: 'Braids',
-    image: '/placeholder.svg',
-    colors: universalColors,
-    colorType: 'universal',
-    inStock: true,
-  },
+  createBraid('braid-spanish-bulk-short', 'Spanish Bulk – Short', 'Quality Spanish Bulk braids. Short length.'),
+  createBraid('braid-spanish-bulk-long', 'Spanish Bulk – Long', 'Quality Spanish Bulk braids. Long length.'),
 
   // Spanish Long
-  {
-    id: 'braid-spanish-long-short',
-    name: 'Spanish Long – Short',
-    description: 'Elegant Spanish Long braids. Short length.',
-    price: 350,
-    wholesalePrice: 280,
-    category: 'Hair Extensions',
-    subcategory: 'Braids',
-    image: '/placeholder.svg',
-    colors: universalColors,
-    colorType: 'universal',
-    inStock: true,
-  },
-  {
-    id: 'braid-spanish-long-long',
-    name: 'Spanish Long – Long',
-    description: 'Elegant Spanish Long braids. Long length.',
-    price: 450,
-    wholesalePrice: 360,
-    category: 'Hair Extensions',
-    subcategory: 'Braids',
-    image: '/placeholder.svg',
-    colors: universalColors,
-    colorType: 'universal',
-    inStock: true,
-  },
+  createBraid('braid-spanish-long-short', 'Spanish Long – Short', 'Elegant Spanish Long braids. Short length.'),
+  createBraid('braid-spanish-long-long', 'Spanish Long – Long', 'Elegant Spanish Long braids. Long length.'),
 
   // Italian
-  {
-    id: 'braid-italian-short',
-    name: 'Italian – Short',
-    description: 'Premium Italian braids. Short length.',
-    price: 400,
-    wholesalePrice: 320,
-    category: 'Hair Extensions',
-    subcategory: 'Braids',
-    image: '/placeholder.svg',
-    colors: universalColors,
-    colorType: 'universal',
-    inStock: true,
-  },
-  {
-    id: 'braid-italian-long',
-    name: 'Italian – Long',
-    description: 'Premium Italian braids. Long length.',
-    price: 500,
-    wholesalePrice: 400,
-    category: 'Hair Extensions',
-    subcategory: 'Braids',
-    image: '/placeholder.svg',
-    colors: universalColors,
-    colorType: 'universal',
-    inStock: true,
-  },
+  createBraid('braid-italian-short', 'Italian – Short', 'Premium Italian braids. Short length.'),
+  createBraid('braid-italian-long', 'Italian – Long', 'Premium Italian braids. Long length.'),
 
   // Italiana French Curl (Darling)
-  {
-    id: 'braid-italiana-french-curl-short',
-    name: 'Italiana French Curl (Darling) – Short',
-    description: 'Luxurious Italiana French Curl by Darling. Short length.',
-    price: 450,
-    wholesalePrice: 360,
-    category: 'Hair Extensions',
-    subcategory: 'Braids',
-    image: '/placeholder.svg',
-    colors: universalColors,
-    colorType: 'universal',
-    inStock: true,
-  },
-  {
-    id: 'braid-italiana-french-curl-long',
-    name: 'Italiana French Curl (Darling) – Long',
-    description: 'Luxurious Italiana French Curl by Darling. Long length.',
-    price: 550,
-    wholesalePrice: 440,
-    category: 'Hair Extensions',
-    subcategory: 'Braids',
-    image: '/placeholder.svg',
-    colors: universalColors,
-    colorType: 'universal',
-    inStock: true,
-  },
+  createBraid('braid-italiana-french-curl-short', 'Italiana French Curl (Darling) – Short', 'Luxurious Italiana French Curl by Darling. Short length.'),
+  createBraid('braid-italiana-french-curl-long', 'Italiana French Curl (Darling) – Long', 'Luxurious Italiana French Curl by Darling. Long length.'),
 ];
 
 // ============= OTHER PRODUCTS =============
@@ -814,4 +386,17 @@ export const products: Product[] = [...braidProducts, ...otherProducts];
 // Helper function to check if a product is a hair extension (braid)
 export const isHairExtension = (product: Product): boolean => {
   return product.category === 'Hair Extensions';
+};
+
+// Get mutable categories for admin section management
+export const getMutableCategories = () => [...categories];
+
+// Add a new subcategory to Hair Extensions (for admin use)
+export const addHairExtensionSubcategory = (subcategory: string): boolean => {
+  const hairExtensions = categories.find(c => c.name === 'Hair Extensions');
+  if (hairExtensions && !hairExtensions.subcategories.includes(subcategory)) {
+    hairExtensions.subcategories.push(subcategory);
+    return true;
+  }
+  return false;
 };
