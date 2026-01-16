@@ -65,10 +65,16 @@ const Checkout = () => {
     setIsSubmitting(true);
 
     try {
-      // Prepare order items with ONLY IDs and quantities (no prices - server will calculate)
+      // Prepare order items with full details for server processing
       const orderItems = items.map(item => ({
         id: item.id,
         quantity: item.quantity,
+        name: item.name,
+        price: item.price,
+        wholesalePrice: item.wholesalePrice,
+        color: item.color,
+        size: item.size,
+        image: item.image,
       }));
 
       console.log('Submitting order with items:', orderItems);

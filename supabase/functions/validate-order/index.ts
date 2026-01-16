@@ -14,6 +14,12 @@ const MPESA_CODE_REGEX = /^[A-Z0-9]{10,15}$/;
 interface OrderItem {
   id: string;
   quantity: number;
+  name?: string;
+  price?: number;
+  wholesalePrice?: number;
+  color?: string;
+  size?: string;
+  image?: string;
 }
 
 interface OrderRequest {
@@ -92,20 +98,29 @@ const validateRequest = (body: any): { valid: boolean; error?: string; data?: Or
     return { valid: false, error: 'Order cannot contain more than 50 different items' };
   }
 
-  const validatedItems: OrderItem[] = [];
+const validatedItems: OrderItem[] = [];
   for (const item of body.items) {
     if (!item.id || typeof item.id !== 'string') {
       return { valid: false, error: 'Each item must have a valid ID' };
     }
-    // Basic UUID validation
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(item.id)) {
+    // Allow both UUID and string IDs (for local product data compatibility)
+    if (item.id.length < 1 || item.id.length > 100) {
       return { valid: false, error: 'Invalid item ID format' };
     }
     if (typeof item.quantity !== 'number' || !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 999) {
       return { valid: false, error: 'Item quantity must be between 1 and 999' };
     }
-    validatedItems.push({ id: item.id, quantity: item.quantity });
+    // Include optional item details from client for local products
+    validatedItems.push({ 
+      id: item.id, 
+      quantity: item.quantity,
+      name: item.name,
+      price: item.price,
+      wholesalePrice: item.wholesalePrice,
+      color: item.color,
+      size: item.size,
+      image: item.image,
+    });
   }
 
   // Validate delivery_type
@@ -226,60 +241,83 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Fetch actual product prices from database (SERVER SOURCE OF TRUTH)
+    // Try to fetch product prices from database (for database products)
     const productIds = orderData.items.map(item => item.id);
-    const { data: products, error: productsError } = await supabase
+    const { data: dbProducts, error: productsError } = await supabase
       .from('products')
       .select('id, name, retail_price, wholesale_price, wholesale_min_qty, category, image_url, in_stock, stock_quantity')
       .in('id', productIds);
 
     if (productsError) {
-      console.error('Products fetch error:', productsError);
-      return new Response(
-        JSON.stringify({ error: 'Failed to verify products' }),
-        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
+      console.error('Products fetch error (non-fatal):', productsError);
     }
 
-    if (!products || products.length !== productIds.length) {
-      return new Response(
-        JSON.stringify({ error: 'One or more products not found' }),
-        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
+    // Create a map of database products for quick lookup
+    const dbProductMap = new Map<string, Product>();
+    if (dbProducts) {
+      dbProducts.forEach((p: Product) => dbProductMap.set(p.id, p));
     }
 
-    // Calculate prices SERVER-SIDE
+    console.log(`Found ${dbProductMap.size} products in database out of ${productIds.length} requested`);
+
+    // Calculate prices - use database products where available, fall back to client-provided data
     let subtotal = 0;
     const orderItems = orderData.items.map(item => {
-      const product = products.find((p: Product) => p.id === item.id)!;
+      const dbProduct = dbProductMap.get(item.id);
       
-      // Check stock availability
-      if (product.in_stock === false) {
-        throw new Error(`Product "${product.name}" is out of stock`);
-      }
-      if (product.stock_quantity !== null && product.stock_quantity < item.quantity) {
-        throw new Error(`Insufficient stock for "${product.name}". Only ${product.stock_quantity} available.`);
-      }
+      if (dbProduct) {
+        // Database product - use server-validated prices
+        if (dbProduct.in_stock === false) {
+          throw new Error(`Product "${dbProduct.name}" is out of stock`);
+        }
+        if (dbProduct.stock_quantity !== null && dbProduct.stock_quantity < item.quantity) {
+          throw new Error(`Insufficient stock for "${dbProduct.name}". Only ${dbProduct.stock_quantity} available.`);
+        }
 
-      // Calculate wholesale threshold (braids: 10, others: 6, or custom)
-      const isBraid = product.category.toLowerCase().includes('braid');
-      const threshold = product.wholesale_min_qty || (isBraid ? 10 : 6);
-      
-      // Determine if wholesale price applies
-      const isWholesale = item.quantity >= threshold && product.wholesale_price !== null && product.wholesale_price > 0;
-      const unitPrice = isWholesale ? product.wholesale_price! : product.retail_price;
-      const itemTotal = unitPrice * item.quantity;
-      
-      subtotal += itemTotal;
+        const isBraid = dbProduct.category.toLowerCase().includes('braid');
+        const threshold = dbProduct.wholesale_min_qty || (isBraid ? 10 : 6);
+        const isWholesale = item.quantity >= threshold && dbProduct.wholesale_price !== null && dbProduct.wholesale_price > 0;
+        const unitPrice = isWholesale ? dbProduct.wholesale_price! : dbProduct.retail_price;
+        const itemTotal = unitPrice * item.quantity;
+        
+        subtotal += itemTotal;
 
-      return {
-        id: product.id,
-        name: product.name,
-        quantity: item.quantity,
-        price: unitPrice,
-        priceType: isWholesale ? 'wholesale' : 'retail',
-        image: product.image_url,
-      };
+        return {
+          id: dbProduct.id,
+          name: dbProduct.name,
+          quantity: item.quantity,
+          price: unitPrice,
+          priceType: isWholesale ? 'wholesale' : 'retail',
+          image: dbProduct.image_url,
+          color: item.color,
+          size: item.size,
+        };
+      } else {
+        // Local product - use client-provided data with basic validation
+        if (!item.name || !item.price) {
+          throw new Error(`Invalid product data for item: ${item.id}`);
+        }
+
+        const isBraid = (item.name || '').toLowerCase().includes('braid');
+        const threshold = isBraid ? 10 : 6;
+        const hasWholesale = item.wholesalePrice && item.wholesalePrice > 0;
+        const isWholesale = item.quantity >= threshold && hasWholesale;
+        const unitPrice = isWholesale ? item.wholesalePrice! : item.price;
+        const itemTotal = unitPrice * item.quantity;
+        
+        subtotal += itemTotal;
+
+        return {
+          id: item.id,
+          name: item.name,
+          quantity: item.quantity,
+          price: unitPrice,
+          priceType: isWholesale ? 'wholesale' : 'retail',
+          image: item.image,
+          color: item.color,
+          size: item.size,
+        };
+      }
     });
 
     const deliveryFee = orderData.delivery_fee || 0;
