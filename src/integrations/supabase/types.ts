@@ -212,6 +212,33 @@ export type Database = {
         }
         Relationships: []
       }
+      page_visits: {
+        Row: {
+          id: string
+          page_path: string
+          referrer: string | null
+          user_agent: string | null
+          visited_at: string
+          visitor_id: string | null
+        }
+        Insert: {
+          id?: string
+          page_path?: string
+          referrer?: string | null
+          user_agent?: string | null
+          visited_at?: string
+          visitor_id?: string | null
+        }
+        Update: {
+          id?: string
+          page_path?: string
+          referrer?: string | null
+          user_agent?: string | null
+          visited_at?: string
+          visitor_id?: string | null
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           additional_images: string[] | null
@@ -437,11 +464,77 @@ export type Database = {
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "vouchers_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "public_products"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
     Views: {
-      [_ in never]: never
+      public_products: {
+        Row: {
+          additional_images: string[] | null
+          barcode: string | null
+          category: string | null
+          created_at: string | null
+          description: string | null
+          expiry_date: string | null
+          id: string | null
+          image_url: string | null
+          in_stock: boolean | null
+          name: string | null
+          retail_price: number | null
+          stock_quantity: number | null
+          subcategory: string | null
+          updated_at: string | null
+          variations: Json | null
+          wholesale_min_qty: number | null
+          wholesale_price: number | null
+        }
+        Insert: {
+          additional_images?: string[] | null
+          barcode?: string | null
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          expiry_date?: string | null
+          id?: string | null
+          image_url?: string | null
+          in_stock?: boolean | null
+          name?: string | null
+          retail_price?: number | null
+          stock_quantity?: number | null
+          subcategory?: string | null
+          updated_at?: string | null
+          variations?: Json | null
+          wholesale_min_qty?: number | null
+          wholesale_price?: number | null
+        }
+        Update: {
+          additional_images?: string[] | null
+          barcode?: string | null
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          expiry_date?: string | null
+          id?: string | null
+          image_url?: string | null
+          in_stock?: boolean | null
+          name?: string | null
+          retail_price?: number | null
+          stock_quantity?: number | null
+          subcategory?: string | null
+          updated_at?: string | null
+          variations?: Json | null
+          wholesale_min_qty?: number | null
+          wholesale_price?: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       get_guest_order: {
