@@ -534,6 +534,7 @@ export type Database = {
       }
     }
     Functions: {
+      cleanup_old_guest_order_lookups: { Args: never; Returns: number }
       get_guest_order: {
         Args: { _order_id: string; _order_token: string }
         Returns: Database["public"]["CompositeTypes"]["guest_order_info"][]
@@ -550,6 +551,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      mark_guest_order_lookup_success: {
+        Args: { _ip_address: string; _order_id: string }
+        Returns: undefined
       }
       reduce_stock: {
         Args: { product_id: string; quantity_sold: number }
