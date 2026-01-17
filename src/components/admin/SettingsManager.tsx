@@ -8,6 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Save, Image, MapPin, Phone, Mail, Clock, Plus, Scissors, X } from 'lucide-react';
+import SuperAdminControls from './SuperAdminControls';
+import { useAuth } from '@/context/AuthContext';
 
 interface SiteSettings {
   logo_url: string;
@@ -23,6 +25,7 @@ interface SiteSettings {
 const DEFAULT_SECTIONS = ['Braids', 'Crotchets', 'Weaves', 'Wigs', 'Brazilian Wool', 'Extensions'];
 
 const SettingsManager = () => {
+  const { user } = useAuth();
   const [settings, setSettings] = useState<SiteSettings>({
     logo_url: '',
     location: 'KAKA HOUSE – OTC, along Racecourse Road, opposite Kaka Travellers Sacco',
@@ -323,6 +326,9 @@ const SettingsManager = () => {
         <Save className="w-4 h-4" />
         {isLoading ? 'Saving...' : 'Save All Settings'}
       </Button>
+
+      {/* Super Admin Controls - only visible to super admin */}
+      <SuperAdminControls userEmail={user?.email} />
     </div>
   );
 };
