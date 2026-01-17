@@ -443,40 +443,10 @@ export type Database = {
     Functions: {
       get_guest_order: {
         Args: { _order_id: string; _order_token: string }
-        Returns: {
-          cashier_id: string | null
-          change_given: number | null
-          created_at: string
-          customer_email: string | null
-          customer_name: string
-          customer_phone: string
-          delivery_address: string | null
-          delivery_fee: number | null
-          delivery_type: string
-          discount_amount: number | null
-          discount_type: string | null
-          id: string
-          items: Json
-          mpesa_code: string | null
-          order_status: string
-          order_token: string | null
-          payment_method: string | null
-          payment_status: string
-          pickup_date: string | null
-          pickup_time: string | null
-          receipt_number: string | null
-          reward_type: string | null
-          sales_channel: string | null
-          status_history: Json | null
-          subtotal: number
-          tax_amount: number | null
-          total: number
-          updated_at: string
-          user_id: string | null
-        }[]
+        Returns: Database["public"]["CompositeTypes"]["guest_order_info"][]
         SetofOptions: {
           from: "*"
-          to: "orders"
+          to: "guest_order_info"
           isOneToOne: false
           isSetofReturn: true
         }
@@ -497,7 +467,19 @@ export type Database = {
       app_role: "admin" | "customer" | "super_admin"
     }
     CompositeTypes: {
-      [_ in never]: never
+      guest_order_info: {
+        id: string | null
+        order_status: string | null
+        delivery_type: string | null
+        delivery_address: string | null
+        pickup_date: string | null
+        pickup_time: string | null
+        items: Json | null
+        subtotal: number | null
+        delivery_fee: number | null
+        total: number | null
+        created_at: string | null
+      }
     }
   }
 }
