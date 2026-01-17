@@ -328,6 +328,8 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Generate order token for guest order tracking
     const orderToken = crypto.randomUUID();
+    // Set token expiration to 90 days from now
+    const orderTokenExpiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString();
 
     // Insert order with SERVER-CALCULATED values
     const { data: createdOrder, error: insertError } = await supabase
@@ -349,6 +351,7 @@ const handler = async (req: Request): Promise<Response> => {
         order_status: 'pending',
         mpesa_code: orderData.mpesa_code,
         order_token: orderToken,
+        order_token_expires_at: orderTokenExpiresAt,
       })
       .select()
       .single();

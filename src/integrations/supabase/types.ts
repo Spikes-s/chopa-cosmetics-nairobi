@@ -131,6 +131,7 @@ export type Database = {
           mpesa_code: string | null
           order_status: string
           order_token: string | null
+          order_token_expires_at: string | null
           payment_method: string | null
           payment_status: string
           pickup_date: string | null
@@ -162,6 +163,7 @@ export type Database = {
           mpesa_code?: string | null
           order_status?: string
           order_token?: string | null
+          order_token_expires_at?: string | null
           payment_method?: string | null
           payment_status?: string
           pickup_date?: string | null
@@ -193,6 +195,7 @@ export type Database = {
           mpesa_code?: string | null
           order_status?: string
           order_token?: string | null
+          order_token_expires_at?: string | null
           payment_method?: string | null
           payment_status?: string
           pickup_date?: string | null
