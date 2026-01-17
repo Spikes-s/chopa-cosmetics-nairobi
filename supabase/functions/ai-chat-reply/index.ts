@@ -108,8 +108,26 @@ serve(async (req) => {
 
     console.log("AI chat request from admin:", user.id);
 
+    // Rate limiting: Check recent AI requests by this admin (max 30 requests per 5 minutes)
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    const { data: recentMessages } = await supabase
+      .from("chat_messages")
+      .select("created_at")
+      .eq("sender_type", "admin")
+      .eq("user_id", user.id)
+      .gte("created_at", fiveMinutesAgo);
+    
+    if (recentMessages && recentMessages.length >= 30) {
+      console.log("Rate limit exceeded for admin:", user.id);
+      return new Response(
+        JSON.stringify({ error: "Rate limit exceeded. Please wait a few minutes before sending more messages." }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const { message, conversationHistory } = await req.json();
     
+    // Validate message is a string and not empty
     if (!message || typeof message !== "string") {
       return new Response(
         JSON.stringify({ error: "Message is required" }),
@@ -117,10 +135,30 @@ serve(async (req) => {
       );
     }
 
+    // Validate message length (max 2000 characters)
+    const trimmedMessage = message.trim();
+    if (trimmedMessage.length === 0) {
+      return new Response(
+        JSON.stringify({ error: "Message cannot be empty" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (trimmedMessage.length > 2000) {
+      return new Response(
+        JSON.stringify({ error: "Message too long. Maximum 2000 characters allowed." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate conversation history (max 50 messages to prevent excessive context)
+    const validatedHistory = Array.isArray(conversationHistory) 
+      ? conversationHistory.slice(-50) 
+      : [];
+
     const messages = [
       { role: "system", content: SYSTEM_PROMPT },
-      ...(conversationHistory || []),
-      { role: "user", content: message }
+      ...validatedHistory,
+      { role: "user", content: trimmedMessage }
     ];
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
