@@ -493,7 +493,6 @@ export type Database = {
           updated_at: string | null
           variations: Json | null
           wholesale_min_qty: number | null
-          wholesale_price: number | null
         }
         Insert: {
           additional_images?: string[] | null
@@ -512,7 +511,6 @@ export type Database = {
           updated_at?: string | null
           variations?: Json | null
           wholesale_min_qty?: number | null
-          wholesale_price?: number | null
         }
         Update: {
           additional_images?: string[] | null
@@ -531,7 +529,6 @@ export type Database = {
           updated_at?: string | null
           variations?: Json | null
           wholesale_min_qty?: number | null
-          wholesale_price?: number | null
         }
         Relationships: []
       }
