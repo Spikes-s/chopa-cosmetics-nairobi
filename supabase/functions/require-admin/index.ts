@@ -3,7 +3,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
 };
 
 serve(async (req) => {
@@ -15,13 +16,17 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-    if (!supabaseUrl || !supabaseAnonKey) {
+    if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceRoleKey) {
       console.error("Missing backend configuration");
-      return new Response(JSON.stringify({ error: "Server configuration error" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "Server configuration error" }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     const authHeader = req.headers.get("authorization");
@@ -32,15 +37,15 @@ serve(async (req) => {
       });
     }
 
-    // Create Supabase client with the user's JWT so RLS applies
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    // Client bound to the caller's JWT (for user validation)
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
 
     const {
       data: { user },
       error: userError,
-    } = await supabase.auth.getUser();
+    } = await supabaseAuth.auth.getUser();
 
     if (userError || !user) {
       return new Response(JSON.stringify({ error: "Invalid authentication" }), {
@@ -49,15 +54,28 @@ serve(async (req) => {
       });
     }
 
-    // Treat both admin and super_admin as privileged
-    const { data: roleRow, error: roleError } = await supabase
+    // Service-role client bypasses RLS so role checks work even if user_roles is locked down.
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
+
+    // Treat both admin and super_admin as privileged.
+    // NOTE: Some users can have BOTH roles; avoid maybeSingle() errors by limiting to 1 row.
+    const { data: roleRow, error: roleError } = await supabaseAdmin
       .from("user_roles")
       .select("role")
       .eq("user_id", user.id)
       .in("role", ["admin", "super_admin"])
+      .limit(1)
       .maybeSingle();
 
-    if (roleError || !roleRow) {
+    if (roleError) {
+      console.error("Role lookup error:", roleError);
+      return new Response(JSON.stringify({ error: "Role verification failed" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (!roleRow) {
       return new Response(JSON.stringify({ error: "Admin access required" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
