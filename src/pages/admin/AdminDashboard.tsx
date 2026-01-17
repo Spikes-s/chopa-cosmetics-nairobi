@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { LogOut, Package, ShoppingBag, BarChart3, MessageSquare, Settings, Users, Home, Monitor, RotateCcw } from 'lucide-react';
+import { LogOut, Package, ShoppingBag, BarChart3, MessageSquare, Settings, Users, Home, Monitor, RotateCcw, FolderTree } from 'lucide-react';
 import ProductsManager from '@/components/admin/ProductsManager';
 import OrdersManager from '@/components/admin/OrdersManager';
 import SalesAnalytics from '@/components/admin/SalesAnalytics';
@@ -12,6 +12,7 @@ import SettingsManager from '@/components/admin/SettingsManager';
 import UsersManager from '@/components/admin/UsersManager';
 import POSSystem from '@/components/admin/POSSystem';
 import ReturnsManager from '@/components/admin/ReturnsManager';
+import CategoriesManager from '@/components/admin/CategoriesManager';
 import ThemeToggle from '@/components/ThemeToggle';
 
 const AdminDashboard = () => {
@@ -85,6 +86,10 @@ const AdminDashboard = () => {
               <Package className="w-4 h-4" />
               <span>Products</span>
             </TabsTrigger>
+            <TabsTrigger value="categories" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-4">
+              <FolderTree className="w-4 h-4" />
+              <span>Categories</span>
+            </TabsTrigger>
             <TabsTrigger value="users" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-4">
               <Users className="w-4 h-4" />
               <span>Users</span>
@@ -117,6 +122,10 @@ const AdminDashboard = () => {
 
           <TabsContent value="products" className="space-y-4">
             <ProductsManager />
+          </TabsContent>
+
+          <TabsContent value="categories" className="space-y-4">
+            <CategoriesManager />
           </TabsContent>
 
           <TabsContent value="users" className="space-y-4">

@@ -123,7 +123,14 @@ const Checkout = () => {
         sessionStorage.setItem('order_tokens', JSON.stringify(existingTokens));
       }
 
-      toast.success('Order submitted successfully! We will contact you shortly.');
+      toast.success('Order submitted successfully! We will contact you shortly.', {
+        position: 'top-center',
+        style: {
+          background: '#22c55e',
+          color: 'white',
+          border: 'none',
+        },
+      });
       clearCart();
       navigate('/');
     } catch (err) {
