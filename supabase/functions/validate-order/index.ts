@@ -368,11 +368,17 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('Order created successfully:', createdOrder.id);
 
+    // Return minimal response - client generates token locally, so only return order ID and essential info
     return new Response(
       JSON.stringify({ 
         success: true, 
-        order: createdOrder,
-        order_token: orderToken,
+        order: {
+          id: createdOrder.id,
+          order_status: createdOrder.order_status,
+          created_at: createdOrder.created_at,
+        },
+        // Token is returned only for guest order tracking - client stores it securely
+        order_token: orderData.user_id ? undefined : orderToken,
       }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
