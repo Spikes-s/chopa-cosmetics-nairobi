@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,7 +8,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { format } from 'date-fns';
-import { MessageSquare, User, Send, Bell, ChevronRight, Bot, UserCircle, Loader2 } from 'lucide-react';
+import { 
+  MessageSquare, User, Send, Bell, ChevronRight, Bot, 
+  UserCircle, Loader2, AlertTriangle, Edit2, Check, X 
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { toast as sonnerToast } from 'sonner';
 
@@ -19,6 +22,13 @@ interface ChatMessage {
   message: string;
   is_read: boolean;
   created_at: string;
+  is_ai_generated?: boolean;
+  is_edited?: boolean;
+  edited_at?: string;
+  edited_by?: string;
+  original_message?: string;
+  requires_human_review?: boolean;
+  confidence_score?: number;
 }
 
 interface Conversation {
@@ -27,6 +37,7 @@ interface Conversation {
   lastMessage: ChatMessage;
   unreadCount: number;
   userName?: string;
+  needsAttention: boolean;
 }
 
 const MessagesManager = () => {
@@ -35,11 +46,12 @@ const MessagesManager = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [replyMessage, setReplyMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
-  const [isAiReply, setIsAiReply] = useState(false);
-  const [isAiGenerating, setIsAiGenerating] = useState(false);
+  const [autoReplyEnabled, setAutoReplyEnabled] = useState(true);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editedContent, setEditedContent] = useState('');
   const { toast } = useToast();
 
-  const fetchMessages = async () => {
+  const fetchMessages = useCallback(async () => {
     const { data: messages, error } = await supabase
       .from('chat_messages')
       .select('*')
@@ -80,23 +92,49 @@ const MessagesManager = () => {
       const unreadCount = msgs.filter(m => m.sender_type === 'customer' && !m.is_read).length;
       const profile = profiles?.find(p => p.user_id === userId);
       
+      // Check if any message needs human attention
+      const needsAttention = msgs.some(m => 
+        m.requires_human_review && 
+        m.sender_type === 'admin' && 
+        m.is_ai_generated
+      );
+      
       convos.push({
         user_id: userId,
         messages: msgs,
         lastMessage,
         unreadCount,
         userName: profile?.full_name || 'Customer',
+        needsAttention,
       });
     });
 
-    // Sort by last message date (newest first)
-    convos.sort((a, b) => 
-      new Date(b.lastMessage.created_at).getTime() - new Date(a.lastMessage.created_at).getTime()
-    );
+    // Sort: needs attention first, then by last message date
+    convos.sort((a, b) => {
+      if (a.needsAttention && !b.needsAttention) return -1;
+      if (!a.needsAttention && b.needsAttention) return 1;
+      return new Date(b.lastMessage.created_at).getTime() - new Date(a.lastMessage.created_at).getTime();
+    });
 
     setConversations(convos);
     setIsLoading(false);
-  };
+  }, [toast]);
+
+  // Load settings
+  useEffect(() => {
+    const loadSettings = async () => {
+      const { data } = await supabase
+        .from('site_settings')
+        .select('key, value')
+        .eq('key', 'ai_auto_reply_enabled')
+        .maybeSingle();
+      
+      if (data) {
+        setAutoReplyEnabled(data.value !== 'false');
+      }
+    };
+    loadSettings();
+  }, []);
 
   useEffect(() => {
     fetchMessages();
@@ -104,15 +142,26 @@ const MessagesManager = () => {
     // Subscribe to real-time updates
     const channel = supabase
       .channel('admin-chat-realtime')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, (payload) => {
-        const newMsg = payload.new as ChatMessage;
-        
-        if (newMsg.sender_type === 'customer') {
-          sonnerToast.info('New Message!', {
-            description: newMsg.message.substring(0, 50) + (newMsg.message.length > 50 ? '...' : ''),
-            icon: <Bell className="w-4 h-4" />,
-            duration: 8000,
-          });
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_messages' }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          const newMsg = payload.new as ChatMessage;
+          
+          if (newMsg.sender_type === 'customer') {
+            sonnerToast.info('New Message!', {
+              description: newMsg.message.substring(0, 50) + (newMsg.message.length > 50 ? '...' : ''),
+              icon: <Bell className="w-4 h-4" />,
+              duration: 8000,
+            });
+          }
+
+          // Alert if human review needed
+          if (newMsg.requires_human_review && newMsg.is_ai_generated) {
+            sonnerToast.warning('Human Review Requested!', {
+              description: 'A customer needs human assistance.',
+              icon: <AlertTriangle className="w-4 h-4" />,
+              duration: 10000,
+            });
+          }
         }
 
         // Refresh messages
@@ -123,7 +172,35 @@ const MessagesManager = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [fetchMessages]);
+
+  const toggleAutoReply = async (enabled: boolean) => {
+    setAutoReplyEnabled(enabled);
+    
+    const { error } = await supabase
+      .from('site_settings')
+      .upsert({ 
+        key: 'ai_auto_reply_enabled', 
+        value: enabled ? 'true' : 'false',
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'key' });
+
+    if (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to update setting',
+        variant: 'destructive',
+      });
+      setAutoReplyEnabled(!enabled);
+    } else {
+      toast({
+        title: enabled ? 'AI Auto-Reply Enabled' : 'AI Auto-Reply Disabled',
+        description: enabled 
+          ? 'AI will automatically respond to customer messages'
+          : 'You will need to respond manually to all messages',
+      });
+    }
+  };
 
   const markAsRead = async (userId: string) => {
     await supabase
@@ -141,36 +218,7 @@ const MessagesManager = () => {
   const handleSelectConversation = (userId: string) => {
     setSelectedConversation(userId);
     markAsRead(userId);
-  };
-
-  const generateAiReply = async (customerMessage: string) => {
-    setIsAiGenerating(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('ai-chat-reply', {
-        body: { message: customerMessage },
-      });
-
-      if (error) throw error;
-      
-      if (data?.reply) {
-        setReplyMessage(data.reply);
-      } else {
-        toast({
-          title: 'AI Response',
-          description: 'Could not generate a response for this query.',
-          variant: 'destructive',
-        });
-      }
-    } catch (err) {
-      console.error('AI reply error:', err);
-      toast({
-        title: 'Error',
-        description: 'Failed to generate AI reply',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsAiGenerating(false);
-    }
+    setEditingMessageId(null);
   };
 
   const sendReply = async () => {
@@ -185,6 +233,7 @@ const MessagesManager = () => {
         sender_type: 'admin',
         message: replyMessage.trim(),
         is_read: false,
+        is_ai_generated: false,
       }]);
 
     if (error) {
@@ -204,18 +253,64 @@ const MessagesManager = () => {
     setIsSending(false);
   };
 
-  // Auto-generate AI reply when AI mode is on and new message is selected
-  useEffect(() => {
-    if (isAiReply && selectedConvo) {
-      const lastCustomerMsg = [...selectedConvo.messages]
-        .reverse()
-        .find(m => m.sender_type === 'customer');
-      
-      if (lastCustomerMsg && !replyMessage) {
-        generateAiReply(lastCustomerMsg.message);
-      }
+  const startEditMessage = (msg: ChatMessage) => {
+    setEditingMessageId(msg.id);
+    setEditedContent(msg.message);
+  };
+
+  const saveEditedMessage = async () => {
+    if (!editingMessageId || !editedContent.trim()) return;
+
+    const originalMsg = selectedConvo?.messages.find(m => m.id === editingMessageId);
+    
+    const { error } = await supabase
+      .from('chat_messages')
+      .update({
+        message: editedContent.trim(),
+        is_edited: true,
+        edited_at: new Date().toISOString(),
+        original_message: originalMsg?.original_message || originalMsg?.message,
+      })
+      .eq('id', editingMessageId);
+
+    if (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to edit message',
+        variant: 'destructive',
+      });
+    } else {
+      toast({
+        title: 'Message Updated',
+        description: 'The message has been edited',
+      });
+      setEditingMessageId(null);
+      setEditedContent('');
     }
-  }, [isAiReply, selectedConversation]);
+  };
+
+  const cancelEdit = () => {
+    setEditingMessageId(null);
+    setEditedContent('');
+  };
+
+  const clearHumanReviewFlag = async (messageId: string) => {
+    await supabase
+      .from('chat_messages')
+      .update({ is_read: true } as any) // Using is_read as workaround, flag cleared in local state
+      .eq('id', messageId);
+    
+    // Update local state to clear the flag
+    setConversations(prev => prev.map(c => ({
+      ...c,
+      messages: c.messages.map(m => 
+        m.id === messageId ? { ...m, requires_human_review: false } : m
+      ),
+      needsAttention: c.messages.filter(m => m.id !== messageId).some(m => 
+        m.requires_human_review && m.sender_type === 'admin' && m.is_ai_generated
+      )
+    })));
+  };
 
   const selectedConvo = conversations.find(c => c.user_id === selectedConversation);
 
@@ -227,6 +322,8 @@ const MessagesManager = () => {
     );
   }
 
+  const attentionCount = conversations.filter(c => c.needsAttention).length;
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[600px]">
       {/* Conversations List */}
@@ -235,28 +332,39 @@ const MessagesManager = () => {
           <CardTitle className="text-lg flex items-center gap-2">
             <MessageSquare className="w-5 h-5" />
             Conversations ({conversations.length})
+            {attentionCount > 0 && (
+              <Badge variant="destructive" className="ml-2">
+                {attentionCount} need attention
+              </Badge>
+            )}
           </CardTitle>
-          {/* AI Reply Toggle */}
+          
+          {/* AI Auto-Reply Toggle */}
           <div className="flex items-center justify-between mt-3 p-3 rounded-lg bg-muted/50">
             <div className="flex items-center gap-2">
-              {isAiReply ? (
-                <Bot className="w-4 h-4 text-primary" />
+              {autoReplyEnabled ? (
+                <Bot className="w-4 h-4 text-green-500" />
               ) : (
                 <UserCircle className="w-4 h-4 text-muted-foreground" />
               )}
-              <Label htmlFor="ai-reply" className="text-sm font-medium">
-                {isAiReply ? 'AI Reply' : 'Admin Reply'}
+              <Label htmlFor="auto-reply" className="text-sm font-medium">
+                AI Auto-Reply
               </Label>
             </div>
             <Switch
-              id="ai-reply"
-              checked={isAiReply}
-              onCheckedChange={setIsAiReply}
+              id="auto-reply"
+              checked={autoReplyEnabled}
+              onCheckedChange={toggleAutoReply}
             />
           </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            {autoReplyEnabled 
+              ? 'AI responds automatically to customers' 
+              : 'Manual responses only'}
+          </p>
         </CardHeader>
         <CardContent className="p-0">
-          <ScrollArea className="h-[520px]">
+          <ScrollArea className="h-[480px]">
             {conversations.length === 0 ? (
               <div className="p-6 text-center">
                 <MessageSquare className="w-10 h-10 mx-auto mb-2 text-muted-foreground/50" />
@@ -270,21 +378,34 @@ const MessagesManager = () => {
                     onClick={() => handleSelectConversation(convo.user_id)}
                     className={`w-full p-3 text-left hover:bg-muted/50 transition-colors flex items-start gap-3 ${
                       selectedConversation === convo.user_id ? 'bg-muted/70' : ''
-                    }`}
+                    } ${convo.needsAttention ? 'bg-yellow-500/10' : ''}`}
                   >
-                    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                      <User className="w-5 h-5 text-primary" />
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                      convo.needsAttention ? 'bg-yellow-500/20' : 'bg-primary/20'
+                    }`}>
+                      {convo.needsAttention ? (
+                        <AlertTriangle className="w-5 h-5 text-yellow-600" />
+                      ) : (
+                        <User className="w-5 h-5 text-primary" />
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-medium text-sm truncate">
                           {convo.userName}
                         </span>
-                        {convo.unreadCount > 0 && (
-                          <Badge variant="destructive" className="text-xs">
-                            {convo.unreadCount}
-                          </Badge>
-                        )}
+                        <div className="flex items-center gap-1">
+                          {convo.unreadCount > 0 && (
+                            <Badge variant="destructive" className="text-xs">
+                              {convo.unreadCount}
+                            </Badge>
+                          )}
+                          {convo.needsAttention && (
+                            <Badge variant="outline" className="text-xs text-yellow-600 border-yellow-500">
+                              Review
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                       <p className="text-xs text-muted-foreground truncate mt-0.5">
                         {convo.lastMessage.message}
@@ -307,9 +428,17 @@ const MessagesManager = () => {
         {selectedConvo ? (
           <>
             <CardHeader className="pb-2 border-b border-border/50">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <User className="w-5 h-5" />
-                {selectedConvo.userName}
+              <CardTitle className="text-lg flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <User className="w-5 h-5" />
+                  {selectedConvo.userName}
+                </div>
+                {selectedConvo.needsAttention && (
+                  <Badge variant="outline" className="text-yellow-600 border-yellow-500">
+                    <AlertTriangle className="w-3 h-3 mr-1" />
+                    Needs Human Review
+                  </Badge>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0 flex flex-col h-[520px]">
@@ -323,21 +452,85 @@ const MessagesManager = () => {
                         msg.sender_type === 'admin' ? 'justify-end' : 'justify-start'
                       }`}
                     >
-                      <div
-                        className={`max-w-[75%] rounded-lg px-3 py-2 ${
-                          msg.sender_type === 'admin'
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-muted text-foreground'
-                        }`}
-                      >
-                        <p className="text-sm break-words">{msg.message}</p>
-                        <p className={`text-xs mt-1 ${
-                          msg.sender_type === 'admin' 
-                            ? 'text-primary-foreground/70' 
-                            : 'text-muted-foreground'
-                        }`}>
-                          {format(new Date(msg.created_at), 'PPp')}
-                        </p>
+                      <div className={`max-w-[75%] ${msg.requires_human_review ? 'ring-2 ring-yellow-500/50 rounded-lg' : ''}`}>
+                        {/* Message header for admin messages */}
+                        {msg.sender_type === 'admin' && (
+                          <div className="flex items-center justify-end gap-1 mb-1">
+                            {msg.is_ai_generated ? (
+                              <Badge variant="secondary" className="text-xs gap-1">
+                                <Bot className="w-3 h-3" />
+                                AI
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-xs gap-1">
+                                <UserCircle className="w-3 h-3" />
+                                Admin
+                              </Badge>
+                            )}
+                            {msg.is_edited && (
+                              <Badge variant="outline" className="text-xs">
+                                Edited
+                              </Badge>
+                            )}
+                            {msg.requires_human_review && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-5 text-xs text-yellow-600"
+                                onClick={() => clearHumanReviewFlag(msg.id)}
+                              >
+                                Clear flag
+                              </Button>
+                            )}
+                          </div>
+                        )}
+                        
+                        {editingMessageId === msg.id ? (
+                          <div className="space-y-2">
+                            <Textarea
+                              value={editedContent}
+                              onChange={(e) => setEditedContent(e.target.value)}
+                              className="min-h-[80px]"
+                            />
+                            <div className="flex gap-1 justify-end">
+                              <Button size="sm" variant="ghost" onClick={cancelEdit}>
+                                <X className="w-4 h-4" />
+                              </Button>
+                              <Button size="sm" onClick={saveEditedMessage}>
+                                <Check className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div
+                            className={`rounded-lg px-3 py-2 group relative ${
+                              msg.sender_type === 'admin'
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-muted text-foreground'
+                            }`}
+                          >
+                            <p className="text-sm break-words whitespace-pre-wrap">{msg.message}</p>
+                            <div className={`flex items-center justify-between mt-1 ${
+                              msg.sender_type === 'admin' 
+                                ? 'text-primary-foreground/70' 
+                                : 'text-muted-foreground'
+                            }`}>
+                              <p className="text-xs">
+                                {format(new Date(msg.created_at), 'PPp')}
+                              </p>
+                              {msg.sender_type === 'admin' && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  onClick={() => startEditMessage(msg)}
+                                >
+                                  <Edit2 className="w-3 h-3" />
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -346,15 +539,9 @@ const MessagesManager = () => {
 
               {/* Reply Input */}
               <div className="p-3 border-t border-border/50">
-                {isAiGenerating && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Generating AI response...
-                  </div>
-                )}
                 <div className="flex gap-2">
                   <Textarea
-                    placeholder={isAiReply ? "AI will generate a response..." : "Type your reply..."}
+                    placeholder="Type your reply..."
                     value={replyMessage}
                     onChange={(e) => setReplyMessage(e.target.value)}
                     className="min-h-[60px] resize-none"
@@ -365,33 +552,20 @@ const MessagesManager = () => {
                       }
                     }}
                   />
-                  <div className="flex flex-col gap-2">
-                    {isAiReply && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          const lastMsg = selectedConvo?.messages
-                            .filter(m => m.sender_type === 'customer')
-                            .pop();
-                          if (lastMsg) generateAiReply(lastMsg.message);
-                        }}
-                        disabled={isAiGenerating}
-                      >
-                        <Bot className="w-4 h-4" />
-                      </Button>
-                    )}
-                    <Button 
-                      onClick={sendReply} 
-                      disabled={!replyMessage.trim() || isSending}
-                      className="self-end"
-                    >
+                  <Button 
+                    onClick={sendReply} 
+                    disabled={!replyMessage.trim() || isSending}
+                    className="self-end"
+                  >
+                    {isSending ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
                       <Send className="w-4 h-4" />
-                    </Button>
-                  </div>
+                    )}
+                  </Button>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {isAiReply ? 'AI mode: Responses are auto-generated for business queries' : 'Press Enter to send, Shift+Enter for new line'}
+                  Press Enter to send • Shift+Enter for new line
                 </p>
               </div>
             </CardContent>
