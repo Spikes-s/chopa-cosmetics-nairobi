@@ -11,3 +11,9 @@ verify_jwt = false
 
 [functions.guest-order-lookup]
 verify_jwt = false
+
+[functions.ai-chat-reply]
+verify_jwt = true
+
+[functions.customer-chat-reply]
+verify_jwt = false
