@@ -71,7 +71,7 @@ const SuperAdminControls = ({ userEmail }: SiteControlsProps) => {
         .from('site_controls')
         .select('value')
         .eq('key', 'site_status')
-        .single();
+        .maybeSingle();
       
       if (data) {
         setSiteStatus(data.value || 'active');
@@ -80,28 +80,79 @@ const SuperAdminControls = ({ userEmail }: SiteControlsProps) => {
 
     if (isSuperAdmin) {
       fetchSiteStatus();
+
+      // Subscribe to realtime updates
+      const channel = supabase
+        .channel('super_admin_site_status')
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'site_controls',
+            filter: 'key=eq.site_status'
+          },
+          (payload) => {
+            const newValue = payload.new?.value;
+            setSiteStatus(newValue || 'active');
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [isSuperAdmin]);
 
   const updateSiteStatus = async (status: string) => {
     setIsLoading(true);
     try {
-      const { error } = await supabase
+      // First try to update existing record
+      const { data: existing, error: fetchError } = await supabase
         .from('site_controls')
-        .update({ value: status, updated_at: new Date().toISOString() })
-        .eq('key', 'site_status');
+        .select('id')
+        .eq('key', 'site_status')
+        .maybeSingle();
 
-      if (error) throw error;
+      if (fetchError) throw fetchError;
+
+      if (existing) {
+        // Update existing record
+        const { error } = await supabase
+          .from('site_controls')
+          .update({ 
+            value: status, 
+            updated_at: new Date().toISOString() 
+          })
+          .eq('key', 'site_status');
+
+        if (error) throw error;
+      } else {
+        // Insert new record if doesn't exist
+        const { error } = await supabase
+          .from('site_controls')
+          .insert({ 
+            key: 'site_status', 
+            value: status, 
+            updated_at: new Date().toISOString() 
+          });
+
+        if (error) throw error;
+      }
 
       setSiteStatus(status);
       toast({
-        title: 'Site Status Updated',
-        description: `Website is now ${status === 'active' ? 'online' : 'offline'}`,
+        title: status === 'active' ? '✅ Website Restored' : '🔴 Website Shut Down',
+        description: status === 'active' 
+          ? 'The website is now online and accessible to all users.' 
+          : 'The website is now offline. Only admins can access it.',
       });
     } catch (error: any) {
+      console.error('Failed to update site status:', error);
       toast({
         title: 'Error',
-        description: error.message,
+        description: error.message || 'Failed to update site status',
         variant: 'destructive',
       });
     } finally {

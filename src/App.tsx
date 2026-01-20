@@ -14,8 +14,10 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ChatWidget from "@/components/ChatWidget";
 import TermsAcceptanceModal from "@/components/TermsAcceptanceModal";
+import MaintenanceScreen from "@/components/MaintenanceScreen";
 import { useTermsAcceptance } from "@/hooks/useTermsAcceptance";
 import { usePageVisit } from "@/hooks/usePageVisit";
+import { useSiteStatus } from "@/hooks/useSiteStatus";
 import Index from "./pages/Index";
 import Products from "./pages/Products";
 import ProductDetail from "./pages/ProductDetail";
@@ -39,6 +41,7 @@ const AppContent = () => {
   const [isFirstVisit, setIsFirstVisit] = useState(true);
   const location = useLocation();
   const { needsAcceptance, isLoading: termsLoading, markAsAccepted } = useTermsAcceptance();
+  const { isBlocked, isLoading: siteStatusLoading } = useSiteStatus();
   
   // Track page visits
   usePageVisit();
@@ -66,6 +69,12 @@ const AppContent = () => {
 
   const isAdminRoute = location.pathname.startsWith('/admin');
   const isTermsPage = location.pathname === '/terms';
+
+  // Show maintenance screen for non-admin users when site is shutdown
+  // Allow access to admin routes so admins can restore the site
+  if (isBlocked && !isAdminRoute && !siteStatusLoading) {
+    return <MaintenanceScreen />;
+  }
 
   return (
     <div className="min-h-screen mirage-bg">
