@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { LogOut, Package, ShoppingBag, BarChart3, MessageSquare, Settings, Users, Home, Monitor, RotateCcw, FolderTree, UserCog } from 'lucide-react';
+import { LogOut, Package, ShoppingBag, BarChart3, MessageSquare, Settings, Users, Home, Monitor, RotateCcw, FolderTree, UserCog, MapPin } from 'lucide-react';
 import ProductsManager from '@/components/admin/ProductsManager';
 import OrdersManager from '@/components/admin/OrdersManager';
 import SalesAnalytics from '@/components/admin/SalesAnalytics';
@@ -14,6 +14,7 @@ import POSSystem from '@/components/admin/POSSystem';
 import ReturnsManager from '@/components/admin/ReturnsManager';
 import CategoriesManager from '@/components/admin/CategoriesManager';
 import RolesManager from '@/components/admin/RolesManager';
+import BranchesManager from '@/components/admin/BranchesManager';
 import ThemeToggle from '@/components/ThemeToggle';
 import { VisitorCounter } from '@/components/admin/VisitorCounter';
 
@@ -111,6 +112,10 @@ const AdminDashboard = () => {
               <Settings className="w-4 h-4" />
               <span>Settings</span>
             </TabsTrigger>
+            <TabsTrigger value="branches" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-4">
+              <MapPin className="w-4 h-4" />
+              <span>Locations</span>
+            </TabsTrigger>
             <TabsTrigger value="roles" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-4">
               <UserCog className="w-4 h-4" />
               <span>Roles</span>
@@ -151,6 +156,10 @@ const AdminDashboard = () => {
 
           <TabsContent value="settings" className="space-y-4">
             <SettingsManager />
+          </TabsContent>
+
+          <TabsContent value="branches" className="space-y-4">
+            <BranchesManager />
           </TabsContent>
 
           <TabsContent value="roles" className="space-y-4">

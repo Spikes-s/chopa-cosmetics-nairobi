@@ -1,25 +1,11 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Phone, MapPin, Clock, Mail, ExternalLink } from 'lucide-react';
+import { Phone, Clock, Mail } from 'lucide-react';
 import PhoneContactDialog from '@/components/PhoneContactDialog';
+import BranchMap from '@/components/BranchMap';
 
 const Contact = () => {
   const [selectedContact, setSelectedContact] = useState<{ phone: string; name: string } | null>(null);
-  const [mapLocation, setMapLocation] = useState('https://maps.app.goo.gl/example');
-
-  useEffect(() => {
-    const fetchMapLocation = async () => {
-      const { data } = await supabase
-        .from('site_settings')
-        .select('value')
-        .eq('key', 'map_location')
-        .single();
-      if (data?.value) setMapLocation(data.value);
-    };
-    fetchMapLocation();
-  }, []);
 
   const contacts = [
     { name: 'James (Manager)', phone: '0715167179' },
@@ -38,7 +24,15 @@ const Contact = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+      {/* Map Section */}
+      <div className="max-w-4xl mx-auto mb-12">
+        <h2 className="text-2xl font-display font-bold text-foreground mb-6 text-center">
+          Our Locations
+        </h2>
+        <BranchMap />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
         {/* Phone Numbers */}
         <Card variant="gradient">
           <CardHeader>
@@ -61,36 +55,6 @@ const Contact = () => {
                 <Phone className="w-4 h-4 text-primary" />
               </button>
             ))}
-          </CardContent>
-        </Card>
-
-        {/* Locations */}
-        <Card variant="glass">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MapPin className="w-5 h-5 text-primary" />
-              Our Locations
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="p-4 rounded-lg bg-muted/30">
-              <p className="font-semibold text-foreground mb-1">Main Branch</p>
-              <p className="text-muted-foreground text-sm">
-                KAKA HOUSE – OTC, along Racecourse Road, opposite Kaka Travellers Sacco
-              </p>
-            </div>
-            <div className="p-4 rounded-lg bg-muted/30">
-              <p className="font-semibold text-foreground mb-1">Thika Branch</p>
-              <p className="text-muted-foreground text-sm">Opposite Family Bank</p>
-            </div>
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => window.open(mapLocation, '_blank')}
-            >
-              <ExternalLink className="w-4 h-4 mr-2" />
-              View in Maps
-            </Button>
           </CardContent>
         </Card>
 

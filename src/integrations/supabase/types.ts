@@ -50,6 +50,57 @@ export type Database = {
         }
         Relationships: []
       }
+      branches: {
+        Row: {
+          address: string | null
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          is_main: boolean | null
+          latitude: number | null
+          longitude: number | null
+          name: string
+          service_area_polygon: Json | null
+          service_radius_km: number | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_main?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
+          name: string
+          service_area_polygon?: Json | null
+          service_radius_km?: number | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_main?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
+          name?: string
+          service_area_polygon?: Json | null
+          service_radius_km?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string
