@@ -7,7 +7,7 @@ import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, MapPin, Pencil, Trash2, Star, Navigation, Loader2 } from 'lucide-react';
+import { Plus, MapPin, Pencil, Trash2, Star, Navigation, Loader2, Route, X } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,6 +18,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+
+interface StartingPoint {
+  name: string;
+  latitude: number;
+  longitude: number;
+}
 
 interface Branch {
   id: string;
@@ -31,6 +37,7 @@ interface Branch {
   is_active: boolean;
   service_radius_km: number | null;
   display_order: number;
+  starting_points: StartingPoint[] | null;
 }
 
 const BranchesManager = () => {
@@ -53,6 +60,13 @@ const BranchesManager = () => {
     is_main: false,
     is_active: true,
     service_radius_km: '',
+    starting_points: [] as StartingPoint[],
+  });
+
+  const [newStartingPoint, setNewStartingPoint] = useState({
+    name: '',
+    latitude: '',
+    longitude: '',
   });
 
   useEffect(() => {
@@ -84,7 +98,13 @@ const BranchesManager = () => {
     if (error) {
       toast({ title: 'Error fetching branches', description: error.message, variant: 'destructive' });
     } else {
-      setBranches(data || []);
+      const parsedData = (data || []).map(branch => ({
+        ...branch,
+        starting_points: Array.isArray(branch.starting_points)
+          ? (branch.starting_points as unknown as StartingPoint[])
+          : null
+      }));
+      setBranches(parsedData);
     }
     setLoading(false);
   };
@@ -100,7 +120,9 @@ const BranchesManager = () => {
       is_main: false,
       is_active: true,
       service_radius_km: '',
+      starting_points: [],
     });
+    setNewStartingPoint({ name: '', latitude: '', longitude: '' });
     setEditingBranch(null);
   };
 
@@ -116,8 +138,70 @@ const BranchesManager = () => {
       is_main: branch.is_main,
       is_active: branch.is_active,
       service_radius_km: branch.service_radius_km?.toString() || '',
+      starting_points: branch.starting_points || [],
     });
     setDialogOpen(true);
+  };
+
+  const addStartingPoint = () => {
+    if (!newStartingPoint.name.trim() || !newStartingPoint.latitude || !newStartingPoint.longitude) {
+      toast({ title: 'Please fill all starting point fields', variant: 'destructive' });
+      return;
+    }
+
+    if (formData.starting_points.length >= 3) {
+      toast({ title: 'Maximum 3 starting points allowed', variant: 'destructive' });
+      return;
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      starting_points: [
+        ...prev.starting_points,
+        {
+          name: newStartingPoint.name.trim(),
+          latitude: parseFloat(newStartingPoint.latitude),
+          longitude: parseFloat(newStartingPoint.longitude),
+        }
+      ]
+    }));
+
+    setNewStartingPoint({ name: '', latitude: '', longitude: '' });
+  };
+
+  const removeStartingPoint = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      starting_points: prev.starting_points.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handlePasteStartingPointLink = () => {
+    navigator.clipboard.readText().then(text => {
+      const patterns = [
+        /@(-?\d+\.\d+),(-?\d+\.\d+)/,
+        /place\/.*@(-?\d+\.\d+),(-?\d+\.\d+)/,
+        /q=(-?\d+\.\d+),(-?\d+\.\d+)/,
+        /ll=(-?\d+\.\d+),(-?\d+\.\d+)/,
+      ];
+
+      for (const pattern of patterns) {
+        const match = text.match(pattern);
+        if (match) {
+          setNewStartingPoint(prev => ({
+            ...prev,
+            latitude: match[1],
+            longitude: match[2]
+          }));
+          toast({ title: 'Coordinates extracted from link' });
+          return;
+        }
+      }
+
+      toast({ title: 'Could not extract coordinates', description: 'Please enter them manually', variant: 'destructive' });
+    }).catch(() => {
+      toast({ title: 'Clipboard access denied', variant: 'destructive' });
+    });
   };
 
   const handleSubmit = async () => {
@@ -138,6 +222,9 @@ const BranchesManager = () => {
       is_main: formData.is_main,
       is_active: formData.is_active,
       service_radius_km: formData.service_radius_km ? parseFloat(formData.service_radius_km) : null,
+      starting_points: formData.starting_points.length > 0 
+        ? JSON.parse(JSON.stringify(formData.starting_points)) 
+        : null,
     };
 
     try {
@@ -203,12 +290,11 @@ const BranchesManager = () => {
 
   const handlePasteGoogleMapsLink = () => {
     navigator.clipboard.readText().then(text => {
-      // Try to extract coordinates from Google Maps link
       const patterns = [
-        /@(-?\d+\.\d+),(-?\d+\.\d+)/, // Standard maps link
-        /place\/.*@(-?\d+\.\d+),(-?\d+\.\d+)/, // Place link
-        /q=(-?\d+\.\d+),(-?\d+\.\d+)/, // Query parameter
-        /ll=(-?\d+\.\d+),(-?\d+\.\d+)/, // ll parameter
+        /@(-?\d+\.\d+),(-?\d+\.\d+)/,
+        /place\/.*@(-?\d+\.\d+),(-?\d+\.\d+)/,
+        /q=(-?\d+\.\d+),(-?\d+\.\d+)/,
+        /ll=(-?\d+\.\d+),(-?\d+\.\d+)/,
       ];
 
       for (const pattern of patterns) {
@@ -252,7 +338,7 @@ const BranchesManager = () => {
               Add Branch
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{editingBranch ? 'Edit Branch' : 'Add New Branch'}</DialogTitle>
             </DialogHeader>
@@ -279,7 +365,7 @@ const BranchesManager = () => {
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label>Coordinates</Label>
+                  <Label>Destination Coordinates</Label>
                   <Button type="button" variant="ghost" size="sm" onClick={handlePasteGoogleMapsLink}>
                     Paste from Maps Link
                   </Button>
@@ -304,6 +390,74 @@ const BranchesManager = () => {
                     />
                   </div>
                 </div>
+              </div>
+
+              {/* Starting Points for Directions */}
+              <div className="space-y-3 pt-2 border-t border-border">
+                <div className="flex items-center gap-2">
+                  <Route className="w-4 h-4 text-destructive" />
+                  <Label className="font-semibold">Starting Points for Directions (Max 3)</Label>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Add common starting locations. Customers can click to get directions from these points.
+                </p>
+                
+                {/* Existing Starting Points */}
+                {formData.starting_points.map((point, index) => (
+                  <div key={index} className="flex items-center gap-2 bg-muted/50 rounded-lg p-2">
+                    <div className="w-3 h-3 rounded-full bg-destructive" />
+                    <span className="flex-1 text-sm font-medium">{point.name}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {point.latitude.toFixed(4)}, {point.longitude.toFixed(4)}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeStartingPoint(index)}
+                      className="h-6 w-6 p-0"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+
+                {/* Add New Starting Point */}
+                {formData.starting_points.length < 3 && (
+                  <div className="space-y-2 bg-muted/30 rounded-lg p-3">
+                    <Input
+                      value={newStartingPoint.name}
+                      onChange={(e) => setNewStartingPoint(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="Location name (e.g., CBD, Westlands)"
+                    />
+                    <div className="flex gap-2">
+                      <Input
+                        type="number"
+                        step="any"
+                        value={newStartingPoint.latitude}
+                        onChange={(e) => setNewStartingPoint(prev => ({ ...prev, latitude: e.target.value }))}
+                        placeholder="Latitude"
+                        className="flex-1"
+                      />
+                      <Input
+                        type="number"
+                        step="any"
+                        value={newStartingPoint.longitude}
+                        onChange={(e) => setNewStartingPoint(prev => ({ ...prev, longitude: e.target.value }))}
+                        placeholder="Longitude"
+                        className="flex-1"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button type="button" variant="outline" size="sm" onClick={handlePasteStartingPointLink} className="flex-1">
+                        Paste Maps Link
+                      </Button>
+                      <Button type="button" size="sm" onClick={addStartingPoint} className="flex-1">
+                        <Plus className="w-4 h-4 mr-1" /> Add Point
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -394,6 +548,13 @@ const BranchesManager = () => {
                 <p className="text-xs text-accent">
                   Service radius: {branch.service_radius_km} km
                 </p>
+              )}
+
+              {branch.starting_points && branch.starting_points.length > 0 && (
+                <div className="flex items-center gap-1 text-xs text-destructive">
+                  <Route className="w-3 h-3" />
+                  <span>{branch.starting_points.length} starting point(s)</span>
+                </div>
               )}
 
               <div className="flex items-center gap-2 pt-2">

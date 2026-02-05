@@ -65,6 +65,7 @@ export type Database = {
           name: string
           service_area_polygon: Json | null
           service_radius_km: number | null
+          starting_points: Json | null
           updated_at: string
         }
         Insert: {
@@ -81,6 +82,7 @@ export type Database = {
           name: string
           service_area_polygon?: Json | null
           service_radius_km?: number | null
+          starting_points?: Json | null
           updated_at?: string
         }
         Update: {
@@ -97,6 +99,7 @@ export type Database = {
           name?: string
           service_area_polygon?: Json | null
           service_radius_km?: number | null
+          starting_points?: Json | null
           updated_at?: string
         }
         Relationships: []
