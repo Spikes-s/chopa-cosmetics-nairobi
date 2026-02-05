@@ -3,7 +3,13 @@ import { useTheme } from '@/context/ThemeContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { MapPin, Navigation, Phone, Mail } from 'lucide-react';
+import { MapPin, Navigation, Phone, Mail, Route } from 'lucide-react';
+
+interface StartingPoint {
+  name: string;
+  latitude: number;
+  longitude: number;
+}
 
 interface Branch {
   id: string;
@@ -16,6 +22,7 @@ interface Branch {
   is_main: boolean;
   is_active: boolean;
   service_radius_km: number | null;
+  starting_points: StartingPoint[] | null;
 }
 
 const BranchMap = () => {
@@ -53,9 +60,16 @@ const BranchMap = () => {
       .order('display_order');
     
     if (!error && data) {
-      setBranches(data);
+      // Parse starting_points from JSONB
+      const parsedData = data.map(branch => ({
+        ...branch,
+        starting_points: Array.isArray(branch.starting_points) 
+          ? (branch.starting_points as unknown as StartingPoint[])
+          : null
+      }));
+      setBranches(parsedData);
       // Select main branch by default
-      const mainBranch = data.find(b => b.is_main) || data[0];
+      const mainBranch = parsedData.find(b => b.is_main) || parsedData[0];
       if (mainBranch && !selectedBranch) {
         setSelectedBranch(mainBranch);
       }
@@ -63,12 +77,15 @@ const BranchMap = () => {
     setLoading(false);
   };
 
-  const handleGetDirections = (branch: Branch) => {
+  const handleGetDirections = (branch: Branch, startingPoint?: StartingPoint) => {
     if (branch.latitude && branch.longitude) {
-      window.open(
-        `https://www.google.com/maps/dir/?api=1&destination=${branch.latitude},${branch.longitude}`,
-        '_blank'
-      );
+      let url = `https://www.google.com/maps/dir/?api=1&destination=${branch.latitude},${branch.longitude}`;
+      
+      if (startingPoint) {
+        url += `&origin=${startingPoint.latitude},${startingPoint.longitude}`;
+      }
+      
+      window.open(url, '_blank');
     }
   };
 
@@ -104,21 +121,12 @@ const BranchMap = () => {
   const getMapEmbedUrl = () => {
     if (!selectedBranch?.latitude || !selectedBranch?.longitude) return null;
     
-    // Create markers for all branches
-    const markers = branches
-      .filter(b => b.latitude && b.longitude)
-      .map(b => `markers=color:${b.is_main ? 'red' : 'blue'}%7Clabel:${b.name.charAt(0)}%7C${b.latitude},${b.longitude}`)
-      .join('&');
-    
-    const baseUrl = 'https://www.google.com/maps/embed/v1/place';
     const center = `${selectedBranch.latitude},${selectedBranch.longitude}`;
-    
-    // Note: For production, you'd use a proper API key
-    // Using the standard embed which doesn't require API key for basic usage
     return `https://maps.google.com/maps?q=${center}&output=embed&z=15`;
   };
 
   const mapUrl = getMapEmbedUrl();
+  const startingPoints = selectedBranch?.starting_points || [];
 
   return (
     <div className="space-y-6">
@@ -203,25 +211,52 @@ const BranchMap = () => {
               )}
             </div>
 
-            <div className="flex flex-wrap gap-2 pt-2">
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => handleGetDirections(selectedBranch)}
-                className="gap-2"
-              >
-                <Navigation className="w-4 h-4" />
-                Get Directions
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleViewInMaps(selectedBranch)}
-                className="gap-2"
-              >
-                <MapPin className="w-4 h-4" />
-                View in Maps
-              </Button>
+            {/* Directions Buttons */}
+            <div className="space-y-3 pt-2">
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => handleGetDirections(selectedBranch)}
+                  className="gap-2"
+                >
+                  <Navigation className="w-4 h-4" />
+                  Get Directions
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleViewInMaps(selectedBranch)}
+                  className="gap-2"
+                >
+                  <MapPin className="w-4 h-4" />
+                  View in Maps
+                </Button>
+              </div>
+
+              {/* Starting Points for Directions */}
+              {startingPoints.length > 0 && (
+                <div className="pt-2 border-t border-border">
+                  <p className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
+                    <Route className="w-4 h-4 text-destructive" />
+                    Quick Directions From:
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {startingPoints.map((point, index) => (
+                      <Button
+                        key={index}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleGetDirections(selectedBranch, point)}
+                        className="gap-2 border-destructive/30 hover:border-destructive hover:bg-destructive/10"
+                      >
+                        <div className="w-2 h-2 rounded-full bg-destructive" />
+                        {point.name}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
