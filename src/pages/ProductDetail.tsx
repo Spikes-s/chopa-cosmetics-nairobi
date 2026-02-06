@@ -34,7 +34,7 @@ interface DBProduct {
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { addItem } = useCart();
+  const { addItem, addViewedProduct } = useCart();
   
   const [dbProduct, setDbProduct] = useState<DBProduct | null>(null);
   const [loading, setLoading] = useState(true);
@@ -69,6 +69,13 @@ const ProductDetail = () => {
       setLoading(false);
     }
   }, [id, localProduct]);
+
+  // Track viewed products for logged-in users
+  useEffect(() => {
+    if (id) {
+      addViewedProduct(id);
+    }
+  }, [id, addViewedProduct]);
 
   // Use either local or DB product
   const product = localProduct || (dbProduct ? {
