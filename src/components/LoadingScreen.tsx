@@ -138,7 +138,7 @@ const LoadingScreen = ({ onComplete }: LoadingScreenProps) => {
 
       {/* Logo with Scribble Effect */}
       <div
-        className={`relative z-10 text-center transition-all duration-1000 ${
+        className={`relative z-10 text-center transition-all duration-1000 px-4 w-full max-w-4xl ${
           showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
         }`}
       >
@@ -184,34 +184,34 @@ const LoadingScreen = ({ onComplete }: LoadingScreenProps) => {
             />
           </svg>
 
-          {/* Main title with scribble reveal */}
+          {/* Main title - CHOPA COSMETICS LIMITED - fully visible and responsive */}
           <h1 
-            className="text-5xl md:text-7xl font-display font-bold gradient-text mb-2 relative"
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-display font-bold gradient-text mb-2 relative whitespace-nowrap"
             style={{
               clipPath: `inset(0 ${100 - scribbleProgress}% 0 0)`,
               transition: 'clip-path 0.1s ease-out',
             }}
           >
-            <span className="animate-scribble-text">CHOPA</span>
+            <span className="animate-scribble-text">CHOPA COSMETICS</span>
           </h1>
           
           <h2 
-            className="text-3xl md:text-4xl font-display font-semibold text-foreground/90"
+            className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-display font-semibold text-foreground/90"
             style={{
-              clipPath: `inset(0 ${100 - Math.max(0, scribbleProgress - 30)}% 0 0)`,
+              clipPath: `inset(0 ${100 - Math.max(0, scribbleProgress - 20)}% 0 0)`,
               transition: 'clip-path 0.1s ease-out',
             }}
           >
-            <span className="animate-scribble-text">COSMETICS LIMITED</span>
+            <span className="animate-scribble-text">LIMITED</span>
           </h2>
 
           {/* Scribble underline effect */}
           <div 
-            className="h-1 mt-2 mx-auto rounded-full"
+            className="h-1 mt-4 mx-auto rounded-full"
             style={{
               background: 'var(--gradient-primary)',
               width: `${scribbleProgress}%`,
-              maxWidth: '300px',
+              maxWidth: '350px',
               transition: 'width 0.1s ease-out',
               boxShadow: '0 0 20px hsl(280, 60%, 50%, 0.5)',
             }}
