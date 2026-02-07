@@ -7,14 +7,16 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Pencil, Trash2, Search, Upload, Image, X, AlertTriangle, Calendar, Palette } from 'lucide-react';
-import { categories } from '@/data/products';
 import { format, parseISO, differenceInDays, addMonths, isBefore } from 'date-fns';
-import { UNIVERSAL_COLORS, EXTRA_COLORS, ALL_COLORS, ColorType, getColorsByType } from '@/data/hairColors';
+import ColorPickerDialog from './ColorPickerDialog';
+
+interface CustomColor {
+  name: string;
+  hex: string;
+}
 
 interface Product {
   id: string;
@@ -34,14 +36,23 @@ interface Product {
   expiry_date: string | null;
 }
 
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  subcategories: string[];
+}
+
 const ProductsManager = () => {
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadingAdditional, setUploadingAdditional] = useState(false);
+  const [showColorPicker, setShowColorPicker] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const additionalFileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -64,9 +75,20 @@ const ProductsManager = () => {
     in_stock: true,
     stock_quantity: '0',
     expiry_date: '',
-    color_type: 'both' as ColorType,
-    available_colors: [] as string[],
+    colors: [] as CustomColor[],
   });
+
+  const fetchCategories = async () => {
+    const { data } = await supabase
+      .from('categories')
+      .select('id, name, slug, subcategories')
+      .eq('is_active', true)
+      .order('display_order', { ascending: true });
+    
+    if (data) {
+      setCategories(data);
+    }
+  };
 
   const fetchProducts = async () => {
     setIsLoading(true);
@@ -88,7 +110,19 @@ const ProductsManager = () => {
   };
 
   useEffect(() => {
+    fetchCategories();
     fetchProducts();
+
+    // Subscribe to realtime updates
+    const channel = supabase
+      .channel('products-manager')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, fetchProducts)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, fetchCategories)
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const resetForm = () => {
@@ -107,8 +141,7 @@ const ProductsManager = () => {
       in_stock: true,
       stock_quantity: '0',
       expiry_date: '',
-      color_type: 'both' as ColorType,
-      available_colors: [],
+      colors: [],
     });
     setEditingProduct(null);
   };
@@ -131,8 +164,7 @@ const ProductsManager = () => {
       in_stock: product.in_stock ?? true,
       stock_quantity: product.stock_quantity?.toString() || '0',
       expiry_date: product.expiry_date || '',
-      color_type: (variations?.colorType as ColorType) || 'both',
-      available_colors: (variations?.availableColors as string[]) || [],
+      colors: variations?.colors || [],
     });
     setIsDialogOpen(true);
   };
@@ -347,6 +379,12 @@ const ProductsManager = () => {
     e.preventDefault();
 
     const stockQty = parseInt(formData.stock_quantity) || 0;
+    
+    // Build variations object with colors - cast to any for JSON compatibility
+    const variations = formData.colors.length > 0 
+      ? { colors: formData.colors.map(c => ({ name: c.name, hex: c.hex })) } as any
+      : null;
+
     const productData = {
       name: formData.name,
       description: formData.description || null,
@@ -361,6 +399,7 @@ const ProductsManager = () => {
       in_stock: stockQty > 0,
       stock_quantity: stockQty,
       expiry_date: formData.expiry_date || null,
+      variations,
     };
 
     if (editingProduct) {
@@ -405,6 +444,20 @@ const ProductsManager = () => {
         fetchProducts();
       }
     }
+  };
+
+  // Handle category change - show color picker for Hair Extensions
+  const handleCategoryChange = (value: string) => {
+    setFormData({ ...formData, category: value, subcategory: '' });
+    
+    // If selecting Hair Extensions and creating new product, show color picker
+    if (value === 'Hair Extensions' && !editingProduct) {
+      setShowColorPicker(true);
+    }
+  };
+
+  const handleColorsConfirmed = (colors: CustomColor[]) => {
+    setFormData({ ...formData, colors });
   };
 
   const filteredProducts = products.filter(p =>
@@ -468,7 +521,7 @@ const ProductsManager = () => {
                   <Label>Category</Label>
                   <Select
                     value={formData.category}
-                    onValueChange={(value) => setFormData({ ...formData, category: value, subcategory: '' })}
+                    onValueChange={handleCategoryChange}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select category" />
@@ -681,6 +734,44 @@ const ProductsManager = () => {
                 </div>
               </div>
 
+              {/* Colors for Hair Extensions */}
+              {formData.category === 'Hair Extensions' && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="flex items-center gap-2">
+                      <Palette className="w-4 h-4 text-primary" />
+                      Available Colors
+                    </Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowColorPicker(true)}
+                    >
+                      <Plus className="w-4 h-4 mr-1" />
+                      {formData.colors.length > 0 ? 'Edit Colors' : 'Add Colors'}
+                    </Button>
+                  </div>
+                  {formData.colors.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {formData.colors.map((color) => (
+                        <Badge key={color.name} variant="secondary" className="flex items-center gap-2">
+                          <div 
+                            className="w-4 h-4 rounded-full border border-border"
+                            style={{ backgroundColor: color.hex }}
+                          />
+                          {color.name}
+                        </Badge>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      No colors added. Click "Add Colors" to add available color options.
+                    </p>
+                  )}
+                </div>
+              )}
+
               <Button type="submit" className="w-full" disabled={isUploading}>
                 {editingProduct ? 'Update Product' : 'Create Product'}
               </Button>
@@ -801,6 +892,14 @@ const ProductsManager = () => {
           ))}
         </div>
       )}
+
+      {/* Color Picker Dialog for Hair Extensions */}
+      <ColorPickerDialog
+        open={showColorPicker}
+        onOpenChange={setShowColorPicker}
+        onColorsConfirmed={handleColorsConfirmed}
+        existingColors={formData.colors}
+      />
     </div>
   );
 };

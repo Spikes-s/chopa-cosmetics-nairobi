@@ -104,6 +104,53 @@ export type Database = {
         }
         Relationships: []
       }
+      brand_subcategories: {
+        Row: {
+          brand_name: string
+          brand_slug: string
+          category_id: string
+          created_at: string | null
+          display_order: number | null
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          parent_subcategory: string
+          updated_at: string | null
+        }
+        Insert: {
+          brand_name: string
+          brand_slug: string
+          category_id: string
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          parent_subcategory: string
+          updated_at?: string | null
+        }
+        Update: {
+          brand_name?: string
+          brand_slug?: string
+          category_id?: string
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          parent_subcategory?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brand_subcategories_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           created_at: string

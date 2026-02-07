@@ -1,7 +1,47 @@
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import CategoryCard from '@/components/CategoryCard';
-import { categories } from '@/data/products';
+import { Loader2 } from 'lucide-react';
+
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  image_url: string | null;
+  subcategories: string[];
+}
 
 const Categories = () => {
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      const { data } = await supabase
+        .from('categories')
+        .select('id, name, slug, image_url, subcategories')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true });
+      
+      if (data) {
+        setCategories(data);
+      }
+      setIsLoading(false);
+    };
+
+    fetchCategories();
+
+    // Subscribe to realtime updates
+    const channel = supabase
+      .channel('categories-page')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, fetchCategories)
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Page Header */}
@@ -15,12 +55,28 @@ const Categories = () => {
         </p>
       </div>
 
-      {/* Categories Grid - 2-3 per row on desktop, single column on mobile */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-        {categories.map((category) => (
-          <CategoryCard key={category.id} category={category} />
-        ))}
-      </div>
+      {/* Categories Grid */}
+      {isLoading ? (
+        <div className="flex justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      ) : categories.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">No categories available yet.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+          {categories.map((category) => (
+            <CategoryCard key={category.id} category={{
+              id: category.id,
+              name: category.name,
+              slug: category.slug,
+              image: category.image_url || '/placeholder.svg',
+              subcategories: category.subcategories,
+            }} />
+          ))}
+        </div>
+      )}
 
       {/* Info Section */}
       <div className="mt-16 text-center">

@@ -30,7 +30,7 @@ const SearchBar = ({ className, placeholder = "Search products...", isMobile = f
   const containerRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout>();
 
-  // Fetch suggestions with debounce
+  // Fetch suggestions with debounce - searches database products
   const fetchSuggestions = useCallback(async (searchQuery: string) => {
     if (searchQuery.trim().length < 2) {
       setSuggestions([]);
@@ -39,10 +39,12 @@ const SearchBar = ({ className, placeholder = "Search products...", isMobile = f
 
     setIsLoading(true);
     try {
+      // Search products from database - escape special characters for ilike
+      const escapedQuery = searchQuery.replace(/[%_]/g, '\\$&');
       const { data, error } = await supabase
         .from('products')
         .select('id, name, category, image_url, retail_price')
-        .or(`name.ilike.%${searchQuery}%,category.ilike.%${searchQuery}%`)
+        .or(`name.ilike.%${escapedQuery}%,category.ilike.%${escapedQuery}%,subcategory.ilike.%${escapedQuery}%`)
         .limit(8);
 
       if (error) throw error;

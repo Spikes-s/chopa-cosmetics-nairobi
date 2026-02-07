@@ -5,7 +5,6 @@ import ProductCard from '@/components/ProductCard';
 import CategoryCard from '@/components/CategoryCard';
 import HamburgerCategoryMenu from '@/components/HamburgerCategoryMenu';
 import FeaturedProducts from '@/components/FeaturedProducts';
-import { categories } from '@/data/products';
 import { supabase } from '@/integrations/supabase/client';
 import { ArrowRight, Sparkles, Truck, Shield, Gift, TrendingUp, Star, Clock } from 'lucide-react';
 
@@ -20,15 +19,34 @@ interface Product {
   description: string | null;
 }
 
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  image_url: string | null;
+  subcategories: string[];
+}
+
 const Index = () => {
+  const [categories, setCategories] = useState<Category[]>([]);
   const [mostBought, setMostBought] = useState<Product[]>([]);
   const [upcoming, setUpcoming] = useState<Product[]>([]);
   const [bestReviewed, setBestReviewed] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const featuredCategories = categories.slice(0, 6);
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchData = async () => {
+      // Fetch categories from database
+      const { data: categoriesData } = await supabase
+        .from('categories')
+        .select('id, name, slug, image_url, subcategories')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true });
+      
+      if (categoriesData) {
+        setCategories(categoriesData);
+      }
+
       // Fetch most bought (from orders - most ordered products)
       const { data: orders } = await supabase
         .from('orders')
@@ -61,10 +79,10 @@ const Index = () => {
           .filter(Boolean) as Product[];
         setMostBought(mostBoughtProducts.length > 0 ? mostBoughtProducts : allProducts.slice(0, 4));
 
-        // Upcoming: newest products (by created_at would be better, but using slice for now)
+        // Upcoming: newest products
         setUpcoming(allProducts.slice(-4).reverse());
 
-        // Best reviewed: random selection (would need reviews table for real implementation)
+        // Best reviewed: random selection
         const shuffled = [...allProducts].sort(() => 0.5 - Math.random());
         setBestReviewed(shuffled.slice(0, 4));
       }
@@ -72,8 +90,10 @@ const Index = () => {
       setIsLoading(false);
     };
 
-    fetchProducts();
+    fetchData();
   }, []);
+
+  const featuredCategories = categories.slice(0, 6);
 
   return (
     <div>
@@ -188,7 +208,13 @@ const Index = () => {
           
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {featuredCategories.map((category) => (
-              <CategoryCard key={category.id} category={category} />
+              <CategoryCard key={category.id} category={{
+                id: category.id,
+                name: category.name,
+                slug: category.slug,
+                image: category.image_url || '/placeholder.svg',
+                subcategories: category.subcategories,
+              }} />
             ))}
           </div>
         </div>

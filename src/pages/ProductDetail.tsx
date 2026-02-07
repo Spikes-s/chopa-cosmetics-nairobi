@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { products, isHairExtension } from '@/data/products';
-import { findColor } from '@/data/hairColors';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/context/CartContext';
@@ -31,44 +29,47 @@ interface DBProduct {
   variations: any;
 }
 
+interface CustomColor {
+  name: string;
+  hex: string;
+}
+
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addItem, addViewedProduct } = useCart();
   
-  const [dbProduct, setDbProduct] = useState<DBProduct | null>(null);
+  const [product, setProduct] = useState<DBProduct | null>(null);
   const [loading, setLoading] = useState(true);
-  
-  // Check local data first
-  const localProduct = products.find((p) => p.id === id);
+  const [notFound, setNotFound] = useState(false);
   
   const [quantity, setQuantity] = useState(1);
-  const [selectedSize, setSelectedSize] = useState(localProduct?.sizes?.[0] || '');
   const [selectedColor, setSelectedColor] = useState('');
 
   useEffect(() => {
     const fetchProduct = async () => {
-      if (!id) return;
+      if (!id) {
+        setNotFound(true);
+        setLoading(false);
+        return;
+      }
       
       const { data, error } = await supabase
         .from('products')
         .select('*')
         .eq('id', id)
-        .single();
+        .maybeSingle();
       
-      if (!error && data) {
-        setDbProduct(data);
+      if (error || !data) {
+        setNotFound(true);
+      } else {
+        setProduct(data);
       }
       setLoading(false);
     };
 
-    // If not found in local products, try DB
-    if (!localProduct) {
-      fetchProduct();
-    } else {
-      setLoading(false);
-    }
-  }, [id, localProduct]);
+    fetchProduct();
+  }, [id]);
 
   // Track viewed products for logged-in users
   useEffect(() => {
@@ -77,26 +78,10 @@ const ProductDetail = () => {
     }
   }, [id, addViewedProduct]);
 
-  // Use either local or DB product
-  const product = localProduct || (dbProduct ? {
-    id: dbProduct.id,
-    name: dbProduct.name,
-    description: dbProduct.description || '',
-    price: dbProduct.retail_price,
-    wholesalePrice: dbProduct.wholesale_price || 0,
-    category: dbProduct.category,
-    subcategory: dbProduct.subcategory || '',
-    image: dbProduct.image_url || '/placeholder.svg',
-    colors: [],
-    sizes: [],
-    inStock: dbProduct.in_stock ?? true,
-  } : null);
-
-  // Determine if product is a hair extension (braid)
-  const isExtension = product ? isHairExtension(product) : false;
-  
-  // Get available colors for the product
-  const availableColors = localProduct?.colors || [];
+  // Get colors from product variations
+  const availableColors: CustomColor[] = product?.variations?.colors || [];
+  const isHairExtension = product?.category === 'Hair Extensions';
+  const canAddToCart = isHairExtension && availableColors.length > 0 ? selectedColor !== '' : true;
 
   if (loading) {
     return (
@@ -106,12 +91,15 @@ const ProductDetail = () => {
     );
   }
 
-  if (!product) {
+  if (notFound || !product) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
         <h1 className="text-2xl font-display font-bold text-foreground mb-4">
           Product Not Found
         </h1>
+        <p className="text-muted-foreground mb-6">
+          The product you're looking for doesn't exist or has been removed.
+        </p>
         <Button onClick={() => navigate('/products')}>
           Back to Products
         </Button>
@@ -119,14 +107,10 @@ const ProductDetail = () => {
     );
   }
 
-  const wholesaleThreshold = dbProduct?.wholesale_min_qty || (isExtension ? 10 : 6);
+  const wholesaleThreshold = product.wholesale_min_qty || 6;
   const isWholesale = quantity >= wholesaleThreshold;
-  
-  const currentPrice = isWholesale ? product.wholesalePrice : product.price;
+  const currentPrice = isWholesale && product.wholesale_price ? product.wholesale_price : product.retail_price;
   const totalPrice = currentPrice * quantity;
-
-  // Validation for hair extensions - must select color
-  const canAddToCart = isExtension ? selectedColor !== '' : true;
 
   const handleAddToCart = () => {
     if (!canAddToCart) {
@@ -135,26 +119,24 @@ const ProductDetail = () => {
     }
 
     addItem({
-      id: `${product.id}-${selectedSize}-${selectedColor}`,
+      id: `${product.id}-${selectedColor}`,
       name: product.name,
-      price: product.price,
-      wholesalePrice: product.wholesalePrice,
+      price: product.retail_price,
+      wholesalePrice: product.wholesale_price || 0,
       quantity,
-      size: selectedSize,
       color: selectedColor,
-      image: product.image,
+      image: product.image_url || '/placeholder.svg',
       category: product.category,
     });
     
     toast.success(`${product.name} added to cart!`);
   };
 
-  // Get color hex for preview
-  const selectedColorData = selectedColor ? findColor(selectedColor) : null;
+  // Get selected color data
+  const selectedColorData = selectedColor ? availableColors.find(c => c.name === selectedColor) : null;
 
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* Back Button */}
       <Button
         variant="ghost"
         onClick={() => navigate(-1)}
@@ -165,10 +147,10 @@ const ProductDetail = () => {
       </Button>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-        {/* Product Image - Large and Centered on Mobile */}
+        {/* Product Image */}
         <div className="aspect-square rounded-2xl overflow-hidden bg-muted/30 gradient-border mx-auto max-w-md lg:max-w-none w-full">
           <img
-            src={product.image}
+            src={product.image_url || '/placeholder.svg'}
             alt={product.name}
             className="w-full h-full object-cover"
           />
@@ -178,7 +160,7 @@ const ProductDetail = () => {
         <div className="flex flex-col">
           <div className="mb-4">
             <span className="text-sm text-primary font-medium uppercase tracking-wider">
-              {product.subcategory}
+              {product.subcategory || product.category}
             </span>
           </div>
 
@@ -186,9 +168,8 @@ const ProductDetail = () => {
             {product.name}
           </h1>
 
-          {/* Short Description */}
           <p className="text-muted-foreground mb-6 font-body leading-relaxed text-sm md:text-base">
-            {product.description}
+            {product.description || 'No description available.'}
           </p>
 
           {/* Price */}
@@ -197,14 +178,14 @@ const ProductDetail = () => {
               <span className="text-3xl font-bold text-foreground">
                 Ksh {currentPrice.toLocaleString()}
               </span>
-              {isWholesale && (
+              {isWholesale && product.wholesale_price && (
                 <span className="text-lg text-muted-foreground line-through">
-                  Ksh {product.price.toLocaleString()}
+                  Ksh {product.retail_price.toLocaleString()}
                 </span>
               )}
             </div>
             
-            {isWholesale && (
+            {isWholesale && product.wholesale_price && (
               <div className="flex items-center gap-2 text-accent text-sm">
                 <Check className="w-4 h-4" />
                 Wholesale price applied!
@@ -213,73 +194,44 @@ const ProductDetail = () => {
 
             <div className="mt-4 pt-4 border-t border-border">
               <p className="text-sm text-muted-foreground">
-                <span className="text-foreground font-medium">Retail:</span> Ksh {product.price.toLocaleString()}
+                <span className="text-foreground font-medium">Retail:</span> Ksh {product.retail_price.toLocaleString()}
               </p>
-              <p className="text-sm text-muted-foreground">
-                <span className="text-accent font-medium">Wholesale:</span> Ksh {product.wholesalePrice.toLocaleString()}
-                <span className="text-xs ml-1">
-                  ({wholesaleThreshold}+ items)
-                </span>
-              </p>
+              {product.wholesale_price && (
+                <p className="text-sm text-muted-foreground">
+                  <span className="text-accent font-medium">Wholesale:</span> Ksh {product.wholesale_price.toLocaleString()}
+                  <span className="text-xs ml-1">({wholesaleThreshold}+ items)</span>
+                </p>
+              )}
             </div>
           </div>
 
           {/* Options */}
           <div className="space-y-4 mb-6">
-            {/* Size Selector - for non-extensions */}
-            {!isExtension && localProduct?.sizes && localProduct.sizes.length > 0 && (
+            {/* Color Selector - Required for hair extensions with colors */}
+            {availableColors.length > 0 && (
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
-                  Size
+                  Color {isHairExtension && <span className="text-destructive">*</span>}
                 </label>
-                <Select value={selectedSize} onValueChange={setSelectedSize}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select size" />
+                <Select value={selectedColor} onValueChange={setSelectedColor}>
+                  <SelectTrigger className={`w-full ${isHairExtension && !selectedColor && 'border-destructive/50'}`}>
+                    <SelectValue placeholder="Select color" />
                   </SelectTrigger>
-                  <SelectContent>
-                    {localProduct.sizes.map((size) => (
-                      <SelectItem key={size} value={size}>
-                        {size}
+                  <SelectContent className="max-h-60">
+                    {availableColors.map((color) => (
+                      <SelectItem key={color.name} value={color.name}>
+                        <div className="flex items-center gap-2">
+                          <div 
+                            className="w-4 h-4 rounded-full border border-border"
+                            style={{ backgroundColor: color.hex }}
+                          />
+                          {color.name}
+                        </div>
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-            )}
-
-            {/* Color Selector - Required for hair extensions */}
-            {availableColors.length > 0 && (
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Color {isExtension && <span className="text-destructive">*</span>}
-                </label>
-                <Select 
-                  value={selectedColor} 
-                  onValueChange={setSelectedColor}
-                >
-                  <SelectTrigger className={`w-full ${isExtension && !selectedColor && 'border-destructive/50'}`}>
-                    <SelectValue placeholder="Select color" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-60">
-                    {availableColors.map((color) => {
-                      const colorData = findColor(color);
-                      return (
-                        <SelectItem key={color} value={color}>
-                          <div className="flex items-center gap-2">
-                            {colorData && (
-                              <div 
-                                className="w-4 h-4 rounded-full border border-border"
-                                style={{ backgroundColor: colorData.hex }}
-                              />
-                            )}
-                            {color}
-                          </div>
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
-                {isExtension && !selectedColor && (
+                {isHairExtension && !selectedColor && (
                   <p className="text-xs text-destructive mt-1 flex items-center gap-1">
                     <AlertCircle className="w-3 h-3" /> Please select a color
                   </p>
@@ -322,7 +274,7 @@ const ProductDetail = () => {
                   <Plus className="w-4 h-4" />
                 </Button>
                 
-                {quantity < wholesaleThreshold && (
+                {product.wholesale_price && quantity < wholesaleThreshold && (
                   <span className="text-sm text-muted-foreground ml-4">
                     Add {wholesaleThreshold - quantity} more for wholesale price
                   </span>
@@ -339,7 +291,7 @@ const ProductDetail = () => {
             </span>
           </div>
 
-          {/* Add to Cart - Hot Pink Button */}
+          {/* Add to Cart */}
           <Button
             size="xl"
             className="w-full bg-pink-500 hover:bg-pink-600 text-white font-bold text-lg py-6"
@@ -350,7 +302,7 @@ const ProductDetail = () => {
             {canAddToCart ? 'Add to Cart' : 'Select Color Above'}
           </Button>
           
-          {isExtension && !canAddToCart && (
+          {isHairExtension && availableColors.length > 0 && !canAddToCart && (
             <p className="text-sm text-muted-foreground text-center mt-2">
               Please select a color to add to cart
             </p>
@@ -358,7 +310,6 @@ const ProductDetail = () => {
         </div>
       </div>
 
-      {/* Customer Reviews Section */}
       <ProductReviews productId={id || ''} />
     </div>
   );
