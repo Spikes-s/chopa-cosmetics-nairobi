@@ -13,11 +13,13 @@ import ScrollToTop from "@/components/ScrollToTop";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ChatWidget from "@/components/ChatWidget";
+import CartNotification from "@/components/CartNotification";
 import TermsAcceptanceModal from "@/components/TermsAcceptanceModal";
 import MaintenanceScreen from "@/components/MaintenanceScreen";
 import { useTermsAcceptance } from "@/hooks/useTermsAcceptance";
 import { usePageVisit } from "@/hooks/usePageVisit";
 import { useSiteStatus } from "@/hooks/useSiteStatus";
+import { useCart } from "@/context/CartContext";
 import Index from "./pages/Index";
 import Products from "./pages/Products";
 import ProductDetail from "./pages/ProductDetail";
@@ -42,7 +44,7 @@ const AppContent = () => {
   const location = useLocation();
   const { needsAcceptance, isLoading: termsLoading, markAsAccepted } = useTermsAcceptance();
   const { isBlocked, isLoading: siteStatusLoading } = useSiteStatus();
-  
+  const { showCartNotification, hideCartNotification } = useCart();
   // Track page visits
   usePageVisit();
 
@@ -98,6 +100,9 @@ const AppContent = () => {
       </main>
       {!isAdminRoute && <Footer />}
       {!isAdminRoute && <ChatWidget />}
+      
+      {/* Cart notification banner */}
+      <CartNotification show={showCartNotification} onClose={hideCartNotification} />
       
       {/* Terms acceptance modal - only show if not on terms page and not loading */}
       {!termsLoading && !isTermsPage && !isAdminRoute && (

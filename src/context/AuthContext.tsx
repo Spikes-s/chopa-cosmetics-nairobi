@@ -60,7 +60,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setIsLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    // Auto-logout on tab close
+    const handleBeforeUnload = () => {
+      // Signal logout before tab closes (cart is already saved in CartContext)
+      supabase.auth.signOut();
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {

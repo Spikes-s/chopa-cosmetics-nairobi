@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Check, Truck, MapPin, Loader2 } from 'lucide-react';
-import DeliveryLocationSelect, { DELIVERY_LOCATIONS } from '@/components/DeliveryLocationSelect';
+import DeliveryLocationSelect from '@/components/DeliveryLocationSelect';
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -32,9 +32,8 @@ const Checkout = () => {
   const [hasPaid, setHasPaid] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const selectedLocation = DELIVERY_LOCATIONS.find(l => l.id === deliveryLocation);
-  const deliveryFee = deliveryMethod === 'delivery' ? (selectedLocation?.price || 0) : 0;
-  const totalWithDelivery = totalWithWholesale + deliveryFee;
+  // No delivery fee displayed - paid to driver
+  const totalWithDelivery = totalWithWholesale;
 
   if (items.length === 0) {
     navigate('/cart');
@@ -89,8 +88,8 @@ const Checkout = () => {
           items: orderItems,
           mpesa_code: formData.mpesaCode.trim(),
           delivery_type: deliveryMethod,
-          delivery_address: deliveryMethod === 'delivery' ? `${selectedLocation?.name} - ${formData.address}` : undefined,
-          delivery_fee: deliveryFee,
+          delivery_address: deliveryMethod === 'delivery' ? `${deliveryLocation} - ${formData.address}` : undefined,
+          delivery_fee: 0, // Fee paid to driver directly
           pickup_date: deliveryMethod === 'pickup' ? formData.pickupDate : undefined,
           pickup_time: deliveryMethod === 'pickup' ? formData.pickupTime : undefined,
         },
@@ -415,12 +414,12 @@ const Checkout = () => {
                     Ksh {totalWithWholesale.toLocaleString()}
                   </span>
                 </div>
-                {deliveryMethod === 'delivery' && (
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-muted-foreground">Delivery ({selectedLocation?.name.replace(' (Free Delivery)', '')})</span>
-                    <span className={deliveryFee === 0 ? 'text-accent font-medium' : 'text-foreground'}>
-                      {deliveryFee === 0 ? 'FREE' : `Ksh ${deliveryFee.toLocaleString()}`}
-                    </span>
+                {deliveryMethod === 'delivery' && deliveryLocation !== 'cbd' && (
+                  <div className="flex items-start gap-2 p-3 rounded-lg bg-warning/10 border border-warning/30 mb-2">
+                    <span className="text-lg">👉</span>
+                    <p className="text-sm font-medium text-warning">
+                      Delivery fee will be paid directly to the driver upon delivery.
+                    </p>
                   </div>
                 )}
                 <div className="flex justify-between items-center pt-4 border-t border-border">

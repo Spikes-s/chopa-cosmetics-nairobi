@@ -20,10 +20,12 @@ export const DELIVERY_LOCATIONS: DeliveryLocation[] = [
 interface DeliveryLocationSelectProps {
   value: string;
   onChange: (value: string) => void;
+  hidePrice?: boolean;
 }
 
-const DeliveryLocationSelect = ({ value, onChange }: DeliveryLocationSelectProps) => {
+const DeliveryLocationSelect = ({ value, onChange, hidePrice = false }: DeliveryLocationSelectProps) => {
   const selectedLocation = DELIVERY_LOCATIONS.find(l => l.id === value);
+  const isOutsideCBD = value && value !== 'cbd';
   
   return (
     <div className="space-y-3">
@@ -34,12 +36,7 @@ const DeliveryLocationSelect = ({ value, onChange }: DeliveryLocationSelectProps
         <SelectContent>
           {DELIVERY_LOCATIONS.map((location) => (
             <SelectItem key={location.id} value={location.id}>
-              <div className="flex items-center justify-between w-full gap-4">
-                <span>{location.name}</span>
-                <span className="text-muted-foreground text-sm">
-                  {location.price === 0 ? 'FREE' : `Ksh ${location.price}`}
-                </span>
-              </div>
+              <span>{location.name.replace(' (Free Delivery)', location.id === 'cbd' ? ' (Free)' : '')}</span>
             </SelectItem>
           ))}
         </SelectContent>
@@ -52,10 +49,17 @@ const DeliveryLocationSelect = ({ value, onChange }: DeliveryLocationSelectProps
             <p className="text-sm font-medium text-foreground">
               Delivery to {selectedLocation.name.replace(' (Free Delivery)', '')}
             </p>
-            <p className="text-lg font-bold text-accent">
-              {selectedLocation.price === 0 ? 'FREE' : `Ksh ${selectedLocation.price.toLocaleString()}`}
-            </p>
           </div>
+        </div>
+      )}
+
+      {/* Warning for outside CBD */}
+      {isOutsideCBD && (
+        <div className="flex items-start gap-2 p-3 rounded-lg bg-warning/10 border border-warning/30">
+          <span className="text-lg">👉</span>
+          <p className="text-sm font-medium text-warning">
+            NOTE: Delivery fee will be paid directly to the driver upon delivery.
+          </p>
         </div>
       )}
 

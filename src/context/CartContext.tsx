@@ -27,6 +27,8 @@ interface CartContextType {
   getItemWholesaleThreshold: (item: CartItem) => number;
   addViewedProduct: (productId: string) => void;
   lastViewedProducts: string[];
+  showCartNotification: boolean;
+  hideCartNotification: () => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -36,6 +38,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [items, setItems] = useState<CartItem[]>([]);
   const [lastViewedProducts, setLastViewedProducts] = useState<string[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [showCartNotification, setShowCartNotification] = useState(false);
+
+  const hideCartNotification = useCallback(() => {
+    setShowCartNotification(false);
+  }, []);
 
   // Save cart to database for logged-in users
   const saveCartToDatabase = useCallback(async (cartItems: CartItem[], viewedProducts: string[]) => {
@@ -141,6 +148,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
       return [...prev, newItem];
     });
+    
+    // Trigger notification
+    setShowCartNotification(true);
   };
 
   const removeItem = (id: string) => {
@@ -204,6 +214,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         getItemWholesaleThreshold,
         addViewedProduct,
         lastViewedProducts,
+        showCartNotification,
+        hideCartNotification,
       }}
     >
       {children}

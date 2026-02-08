@@ -4,15 +4,11 @@ import { useCart } from '@/context/CartContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Trash2, Minus, Plus, ShoppingBag, ArrowRight } from 'lucide-react';
-import DeliveryLocationSelect, { DELIVERY_LOCATIONS } from '@/components/DeliveryLocationSelect';
+import DeliveryLocationSelect from '@/components/DeliveryLocationSelect';
 
 const Cart = () => {
   const { items, removeItem, updateQuantity, totalWithWholesale, clearCart, getItemWholesaleThreshold } = useCart();
   const [deliveryLocation, setDeliveryLocation] = useState('cbd');
-  
-  const selectedLocation = DELIVERY_LOCATIONS.find(l => l.id === deliveryLocation);
-  const deliveryFee = selectedLocation?.price || 0;
-  const totalWithDelivery = totalWithWholesale + deliveryFee;
 
   if (items.length === 0) {
     return (
@@ -172,18 +168,12 @@ const Cart = () => {
                 </div>
                 
                 <div className="border-t border-border pt-4">
-                  <p className="text-sm font-medium text-foreground mb-2">Delivery Location</p>
+                  <p className="text-sm font-medium text-foreground mb-2">Select Delivery Area</p>
                   <DeliveryLocationSelect 
                     value={deliveryLocation} 
-                    onChange={setDeliveryLocation} 
+                    onChange={setDeliveryLocation}
+                    hidePrice
                   />
-                </div>
-
-                <div className="flex justify-between text-muted-foreground pt-2">
-                  <span>Delivery Fee</span>
-                  <span className={deliveryFee === 0 ? 'text-accent font-medium' : ''}>
-                    {deliveryFee === 0 ? 'FREE' : `Ksh ${deliveryFee.toLocaleString()}`}
-                  </span>
                 </div>
               </div>
 
@@ -191,7 +181,7 @@ const Cart = () => {
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-semibold text-foreground">Total</span>
                   <span className="text-2xl font-bold gradient-text">
-                    Ksh {totalWithDelivery.toLocaleString()}
+                    Ksh {totalWithWholesale.toLocaleString()}
                   </span>
                 </div>
               </div>

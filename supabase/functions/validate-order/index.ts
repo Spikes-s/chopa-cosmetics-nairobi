@@ -9,7 +9,9 @@ const corsHeaders = {
 
 // Input validation regex patterns
 const KENYAN_PHONE_REGEX = /^(?:\+254|0)[17]\d{8}$/;
-const MPESA_CODE_REGEX = /^[A-Z0-9]{10,15}$/;
+// M-Pesa validation: accept full message or just transaction code
+const MPESA_CODE_REGEX = /[A-Z0-9]{10,15}/; // Extract code from message
+const MPESA_MESSAGE_MIN_LENGTH = 10;
 
 interface OrderItem {
   id: string;
@@ -81,14 +83,17 @@ const validateRequest = (body: any): { valid: boolean; error?: string; data?: Or
     customerEmail = trimmedEmail;
   }
 
-  // Validate mpesa_code
+  // Validate mpesa_code - accept full message or just code
   if (!body.mpesa_code || typeof body.mpesa_code !== 'string') {
-    return { valid: false, error: 'M-Pesa transaction code is required' };
+    return { valid: false, error: 'M-Pesa confirmation message is required' };
   }
-  const mpesaCode = body.mpesa_code.trim().toUpperCase();
-  if (!MPESA_CODE_REGEX.test(mpesaCode)) {
-    return { valid: false, error: 'Invalid M-Pesa transaction code format' };
+  const mpesaInput = body.mpesa_code.trim();
+  if (mpesaInput.length < MPESA_MESSAGE_MIN_LENGTH) {
+    return { valid: false, error: 'Please paste the complete M-Pesa confirmation message' };
   }
+  // Extract transaction code from message if present
+  const codeMatch = mpesaInput.toUpperCase().match(MPESA_CODE_REGEX);
+  const mpesaCode = codeMatch ? codeMatch[0] : mpesaInput.toUpperCase().slice(0, 15);
 
   // Validate items array
   if (!Array.isArray(body.items) || body.items.length === 0) {
