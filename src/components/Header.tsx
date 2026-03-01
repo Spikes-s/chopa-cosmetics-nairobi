@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, User, Menu, X, LogOut } from 'lucide-react';
+import { ShoppingCart, User, Menu, X, LogOut, KeyRound, ChevronRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -8,21 +8,59 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuPortal,
 } from '@/components/ui/dropdown-menu';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import ThemeToggle from '@/components/ThemeToggle';
 import SearchBar from '@/components/SearchBar';
+import { useToast } from '@/hooks/use-toast';
+
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+}
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
   const { totalItems } = useCart();
   const { user, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      const { data } = await supabase
+        .from('categories')
+        .select('id, name, slug')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true });
+      if (data) setCategories(data);
+    };
+    fetchCategories();
+  }, []);
 
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
+  };
+
+  const handleResetPassword = async () => {
+    if (!user?.email) return;
+    const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Check your email', description: 'A password reset link has been sent to your email.' });
+    }
   };
 
   return (
@@ -79,7 +117,7 @@ const Header = () => {
                   <User className="w-5 h-5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48 bg-popover border-border">
+              <DropdownMenuContent align="end" className="w-56 bg-popover border-border">
                 {user ? (
                   <>
                     <div className="px-2 py-1.5">
@@ -93,6 +131,28 @@ const Header = () => {
                         </Link>
                       </DropdownMenuItem>
                     )}
+                    {/* Categories submenu */}
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger className="cursor-pointer">
+                        Shop by Category
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuPortal>
+                        <DropdownMenuSubContent className="bg-popover border-border">
+                          {categories.map((cat) => (
+                            <DropdownMenuItem key={cat.id} asChild>
+                              <Link to={`/products?category=${cat.slug}`} className="w-full cursor-pointer">
+                                {cat.name}
+                              </Link>
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuSubContent>
+                      </DropdownMenuPortal>
+                    </DropdownMenuSub>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleResetPassword} className="cursor-pointer">
+                      <KeyRound className="w-4 h-4 mr-2" />
+                      Reset Password
+                    </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link to="/auth?mode=login" className="w-full cursor-pointer">
                         Add Another Account
@@ -105,6 +165,24 @@ const Header = () => {
                   </>
                 ) : (
                   <>
+                    {/* Categories for guests too */}
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger className="cursor-pointer">
+                        Shop by Category
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuPortal>
+                        <DropdownMenuSubContent className="bg-popover border-border">
+                          {categories.map((cat) => (
+                            <DropdownMenuItem key={cat.id} asChild>
+                              <Link to={`/products?category=${cat.slug}`} className="w-full cursor-pointer">
+                                {cat.name}
+                              </Link>
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuSubContent>
+                      </DropdownMenuPortal>
+                    </DropdownMenuSub>
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
                       <Link to="/auth?mode=login" className="w-full cursor-pointer">
                         Login

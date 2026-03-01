@@ -184,25 +184,26 @@ const LoadingScreen = ({ onComplete }: LoadingScreenProps) => {
             />
           </svg>
 
-          {/* Main title - CHOPA COSMETICS LIMITED - fully visible and responsive */}
+          {/* Main title - CHOPA COSMETICS LIMITED - with flashing colors */}
           <h1 
-            className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-display font-bold gradient-text mb-2 relative whitespace-nowrap"
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-display font-bold mb-2 relative whitespace-nowrap animate-color-flash"
             style={{
               clipPath: `inset(0 ${100 - scribbleProgress}% 0 0)`,
               transition: 'clip-path 0.1s ease-out',
             }}
           >
-            <span className="animate-scribble-text">CHOPA COSMETICS</span>
+            CHOPA COSMETICS
           </h1>
           
           <h2 
-            className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-display font-semibold text-foreground/90"
+            className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-display font-semibold animate-color-flash"
             style={{
               clipPath: `inset(0 ${100 - Math.max(0, scribbleProgress - 20)}% 0 0)`,
               transition: 'clip-path 0.1s ease-out',
+              animationDelay: '0.5s',
             }}
           >
-            <span className="animate-scribble-text">LIMITED</span>
+            LIMITED
           </h2>
 
           {/* Scribble underline effect */}
