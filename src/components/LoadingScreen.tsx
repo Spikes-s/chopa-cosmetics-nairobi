@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Star } from 'lucide-react';
 
 interface LoadingScreenProps {
@@ -9,69 +9,6 @@ const LoadingScreen = ({ onComplete }: LoadingScreenProps) => {
   const [stars, setStars] = useState<Array<{ id: number; left: number; delay: number }>>([]);
   const [showContent, setShowContent] = useState(false);
   const [scribbleProgress, setScribbleProgress] = useState(0);
-  const audioContextRef = useRef<AudioContext | null>(null);
-
-  // Generate tingling/chime sounds
-  const playTinglingSound = () => {
-    try {
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      audioContextRef.current = audioContext;
-
-      // Create multiple chime/tingle sounds
-      const playChime = (startTime: number, frequency: number, duration: number) => {
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
-        
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-        
-        oscillator.type = 'sine';
-        oscillator.frequency.setValueAtTime(frequency, startTime);
-        
-        // Full volume (1.0 = 100%)
-        gainNode.gain.setValueAtTime(0, startTime);
-        gainNode.gain.linearRampToValueAtTime(1.0, startTime + 0.02);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
-        
-        oscillator.start(startTime);
-        oscillator.stop(startTime + duration);
-      };
-
-      // Star falling frequencies (magical tingling sounds)
-      const frequencies = [2093, 2637, 3136, 2349, 1760, 2093, 2794, 3520, 1975, 2489];
-      const now = audioContext.currentTime;
-
-      // Play cascading chimes over 3 seconds
-      for (let i = 0; i < 20; i++) {
-        const delay = (i * 0.15) + (Math.random() * 0.1);
-        const freq = frequencies[i % frequencies.length] * (0.8 + Math.random() * 0.4);
-        playChime(now + delay, freq, 0.8 + Math.random() * 0.4);
-      }
-
-      // Add sparkle overtones
-      for (let i = 0; i < 15; i++) {
-        const delay = (i * 0.2) + 0.05;
-        const freq = 4000 + Math.random() * 2000;
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
-        
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-        
-        oscillator.type = 'triangle';
-        oscillator.frequency.setValueAtTime(freq, now + delay);
-        
-        gainNode.gain.setValueAtTime(0, now + delay);
-        gainNode.gain.linearRampToValueAtTime(0.5, now + delay + 0.01);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, now + delay + 0.3);
-        
-        oscillator.start(now + delay);
-        oscillator.stop(now + delay + 0.3);
-      }
-    } catch (error) {
-      console.log('Audio not supported:', error);
-    }
-  };
 
   useEffect(() => {
     // Generate falling stars
@@ -81,9 +18,6 @@ const LoadingScreen = ({ onComplete }: LoadingScreenProps) => {
       delay: Math.random() * 2,
     }));
     setStars(newStars);
-
-    // Play sound immediately
-    playTinglingSound();
 
     // Animate scribble effect
     const scribbleInterval = setInterval(() => {
@@ -101,9 +35,6 @@ const LoadingScreen = ({ onComplete }: LoadingScreenProps) => {
     
     // Complete loading after animation
     const completeTimer = setTimeout(() => {
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
-      }
       onComplete();
     }, 4000);
 
@@ -111,9 +42,6 @@ const LoadingScreen = ({ onComplete }: LoadingScreenProps) => {
       clearTimeout(contentTimer);
       clearTimeout(completeTimer);
       clearInterval(scribbleInterval);
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
-      }
     };
   }, [onComplete]);
 
@@ -186,7 +114,7 @@ const LoadingScreen = ({ onComplete }: LoadingScreenProps) => {
 
           {/* Main title - CHOPA COSMETICS LIMITED - with flashing colors */}
           <h1 
-            className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-display font-bold mb-2 relative whitespace-nowrap animate-color-flash"
+            className="text-xl xs:text-2xl sm:text-4xl md:text-5xl lg:text-7xl font-display font-bold mb-2 relative animate-color-flash leading-tight"
             style={{
               clipPath: `inset(0 ${100 - scribbleProgress}% 0 0)`,
               transition: 'clip-path 0.1s ease-out',
@@ -196,7 +124,7 @@ const LoadingScreen = ({ onComplete }: LoadingScreenProps) => {
           </h1>
           
           <h2 
-            className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-display font-semibold animate-color-flash"
+            className="text-lg xs:text-xl sm:text-3xl md:text-4xl lg:text-5xl font-display font-semibold animate-color-flash"
             style={{
               clipPath: `inset(0 ${100 - Math.max(0, scribbleProgress - 20)}% 0 0)`,
               transition: 'clip-path 0.1s ease-out',
