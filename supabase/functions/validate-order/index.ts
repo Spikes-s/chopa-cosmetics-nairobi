@@ -216,6 +216,15 @@ const handler = async (req: Request): Promise<Response> => {
     // Create service role client for database operations
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Enforce request body size limit (100KB max)
+    const contentLength = parseInt(req.headers.get('content-length') || '0');
+    if (contentLength > 102400) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Request too large' }),
+        { status: 413, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     // Parse and validate request body
     const body = await req.json();
     const validation = validateRequest(body);

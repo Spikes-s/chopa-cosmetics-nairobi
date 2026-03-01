@@ -96,6 +96,14 @@ serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+    // Enforce request body size limit (50KB max)
+    const contentLength = parseInt(req.headers.get('content-length') || '0');
+    if (contentLength > 51200) {
+      return new Response(
+        JSON.stringify({ error: "Request too large" }),
+        { status: 413, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // Parse request
     const { message, userId, conversationHistory } = await req.json();
@@ -126,6 +134,14 @@ serve(async (req) => {
     if (trimmedMessage.length > 1000) {
       return new Response(
         JSON.stringify({ error: "Message too long. Maximum 1000 characters." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate conversationHistory size (max 50 messages to prevent oversized payloads)
+    if (conversationHistory && Array.isArray(conversationHistory) && conversationHistory.length > 50) {
+      return new Response(
+        JSON.stringify({ error: "Conversation history too long. Please start a new chat." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
