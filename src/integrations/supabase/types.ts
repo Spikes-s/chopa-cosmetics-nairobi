@@ -403,6 +403,13 @@ export type Database = {
             foreignKeyName: "product_reviews_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "admin_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_reviews_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
@@ -667,6 +674,13 @@ export type Database = {
             foreignKeyName: "vouchers_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "admin_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vouchers_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
@@ -681,6 +695,72 @@ export type Database = {
       }
     }
     Views: {
+      admin_products: {
+        Row: {
+          additional_images: string[] | null
+          barcode: string | null
+          category: string | null
+          cost_price: number | null
+          created_at: string | null
+          description: string | null
+          display_section: string | null
+          expiry_date: string | null
+          id: string | null
+          image_url: string | null
+          in_stock: boolean | null
+          name: string | null
+          retail_price: number | null
+          stock_quantity: number | null
+          subcategory: string | null
+          updated_at: string | null
+          variations: Json | null
+          wholesale_min_qty: number | null
+          wholesale_price: number | null
+        }
+        Insert: {
+          additional_images?: string[] | null
+          barcode?: string | null
+          category?: string | null
+          cost_price?: never
+          created_at?: string | null
+          description?: string | null
+          display_section?: string | null
+          expiry_date?: string | null
+          id?: string | null
+          image_url?: string | null
+          in_stock?: boolean | null
+          name?: string | null
+          retail_price?: number | null
+          stock_quantity?: number | null
+          subcategory?: string | null
+          updated_at?: string | null
+          variations?: Json | null
+          wholesale_min_qty?: number | null
+          wholesale_price?: number | null
+        }
+        Update: {
+          additional_images?: string[] | null
+          barcode?: string | null
+          category?: string | null
+          cost_price?: never
+          created_at?: string | null
+          description?: string | null
+          display_section?: string | null
+          expiry_date?: string | null
+          id?: string | null
+          image_url?: string | null
+          in_stock?: boolean | null
+          name?: string | null
+          retail_price?: number | null
+          stock_quantity?: number | null
+          subcategory?: string | null
+          updated_at?: string | null
+          variations?: Json | null
+          wholesale_min_qty?: number | null
+          wholesale_price?: number | null
+        }
+        Relationships: []
+      }
       public_products: {
         Row: {
           additional_images: string[] | null
