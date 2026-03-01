@@ -214,6 +214,30 @@ export type Database = {
         }
         Relationships: []
       }
+      guest_order_lookups: {
+        Row: {
+          created_at: string
+          id: string
+          ip_address: string
+          order_id: string
+          success: boolean | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ip_address: string
+          order_id: string
+          success?: boolean | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ip_address?: string
+          order_id?: string
+          success?: boolean | null
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           cashier_id: string | null
@@ -716,6 +740,15 @@ export type Database = {
       }
     }
     Functions: {
+      check_guest_order_rate_limit: {
+        Args: {
+          _ip_address: string
+          _max_attempts: number
+          _order_id: string
+          _window_minutes: number
+        }
+        Returns: boolean
+      }
       cleanup_old_guest_order_lookups: { Args: never; Returns: number }
       get_guest_order: {
         Args: { _order_id: string; _order_token: string }
