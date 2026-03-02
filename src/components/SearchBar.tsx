@@ -11,7 +11,17 @@ interface ProductSuggestion {
   category: string;
   image_url: string | null;
   retail_price: number;
+  type: 'product';
 }
+
+interface CategorySuggestion {
+  id: string;
+  name: string;
+  slug: string;
+  type: 'category';
+}
+
+type Suggestion = ProductSuggestion | CategorySuggestion;
 
 interface SearchBarProps {
   className?: string;
@@ -21,7 +31,7 @@ interface SearchBarProps {
 
 const SearchBar = ({ className, placeholder = "Search products...", isMobile = false }: SearchBarProps) => {
   const [query, setQuery] = useState('');
-  const [suggestions, setSuggestions] = useState<ProductSuggestion[]>([]);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
@@ -39,16 +49,40 @@ const SearchBar = ({ className, placeholder = "Search products...", isMobile = f
 
     setIsLoading(true);
     try {
-      // Search products from database - escape special characters for ilike
       const escapedQuery = searchQuery.replace(/[%_]/g, '\\$&');
-      const { data, error } = await supabase
+      
+      // Search products
+      const { data: products, error: prodError } = await supabase
         .from('products')
         .select('id, name, category, image_url, retail_price')
         .or(`name.ilike.%${escapedQuery}%,category.ilike.%${escapedQuery}%,subcategory.ilike.%${escapedQuery}%`)
-        .limit(8);
+        .limit(6);
 
-      if (error) throw error;
-      setSuggestions(data || []);
+      // Search categories
+      const { data: categories, error: catError } = await supabase
+        .from('categories')
+        .select('id, name, slug')
+        .ilike('name', `%${escapedQuery}%`)
+        .eq('is_active', true)
+        .limit(3);
+
+      const results: Suggestion[] = [];
+      
+      // Add category matches first
+      if (!catError && categories) {
+        categories.forEach(cat => {
+          results.push({ ...cat, type: 'category' });
+        });
+      }
+      
+      // Add product matches
+      if (!prodError && products) {
+        products.forEach(prod => {
+          results.push({ ...prod, type: 'product' });
+        });
+      }
+
+      setSuggestions(results);
     } catch (err) {
       console.error('Search error:', err);
       setSuggestions([]);
@@ -117,12 +151,15 @@ const SearchBar = ({ className, placeholder = "Search products...", isMobile = f
     }
   };
 
-  const handleSuggestionClick = (suggestion: ProductSuggestion) => {
-    // Blur input to hide keyboard
+  const handleSuggestionClick = (suggestion: Suggestion) => {
     inputRef.current?.blur();
     setShowSuggestions(false);
     setQuery('');
-    navigate(`/products/${suggestion.id}`);
+    if (suggestion.type === 'category') {
+      navigate(`/products?category=${(suggestion as CategorySuggestion).slug}`);
+    } else {
+      navigate(`/product/${suggestion.id}`);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -202,7 +239,7 @@ const SearchBar = ({ className, placeholder = "Search products...", isMobile = f
           ) : suggestions.length > 0 ? (
             <ul className="py-1">
               {suggestions.map((suggestion, index) => (
-                <li key={suggestion.id}>
+                <li key={`${suggestion.type}-${suggestion.id}`}>
                   <button
                     type="button"
                     onClick={() => handleSuggestionClick(suggestion)}
@@ -212,7 +249,7 @@ const SearchBar = ({ className, placeholder = "Search products...", isMobile = f
                     )}
                   >
                     <div className="w-10 h-10 rounded-md bg-muted overflow-hidden flex-shrink-0">
-                      {suggestion.image_url ? (
+                      {suggestion.type === 'product' && suggestion.image_url ? (
                         <img
                           src={suggestion.image_url}
                           alt={suggestion.name}
@@ -226,11 +263,15 @@ const SearchBar = ({ className, placeholder = "Search products...", isMobile = f
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm truncate">{suggestion.name}</p>
-                      <p className="text-xs text-muted-foreground">{suggestion.category}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {suggestion.type === 'category' ? 'Category' : suggestion.category}
+                      </p>
                     </div>
-                    <span className="text-sm font-semibold text-primary">
-                      Ksh {suggestion.retail_price}
-                    </span>
+                    {suggestion.type === 'product' && (
+                      <span className="text-sm font-semibold text-primary">
+                        Ksh {suggestion.retail_price}
+                      </span>
+                    )}
                   </button>
                 </li>
               ))}

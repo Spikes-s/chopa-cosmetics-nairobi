@@ -6,15 +6,17 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { CartProvider } from "@/context/CartContext";
-import { AuthProvider } from "@/context/AuthContext";
+import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import LoadingScreen from "@/components/LoadingScreen";
 import ScrollToTop from "@/components/ScrollToTop";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ChatWidget from "@/components/ChatWidget";
+import FloatingCartButton from "@/components/FloatingCartButton";
 import CartNotification from "@/components/CartNotification";
 import TermsAcceptanceModal from "@/components/TermsAcceptanceModal";
+import AuthModal from "@/components/AuthModal";
 import MaintenanceScreen from "@/components/MaintenanceScreen";
 import { useTermsAcceptance } from "@/hooks/useTermsAcceptance";
 import { usePageVisit } from "@/hooks/usePageVisit";
@@ -42,10 +44,12 @@ const FIRST_VISIT_KEY = 'chopa-first-visit';
 const AppContent = () => {
   const [showLoading, setShowLoading] = useState(false);
   const [isFirstVisit, setIsFirstVisit] = useState(true);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const location = useLocation();
   const { needsAcceptance, isLoading: termsLoading, markAsAccepted } = useTermsAcceptance();
   const { isBlocked, isLoading: siteStatusLoading } = useSiteStatus();
   const { showCartNotification, hideCartNotification } = useCart();
+  const { user } = useAuth();
   // Track page visits
   usePageVisit();
 
@@ -57,6 +61,10 @@ const AppContent = () => {
       setIsFirstVisit(true);
     } else {
       setIsFirstVisit(false);
+      // If already visited but not logged in, show auth modal
+      if (!user) {
+        setShowAuthModal(true);
+      }
     }
   }, []);
 
@@ -64,7 +72,18 @@ const AppContent = () => {
     sessionStorage.setItem(FIRST_VISIT_KEY, 'true');
     setShowLoading(false);
     setIsFirstVisit(false);
-  }, []);
+    // Show auth modal after intro animation if not logged in
+    if (!user) {
+      setShowAuthModal(true);
+    }
+  }, [user]);
+
+  // Close auth modal when user logs in
+  useEffect(() => {
+    if (user) {
+      setShowAuthModal(false);
+    }
+  }, [user]);
 
   if (showLoading && isFirstVisit) {
     return <LoadingScreen onComplete={handleLoadingComplete} />;
@@ -72,9 +91,9 @@ const AppContent = () => {
 
   const isAdminRoute = location.pathname.startsWith('/admin');
   const isTermsPage = location.pathname === '/terms';
+  const isAuthPage = location.pathname === '/auth';
 
   // Show maintenance screen for non-admin users when site is shutdown
-  // Allow access to admin routes so admins can restore the site
   if (isBlocked && !isAdminRoute && !siteStatusLoading) {
     return <MaintenanceScreen />;
   }
@@ -102,11 +121,17 @@ const AppContent = () => {
       </main>
       {!isAdminRoute && <Footer />}
       {!isAdminRoute && <ChatWidget />}
+      {!isAdminRoute && <FloatingCartButton />}
       
       {/* Cart notification banner */}
       <CartNotification show={showCartNotification} onClose={hideCartNotification} />
       
-      {/* Terms acceptance modal - only show if not on terms page and not loading */}
+      {/* Auth modal - shown after intro animation */}
+      {!isAuthPage && !isAdminRoute && (
+        <AuthModal open={showAuthModal} onClose={() => setShowAuthModal(false)} />
+      )}
+      
+      {/* Terms acceptance modal */}
       {!termsLoading && !isTermsPage && !isAdminRoute && (
         <TermsAcceptanceModal 
           open={needsAcceptance} 

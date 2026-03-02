@@ -89,14 +89,6 @@ const BranchMap = () => {
     }
   };
 
-  const handleViewInMaps = (branch: Branch) => {
-    if (branch.latitude && branch.longitude) {
-      window.open(
-        `https://www.google.com/maps?q=${branch.latitude},${branch.longitude}`,
-        '_blank'
-      );
-    }
-  };
 
   if (loading) {
     return (
@@ -222,15 +214,6 @@ const BranchMap = () => {
                 >
                   <Navigation className="w-4 h-4" />
                   Get Directions
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleViewInMaps(selectedBranch)}
-                  className="gap-2"
-                >
-                  <MapPin className="w-4 h-4" />
-                  View in Maps
                 </Button>
               </div>
 

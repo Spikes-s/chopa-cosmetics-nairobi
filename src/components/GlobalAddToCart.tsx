@@ -90,9 +90,8 @@ const GlobalAddToCart = ({ product, onClose }: GlobalAddToCartProps) => {
         )}
 
         <Button
-          variant="gradient"
           size="lg"
-          className="w-full"
+          className="w-full bg-green-600 hover:bg-green-700 text-white"
           onClick={handleAddToCart}
           disabled={product.inStock === false}
         >
