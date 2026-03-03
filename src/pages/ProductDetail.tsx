@@ -5,13 +5,6 @@ import { Button } from '@/components/ui/button';
 import { useCart } from '@/context/CartContext';
 import { toast } from 'sonner';
 import { ShoppingCart, Minus, Plus, ArrowLeft, Check, AlertCircle } from 'lucide-react';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import ProductReviews from '@/components/ProductReviews';
 
 interface DBProduct {
@@ -32,6 +25,7 @@ interface DBProduct {
 interface CustomColor {
   name: string;
   hex: string;
+  hex2?: string;
 }
 
 const ProductDetail = () => {
@@ -207,42 +201,75 @@ const ProductDetail = () => {
 
           {/* Options */}
           <div className="space-y-4 mb-6">
-            {/* Color Selector - Required for hair extensions with colors */}
+            {/* Color Selector - Large swatches for hair extensions */}
             {availableColors.length > 0 && (
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
+                <label className="block text-sm font-medium text-foreground mb-3">
                   Color {isHairExtension && <span className="text-destructive">*</span>}
                 </label>
-                <Select value={selectedColor} onValueChange={setSelectedColor}>
-                  <SelectTrigger className={`w-full ${isHairExtension && !selectedColor && 'border-destructive/50'}`}>
-                    <SelectValue placeholder="Select color" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-60">
-                    {availableColors.map((color) => (
-                      <SelectItem key={color.name} value={color.name}>
-                        <div className="flex items-center gap-2">
-                          <div 
-                            className="w-4 h-4 rounded-full border border-border"
+                <div className="flex flex-wrap gap-3">
+                  {availableColors.map((color) => {
+                    const isSelected = selectedColor === color.name;
+                    return (
+                      <button
+                        key={color.name}
+                        type="button"
+                        onClick={() => setSelectedColor(color.name)}
+                        className={`flex flex-col items-center gap-1.5 p-2 rounded-xl border-2 transition-all ${
+                          isSelected 
+                            ? 'border-primary ring-2 ring-primary/30 bg-primary/5' 
+                            : 'border-border hover:border-primary/50'
+                        }`}
+                      >
+                        {color.hex2 ? (
+                          <svg width={48} height={48}>
+                            <defs>
+                              <linearGradient id={`detail-grad-${color.name}`} x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor={color.hex} />
+                                <stop offset="45%" stopColor={color.hex} />
+                                <stop offset="55%" stopColor={color.hex2} />
+                                <stop offset="100%" stopColor={color.hex2} />
+                              </linearGradient>
+                            </defs>
+                            <circle cx={24} cy={24} r={22} fill={`url(#detail-grad-${color.name})`} stroke="hsl(var(--border))" strokeWidth="1" />
+                          </svg>
+                        ) : (
+                          <div
+                            className="w-12 h-12 rounded-full border border-border"
                             style={{ backgroundColor: color.hex }}
                           />
-                          {color.name}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                        )}
+                        <span className="text-xs font-medium text-foreground max-w-[60px] truncate">{color.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
                 {isHairExtension && !selectedColor && (
-                  <p className="text-xs text-destructive mt-1 flex items-center gap-1">
+                  <p className="text-xs text-destructive mt-2 flex items-center gap-1">
                     <AlertCircle className="w-3 h-3" /> Please select a color
                   </p>
                 )}
                 {selectedColorData && (
-                  <div className="mt-2 flex items-center gap-2">
-                    <div 
-                      className="w-6 h-6 rounded-full border border-border"
-                      style={{ backgroundColor: selectedColorData.hex }}
-                    />
-                    <span className="text-sm text-muted-foreground">
+                  <div className="mt-3 flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                    {selectedColorData.hex2 ? (
+                      <svg width={36} height={36}>
+                        <defs>
+                          <linearGradient id="selected-grad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor={selectedColorData.hex} />
+                            <stop offset="45%" stopColor={selectedColorData.hex} />
+                            <stop offset="55%" stopColor={selectedColorData.hex2} />
+                            <stop offset="100%" stopColor={selectedColorData.hex2} />
+                          </linearGradient>
+                        </defs>
+                        <circle cx={18} cy={18} r={16} fill="url(#selected-grad)" stroke="hsl(var(--border))" strokeWidth="1" />
+                      </svg>
+                    ) : (
+                      <div
+                        className="w-9 h-9 rounded-full border border-border"
+                        style={{ backgroundColor: selectedColorData.hex }}
+                      />
+                    )}
+                    <span className="text-sm font-medium text-foreground">
                       Selected: {selectedColorData.name}
                     </span>
                   </div>

@@ -60,17 +60,46 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setIsLoading(false);
     });
 
-    // Auto-logout on tab close
+    // Auto-logout on tab/browser close (not on reload)
     const handleBeforeUnload = () => {
-      // Signal logout before tab closes (cart is already saved in CartContext)
+      // Set a flag; if user returns (reload), we'll clear it
+      sessionStorage.setItem('chopa_closing', 'true');
+    };
+
+    // On load, check if we were closing (means tab was closed and reopened = new session)
+    const wasClosing = sessionStorage.getItem('chopa_closing');
+    if (wasClosing) {
+      sessionStorage.removeItem('chopa_closing');
+      // Tab was closed then reopened — sign out to force re-login
       supabase.auth.signOut();
+    }
+
+    // Use visibilitychange + timeout to detect real tab close vs reload
+    let closeTimeout: ReturnType<typeof setTimeout> | null = null;
+    
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        // Start a timeout — if we don't come back in 3s, sign out
+        closeTimeout = setTimeout(() => {
+          supabase.auth.signOut();
+        }, 3000);
+      } else {
+        // User came back (tab switch or reload) — cancel the logout
+        if (closeTimeout) {
+          clearTimeout(closeTimeout);
+          closeTimeout = null;
+        }
+      }
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       subscription.unsubscribe();
       window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (closeTimeout) clearTimeout(closeTimeout);
     };
   }, []);
 
