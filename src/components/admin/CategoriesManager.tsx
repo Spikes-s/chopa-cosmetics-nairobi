@@ -260,14 +260,48 @@ const CategoriesManager = () => {
                 />
               </div>
 
+              {/* Category Image Section */}
               <div className="space-y-2">
-                <Label htmlFor="image_url">Image URL (optional)</Label>
-                <Input
-                  id="image_url"
-                  value={formData.image_url}
-                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                  placeholder="https://..."
-                />
+                <Label>Category Image</Label>
+                {formData.image_url && (
+                  <div className="w-full h-32 rounded-lg overflow-hidden border border-border mb-2">
+                    <img src={formData.image_url} alt="Preview" className="w-full h-full object-cover" />
+                  </div>
+                )}
+                <div className="space-y-2">
+                  <Label htmlFor="image_url" className="text-xs text-muted-foreground">Paste Image URL</Label>
+                  <Input
+                    id="image_url"
+                    value={formData.image_url}
+                    onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                    placeholder="https://..."
+                  />
+                  <Label className="text-xs text-muted-foreground">Or upload from device</Label>
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      if (file.size > 5 * 1024 * 1024) {
+                        toast({ title: 'File too large', description: 'Max 5MB', variant: 'destructive' });
+                        return;
+                      }
+                      const ext = file.name.split('.').pop();
+                      const path = `categories/${Date.now()}.${ext}`;
+                      const { error: uploadError } = await supabase.storage
+                        .from('product-images')
+                        .upload(path, file);
+                      if (uploadError) {
+                        toast({ title: 'Upload failed', description: uploadError.message, variant: 'destructive' });
+                        return;
+                      }
+                      const { data: urlData } = supabase.storage.from('product-images').getPublicUrl(path);
+                      setFormData({ ...formData, image_url: urlData.publicUrl });
+                      toast({ title: 'Image uploaded' });
+                    }}
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -313,9 +347,15 @@ const CategoriesManager = () => {
           <Card key={category.id} className="glass-card">
             <CardContent className="flex items-center justify-between p-4">
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
-                  <FolderTree className="w-5 h-5 text-primary" />
-                </div>
+                {category.image_url ? (
+                  <div className="w-10 h-10 rounded-lg overflow-hidden border border-border">
+                    <img src={category.image_url} alt={category.name} className="w-full h-full object-cover" />
+                  </div>
+                ) : (
+                  <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
+                    <FolderTree className="w-5 h-5 text-primary" />
+                  </div>
+                )}
                 <div>
                   <h3 className="font-semibold">{category.name}</h3>
                   <div className="flex flex-wrap gap-1 mt-1">

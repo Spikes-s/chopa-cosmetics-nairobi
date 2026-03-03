@@ -3,7 +3,8 @@ import { useTheme } from '@/context/ThemeContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { MapPin, Navigation, Phone, Mail, Route } from 'lucide-react';
+import { MapPin, Phone, Mail } from 'lucide-react';
+import FullscreenMapModal from '@/components/FullscreenMapModal';
 
 interface StartingPoint {
   name: string;
@@ -77,18 +78,7 @@ const BranchMap = () => {
     setLoading(false);
   };
 
-  const handleGetDirections = (branch: Branch, startingPoint?: StartingPoint) => {
-    if (branch.latitude && branch.longitude) {
-      let url = `https://www.google.com/maps/dir/?api=1&destination=${branch.latitude},${branch.longitude}`;
-      
-      if (startingPoint) {
-        url += `&origin=${startingPoint.latitude},${startingPoint.longitude}`;
-      }
-      
-      window.open(url, '_blank');
-    }
-  };
-
+  const [fullscreenMap, setFullscreenMap] = useState(false);
 
   if (loading) {
     return (
@@ -143,24 +133,30 @@ const BranchMap = () => {
         </div>
       )}
 
-      {/* Map Container */}
-      <Card variant="glass" className="overflow-hidden">
+      {/* Map Container - tap to open fullscreen */}
+      <Card variant="glass" className="overflow-hidden cursor-pointer" onClick={() => setFullscreenMap(true)}>
         <div 
           className={`w-full h-64 md:h-80 relative ${
             theme === 'dark' ? 'brightness-75 contrast-125 invert hue-rotate-180' : ''
           }`}
         >
           {mapUrl ? (
-            <iframe
-              src={mapUrl}
-              width="100%"
-              height="100%"
-              style={{ border: 0 }}
-              allowFullScreen
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              title={`Map showing ${selectedBranch?.name}`}
-            />
+            <>
+              <iframe
+                src={mapUrl}
+                width="100%"
+                height="100%"
+                style={{ border: 0, pointerEvents: 'none' }}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                title={`Map showing ${selectedBranch?.name}`}
+              />
+              <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/0 hover:bg-black/10 transition-colors">
+                <span className="px-3 py-1.5 rounded-full bg-background/80 text-foreground text-xs font-medium opacity-0 hover:opacity-100 transition-opacity">
+                  Tap to expand
+                </span>
+              </div>
+            </>
           ) : (
             <div className="flex items-center justify-center h-full bg-muted">
               <p className="text-muted-foreground">Map not available</p>
@@ -168,6 +164,17 @@ const BranchMap = () => {
           )}
         </div>
       </Card>
+
+      {/* Fullscreen Map Modal */}
+      {selectedBranch?.latitude && selectedBranch?.longitude && (
+        <FullscreenMapModal
+          isOpen={fullscreenMap}
+          onClose={() => setFullscreenMap(false)}
+          latitude={selectedBranch.latitude}
+          longitude={selectedBranch.longitude}
+          branchName={selectedBranch.name}
+        />
+      )}
 
       {/* Branch Info */}
       {selectedBranch && (
@@ -203,43 +210,17 @@ const BranchMap = () => {
               )}
             </div>
 
-            {/* Directions Buttons */}
-            <div className="space-y-3 pt-2">
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={() => handleGetDirections(selectedBranch)}
-                  className="gap-2"
-                >
-                  <Navigation className="w-4 h-4" />
-                  Get Directions
-                </Button>
-              </div>
-
-              {/* Starting Points for Directions */}
-              {startingPoints.length > 0 && (
-                <div className="pt-2 border-t border-border">
-                  <p className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
-                    <Route className="w-4 h-4 text-destructive" />
-                    Quick Directions From:
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {startingPoints.map((point, index) => (
-                      <Button
-                        key={index}
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleGetDirections(selectedBranch, point)}
-                        className="gap-2 border-destructive/30 hover:border-destructive hover:bg-destructive/10"
-                      >
-                        <div className="w-2 h-2 rounded-full bg-destructive" />
-                        {point.name}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              )}
+            {/* Tap map to view fullscreen */}
+            <div className="pt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setFullscreenMap(true)}
+                className="gap-2"
+              >
+                <MapPin className="w-4 h-4" />
+                View Full Map
+              </Button>
             </div>
           </CardContent>
         </Card>
