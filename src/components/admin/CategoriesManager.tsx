@@ -283,6 +283,10 @@ const CategoriesManager = () => {
                     onChange={async (e) => {
                       const file = e.target.files?.[0];
                       if (!file) return;
+                      if (!file.type.startsWith('image/')) {
+                        toast({ title: 'Invalid file type', description: 'Please select an image file', variant: 'destructive' });
+                        return;
+                      }
                       if (file.size > 5 * 1024 * 1024) {
                         toast({ title: 'File too large', description: 'Max 5MB', variant: 'destructive' });
                         return;
