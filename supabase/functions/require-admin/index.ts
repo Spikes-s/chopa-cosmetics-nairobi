@@ -4,7 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 serve(async (req) => {
@@ -30,7 +30,7 @@ serve(async (req) => {
     }
 
     const authHeader = req.headers.get("authorization");
-    if (!authHeader) {
+    if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Authentication required" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -42,17 +42,17 @@ serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     });
 
-    const {
-      data: { user },
-      error: userError,
-    } = await supabaseAuth.auth.getUser();
+    const token = authHeader.replace("Bearer ", "");
+    const { data, error: claimsError } = await supabaseAuth.auth.getClaims(token);
 
-    if (userError || !user) {
+    if (claimsError || !data?.claims) {
       return new Response(JSON.stringify({ error: "Invalid authentication" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const userId = data.claims.sub;
 
     // Service-role client bypasses RLS so role checks work even if user_roles is locked down.
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
@@ -62,7 +62,7 @@ serve(async (req) => {
     const { data: roleRow, error: roleError } = await supabaseAdmin
       .from("user_roles")
       .select("role")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .in("role", ["admin", "super_admin"])
       .limit(1)
       .maybeSingle();
