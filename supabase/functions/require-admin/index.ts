@@ -42,17 +42,19 @@ serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     });
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data, error: claimsError } = await supabaseAuth.auth.getClaims(token);
+    const {
+      data: { user },
+      error: userError,
+    } = await supabaseAuth.auth.getUser();
 
-    if (claimsError || !data?.claims) {
+    if (userError || !user) {
       return new Response(JSON.stringify({ error: "Invalid authentication" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const userId = data.claims.sub;
+    const userId = user.id;
 
     // Service-role client bypasses RLS so role checks work even if user_roles is locked down.
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
