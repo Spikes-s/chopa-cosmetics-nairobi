@@ -76,6 +76,9 @@ const ProductsManager = () => {
     stock_quantity: '0',
     expiry_date: '',
     colors: [] as CustomColor[],
+    sale_price: '',
+    sale_ends_at: '',
+    sale_label: '',
   });
 
   const fetchCategories = async () => {
