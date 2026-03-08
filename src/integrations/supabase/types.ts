@@ -437,6 +437,9 @@ export type Database = {
           in_stock: boolean | null
           name: string
           retail_price: number
+          sale_ends_at: string | null
+          sale_label: string | null
+          sale_price: number | null
           stock_quantity: number | null
           subcategory: string | null
           updated_at: string
@@ -458,6 +461,9 @@ export type Database = {
           in_stock?: boolean | null
           name: string
           retail_price: number
+          sale_ends_at?: string | null
+          sale_label?: string | null
+          sale_price?: number | null
           stock_quantity?: number | null
           subcategory?: string | null
           updated_at?: string
@@ -479,6 +485,9 @@ export type Database = {
           in_stock?: boolean | null
           name?: string
           retail_price?: number
+          sale_ends_at?: string | null
+          sale_label?: string | null
+          sale_price?: number | null
           stock_quantity?: number | null
           subcategory?: string | null
           updated_at?: string

@@ -47,7 +47,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
   };
 
   return (
-    <Card variant="gradient" className="group overflow-hidden hover:shadow-xl hover:shadow-primary/20 transition-all duration-500">
+    <Card variant="gradient" className="group overflow-hidden hover:shadow-xl hover:shadow-accent/10 transition-all duration-500 sparkle-hover hover:gold-glow">
       <Link to={`/product/${product.id}`}>
         <div className="relative aspect-square overflow-hidden bg-muted/30">
           <img

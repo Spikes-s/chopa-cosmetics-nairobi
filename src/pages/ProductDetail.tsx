@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { ShoppingCart, Minus, Plus, ArrowLeft, Check, AlertCircle } from 'lucide-react';
 import ProductReviews from '@/components/ProductReviews';
 import ProductGallery from '@/components/ProductGallery';
+import SmartRecommendations from '@/components/SmartRecommendations';
 
 interface DBProduct {
   id: string;
@@ -318,6 +319,12 @@ const ProductDetail = () => {
       </div>
 
       <ProductReviews productId={id || ''} />
+
+      <SmartRecommendations 
+        currentProductId={id || ''} 
+        category={product.category}
+        subcategory={product.subcategory}
+      />
     </div>
   );
 };
