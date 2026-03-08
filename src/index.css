@@ -42,6 +42,8 @@
     --gradient-card: linear-gradient(145deg, hsl(270, 40%, 8%) 0%, hsl(280, 35%, 6%) 100%);
     --gradient-button: linear-gradient(135deg, hsl(280, 60%, 55%) 0%, hsl(320, 70%, 50%) 100%);
     --gradient-gold: linear-gradient(135deg, hsl(45, 100%, 60%) 0%, hsl(35, 100%, 50%) 100%);
+    --gold: 45 100% 60%;
+    --gold-foreground: 270 50% 5%;
     
     --shadow-glow: 0 0 40px hsl(280, 60%, 40%, 0.3);
     --shadow-card: 0 10px 40px -10px hsl(280, 60%, 20%, 0.5);
