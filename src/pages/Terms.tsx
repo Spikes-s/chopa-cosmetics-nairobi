@@ -85,13 +85,19 @@ const Terms = () => {
           </ReactMarkdown>
         </div>
         
-        {version && (
-          <div className="mt-8 pt-4 border-t border-border">
+        <div className="mt-8 pt-4 border-t border-border space-y-2">
+          {version && (
             <p className="text-xs text-muted-foreground text-center">
               Terms Version: {version}
             </p>
-          </div>
-        )}
+          )}
+          <p className="text-sm text-muted-foreground text-center">
+            Please also review our{' '}
+            <a href="/privacy" className="text-primary underline hover:text-primary/80 transition-colors">
+              Privacy Policy
+            </a>.
+          </p>
+        </div>
       </div>
     </div>
   );
