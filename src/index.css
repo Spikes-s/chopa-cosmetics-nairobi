@@ -452,6 +452,40 @@
   background: hsl(var(--secondary));
 }
 
+/* Gold sparkle effect on product card hover */
+@keyframes sparkle {
+  0%, 100% { opacity: 0; transform: scale(0) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1) rotate(180deg); }
+}
+
+.sparkle-hover {
+  position: relative;
+  overflow: hidden;
+}
+
+.sparkle-hover::after {
+  content: '✦';
+  position: absolute;
+  top: 10%;
+  right: 10%;
+  font-size: 1rem;
+  color: hsl(var(--accent));
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+  animation: sparkle 1.5s ease-in-out infinite;
+}
+
+.sparkle-hover:hover::after {
+  opacity: 1;
+}
+
+.gold-glow {
+  box-shadow: 0 0 20px hsl(45, 100%, 60%, 0.15), 0 0 60px hsl(45, 100%, 60%, 0.05);
+}
+
+
+
 /* Print styles for POS receipts */
 @media print {
   body * {
