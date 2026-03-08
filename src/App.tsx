@@ -18,6 +18,7 @@ import CartNotification from "@/components/CartNotification";
 import TermsAcceptanceModal from "@/components/TermsAcceptanceModal";
 import AuthModal from "@/components/AuthModal";
 import MaintenanceScreen from "@/components/MaintenanceScreen";
+import CookieConsent from "@/components/CookieConsent";
 import { useTermsAcceptance } from "@/hooks/useTermsAcceptance";
 import { usePageVisit } from "@/hooks/usePageVisit";
 import { useSiteStatus } from "@/hooks/useSiteStatus";
