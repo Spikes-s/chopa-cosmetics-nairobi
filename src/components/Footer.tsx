@@ -1,11 +1,21 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Phone, MapPin, Clock, ExternalLink } from 'lucide-react';
+import { Phone, MapPin, Clock, ExternalLink, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 
 const Footer = () => {
   const [mapLocation, setMapLocation] = useState<string | null>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
 
   useEffect(() => {
     const fetchMapLocation = async () => {
@@ -126,6 +136,36 @@ const Footer = () => {
             </Button>
           </div>
         </div>
+
+        {/* Install App Banner */}
+        {deferredPrompt && (
+          <div className="border-t border-border mt-8 pt-6 pb-2">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-primary/10 rounded-xl p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
+                  <Download className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-semibold text-sm text-foreground">Install Chopa App</p>
+                  <p className="text-xs text-muted-foreground">Get faster access & offline browsing</p>
+                </div>
+              </div>
+              <Button
+                variant="gradient"
+                size="sm"
+                onClick={async () => {
+                  if (!deferredPrompt) return;
+                  deferredPrompt.prompt();
+                  await deferredPrompt.userChoice;
+                  setDeferredPrompt(null);
+                }}
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Install App
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Bottom Bar */}
         <div className="border-t border-border mt-8 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
