@@ -140,6 +140,12 @@ const Header = () => {
                         </DropdownMenuSubContent>
                       </DropdownMenuPortal>
                     </DropdownMenuSub>
+                    <DropdownMenuItem asChild>
+                      <Link to="/my-orders" className="w-full cursor-pointer">
+                        <Package className="w-4 h-4 mr-2" />
+                        My Orders
+                      </Link>
+                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => setChangePasswordOpen(true)} className="cursor-pointer">
                       <KeyRound className="w-4 h-4 mr-2" />
