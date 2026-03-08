@@ -313,16 +313,35 @@ const ChatWidget = () => {
                   <>
                     {/* Messages area */}
                     <div className="h-72 overflow-y-auto p-3 space-y-3">
-                      {messages.length === 0 && !isAiTyping ? (
-                        <div className="h-full flex items-center justify-center text-center">
-                          <div>
-                            <Bot className="w-10 h-10 mx-auto mb-2 text-primary/50" />
-                            <p className="text-sm text-muted-foreground">
-                              Hi! 👋 I'm your AI assistant.
-                            </p>
-                            <p className="text-xs text-muted-foreground/70 mt-1">
-                              Ask me about products, orders, or our store!
-                            </p>
+                    {messages.length === 0 && !isAiTyping ? (
+                        <div className="h-full flex flex-col items-center justify-center text-center px-2">
+                          <Bot className="w-10 h-10 mx-auto mb-2 text-primary/50" />
+                          <p className="text-sm text-muted-foreground mb-3">
+                            Hi! 👋 How can I help you?
+                          </p>
+                          <div className="grid grid-cols-2 gap-2 w-full">
+                            {[
+                              { label: '📍 Store Location', msg: 'Where are you located?' },
+                              { label: '🚚 Delivery Charges', msg: 'What are your delivery charges?' },
+                              { label: '💰 Wholesale Prices', msg: 'What are your wholesale prices?' },
+                              { label: '📦 Product Availability', msg: 'How can I check product availability?' },
+                            ].map((qr) => (
+                              <button
+                                key={qr.label}
+                                type="button"
+                                onClick={() => {
+                                  setNewMessage(qr.msg);
+                                  // Auto-send after a tick
+                                  setTimeout(() => {
+                                    const form = document.getElementById('chat-form') as HTMLFormElement;
+                                    form?.requestSubmit();
+                                  }, 50);
+                                }}
+                                className="text-xs px-2 py-2 rounded-lg border border-primary/20 bg-primary/5 hover:bg-primary/10 text-foreground transition-colors text-left"
+                              >
+                                {qr.label}
+                              </button>
+                            ))}
                           </div>
                         </div>
                       ) : (
