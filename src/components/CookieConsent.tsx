@@ -56,8 +56,8 @@ const CookieConsent = () => {
             <p className="text-muted-foreground text-xs md:text-sm leading-relaxed">
               We use cookies and Google Analytics to understand how you use our site and improve your experience. 
               You can accept or decline non-essential cookies. See our{' '}
-              <a href="/terms" className="text-primary underline hover:text-primary/80 transition-colors">
-                Terms & Privacy Policy
+              <a href="/privacy" className="text-primary underline hover:text-primary/80 transition-colors">
+                Privacy Policy
               </a>{' '}
               for more details.
             </p>
