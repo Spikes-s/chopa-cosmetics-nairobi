@@ -19,6 +19,7 @@ import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import ThemeToggle from '@/components/ThemeToggle';
 import SearchBar from '@/components/SearchBar';
+import NotificationBell from '@/components/NotificationBell';
 import { useToast } from '@/hooks/use-toast';
 
 interface Category {
