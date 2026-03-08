@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, User, Menu, X, LogOut, KeyRound, ChevronRight, Loader2 } from 'lucide-react';
+import { ShoppingCart, User, Menu, X, LogOut, KeyRound, ChevronRight, Loader2, Package } from 'lucide-react';
 import ChangePasswordDialog from '@/components/ChangePasswordDialog';
 import { Button } from '@/components/ui/button';
 import {
