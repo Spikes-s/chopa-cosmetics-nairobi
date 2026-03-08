@@ -16,6 +16,7 @@ import ReturnsManager from '@/components/admin/ReturnsManager';
 import CategoriesManager from '@/components/admin/CategoriesManager';
 import RolesManager from '@/components/admin/RolesManager';
 import BranchesManager from '@/components/admin/BranchesManager';
+import BundleDealsManager from '@/components/admin/BundleDealsManager';
 import ThemeToggle from '@/components/ThemeToggle';
 import { VisitorCounter } from '@/components/admin/VisitorCounter';
 
