@@ -6,6 +6,7 @@ import { useCart } from '@/context/CartContext';
 import { toast } from 'sonner';
 import { ShoppingCart, Minus, Plus, ArrowLeft, Check, AlertCircle } from 'lucide-react';
 import ProductReviews from '@/components/ProductReviews';
+import ProductGallery from '@/components/ProductGallery';
 
 interface DBProduct {
   id: string;
@@ -26,6 +27,7 @@ interface CustomColor {
   name: string;
   hex: string;
   hex2?: string;
+  image?: string; // color-specific product image
 }
 
 const ProductDetail = () => {
@@ -65,17 +67,17 @@ const ProductDetail = () => {
     fetchProduct();
   }, [id]);
 
-  // Track viewed products for logged-in users
   useEffect(() => {
-    if (id) {
-      addViewedProduct(id);
-    }
+    if (id) addViewedProduct(id);
   }, [id, addViewedProduct]);
 
-  // Get colors from product variations
   const availableColors: CustomColor[] = product?.variations?.colors || [];
   const isHairExtension = product?.category === 'Hair Extensions';
   const canAddToCart = isHairExtension && availableColors.length > 0 ? selectedColor !== '' : true;
+
+  // Get the color-specific image if available
+  const selectedColorData = selectedColor ? availableColors.find(c => c.name === selectedColor) : null;
+  const colorImage = selectedColorData?.image || null;
 
   if (loading) {
     return (
@@ -88,15 +90,9 @@ const ProductDetail = () => {
   if (notFound || !product) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
-        <h1 className="text-2xl font-display font-bold text-foreground mb-4">
-          Product Not Found
-        </h1>
-        <p className="text-muted-foreground mb-6">
-          The product you're looking for doesn't exist or has been removed.
-        </p>
-        <Button onClick={() => navigate('/products')}>
-          Back to Products
-        </Button>
+        <h1 className="text-2xl font-display font-bold text-foreground mb-4">Product Not Found</h1>
+        <p className="text-muted-foreground mb-6">The product you're looking for doesn't exist or has been removed.</p>
+        <Button onClick={() => navigate('/products')}>Back to Products</Button>
       </div>
     );
   }
@@ -119,34 +115,33 @@ const ProductDetail = () => {
       wholesalePrice: product.wholesale_price || 0,
       quantity,
       color: selectedColor,
-      image: product.image_url || '/placeholder.svg',
+      image: colorImage || product.image_url || '/placeholder.svg',
       category: product.category,
     });
     
     toast.success(`${product.name} added to cart!`);
   };
 
-  // Get selected color data
-  const selectedColorData = selectedColor ? availableColors.find(c => c.name === selectedColor) : null;
+  // Build the gallery images - if a color-specific image exists, show it first
+  const galleryMainImage = colorImage || product.image_url || '/placeholder.svg';
+  const galleryAdditional = colorImage
+    ? [product.image_url, ...(product.additional_images || [])].filter(Boolean) as string[]
+    : product.additional_images || undefined;
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <Button
-        variant="ghost"
-        onClick={() => navigate(-1)}
-        className="mb-6"
-      >
-        <ArrowLeft className="w-4 h-4 mr-2" />
-        Back
+      <Button variant="ghost" onClick={() => navigate(-1)} className="mb-6">
+        <ArrowLeft className="w-4 h-4 mr-2" /> Back
       </Button>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-        {/* Product Image */}
-        <div className="aspect-square rounded-2xl overflow-hidden bg-muted/30 gradient-border mx-auto max-w-md lg:max-w-none w-full">
-          <img
-            src={product.image_url || '/placeholder.svg'}
-            alt={product.name}
-            className="w-full h-full object-cover"
+        {/* Product Image Gallery */}
+        <div className="mx-auto max-w-md lg:max-w-none w-full">
+          <ProductGallery
+            mainImage={galleryMainImage}
+            additionalImages={galleryAdditional}
+            productName={product.name}
+            productDescription={product.description || undefined}
           />
         </div>
 
@@ -181,8 +176,7 @@ const ProductDetail = () => {
             
             {isWholesale && product.wholesale_price && (
               <div className="flex items-center gap-2 text-accent text-sm">
-                <Check className="w-4 h-4" />
-                Wholesale price applied!
+                <Check className="w-4 h-4" /> Wholesale price applied!
               </div>
             )}
 
@@ -201,7 +195,7 @@ const ProductDetail = () => {
 
           {/* Options */}
           <div className="space-y-4 mb-6">
-            {/* Color Selector - Large swatches for hair extensions */}
+            {/* Color Selector */}
             {availableColors.length > 0 && (
               <div>
                 <label className="block text-sm font-medium text-foreground mb-3">
@@ -279,25 +273,13 @@ const ProductDetail = () => {
 
             {/* Quantity */}
             <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Quantity
-              </label>
+              <label className="block text-sm font-medium text-foreground mb-2">Quantity</label>
               <div className="flex items-center gap-3">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                >
+                <Button variant="outline" size="icon" onClick={() => setQuantity(Math.max(1, quantity - 1))}>
                   <Minus className="w-4 h-4" />
                 </Button>
-                <span className="w-12 text-center font-semibold text-foreground">
-                  {quantity}
-                </span>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setQuantity(quantity + 1)}
-                >
+                <span className="w-12 text-center font-semibold text-foreground">{quantity}</span>
+                <Button variant="outline" size="icon" onClick={() => setQuantity(quantity + 1)}>
                   <Plus className="w-4 h-4" />
                 </Button>
                 
@@ -313,9 +295,7 @@ const ProductDetail = () => {
           {/* Total */}
           <div className="flex items-center justify-between py-4 border-t border-border mb-6">
             <span className="text-lg font-medium text-foreground">Total:</span>
-            <span className="text-2xl font-bold gradient-text">
-              Ksh {totalPrice.toLocaleString()}
-            </span>
+            <span className="text-2xl font-bold gradient-text">Ksh {totalPrice.toLocaleString()}</span>
           </div>
 
           {/* Add to Cart */}
