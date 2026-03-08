@@ -228,6 +228,9 @@ const Index = () => {
       {/* Flash Sales */}
       <FlashSales />
 
+      {/* Bundle Deals */}
+      <BundleDeals />
+
       {/* Most Bought Products */}
       <section className="py-16 md:py-24 bg-card/30">
         <div className="container mx-auto px-4">

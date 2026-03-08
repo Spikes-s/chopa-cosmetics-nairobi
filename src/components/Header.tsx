@@ -146,6 +146,12 @@ const Header = () => {
                         My Orders
                       </Link>
                     </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/wallet" className="w-full cursor-pointer">
+                        <Wallet className="w-4 h-4 mr-2" />
+                        My Wallet
+                      </Link>
+                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => setChangePasswordOpen(true)} className="cursor-pointer">
                       <KeyRound className="w-4 h-4 mr-2" />

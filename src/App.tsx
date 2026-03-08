@@ -149,6 +149,7 @@ const AppContent = () => {
       
       {/* Cookie consent banner */}
       {!isAdminRoute && <CookieConsent />}
+      <PWAInstallPrompt />
     </div>
   );
 };
