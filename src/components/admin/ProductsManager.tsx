@@ -424,7 +424,7 @@ const ProductsManager = () => {
       in_stock: stockQty > 0,
       stock_quantity: stockQty,
       expiry_date: formData.expiry_date || null,
-      variations,
+      variations: finalVariations,
       sale_price: formData.sale_price ? parseFloat(formData.sale_price) : null,
       sale_ends_at: formData.sale_ends_at ? new Date(formData.sale_ends_at).toISOString() : null,
       sale_label: formData.sale_label || null,
