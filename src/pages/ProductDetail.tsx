@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ import { ShoppingCart, Minus, Plus, ArrowLeft, Check, AlertCircle } from 'lucide
 import ProductReviews from '@/components/ProductReviews';
 import ProductGallery from '@/components/ProductGallery';
 import SmartRecommendations from '@/components/SmartRecommendations';
+import ProductVariantSelector from '@/components/ProductVariantSelector';
 
 interface DBProduct {
   id: string;
@@ -28,7 +29,18 @@ interface CustomColor {
   name: string;
   hex: string;
   hex2?: string;
-  image?: string; // color-specific product image
+  image?: string;
+}
+
+interface VariantGroup {
+  type: string;
+  label: string;
+  options: { name: string; image?: string }[];
+}
+
+interface NamedImage {
+  name: string;
+  url: string;
 }
 
 const ProductDetail = () => {
@@ -42,29 +54,19 @@ const ProductDetail = () => {
   
   const [quantity, setQuantity] = useState(1);
   const [selectedColor, setSelectedColor] = useState('');
+  const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const fetchProduct = async () => {
-      if (!id) {
-        setNotFound(true);
-        setLoading(false);
-        return;
-      }
-      
+      if (!id) { setNotFound(true); setLoading(false); return; }
       const { data, error } = await supabase
         .from('products')
         .select('*')
         .eq('id', id)
         .maybeSingle();
-      
-      if (error || !data) {
-        setNotFound(true);
-      } else {
-        setProduct(data);
-      }
+      if (error || !data) { setNotFound(true); } else { setProduct(data); }
       setLoading(false);
     };
-
     fetchProduct();
   }, [id]);
 
@@ -73,12 +75,47 @@ const ProductDetail = () => {
   }, [id, addViewedProduct]);
 
   const availableColors: CustomColor[] = product?.variations?.colors || [];
+  const variantGroups: VariantGroup[] = product?.variations?.variant_groups || [];
+  const namedImages: NamedImage[] = product?.variations?.named_images || [];
   const isHairExtension = product?.category === 'Hair Extensions';
-  const canAddToCart = isHairExtension && availableColors.length > 0 ? selectedColor !== '' : true;
+  const hasColors = availableColors.length > 0;
+  const hasVariants = variantGroups.length > 0;
 
-  // Get the color-specific image if available
-  const selectedColorData = selectedColor ? availableColors.find(c => c.name === selectedColor) : null;
-  const colorImage = selectedColorData?.image || null;
+  // Determine if add-to-cart is allowed
+  const canAddToCart = useMemo(() => {
+    if (isHairExtension && hasColors && !selectedColor) return false;
+    // For non-hair products with variants, require at least one selection if variants exist
+    return true;
+  }, [isHairExtension, hasColors, selectedColor]);
+
+  // Find the best matching image based on selected options
+  // Priority: 1. Color, 2. Weight, 3. Size, 4. Quantity
+  const resolvedImage = useMemo(() => {
+    const priorities = ['color', 'weight', 'capacity', 'size', 'quantity'];
+    
+    // Check color-specific image first
+    if (selectedColor) {
+      const colorData = availableColors.find(c => c.name === selectedColor);
+      if (colorData?.image) return colorData.image;
+      // Check named images for color match
+      const namedMatch = namedImages.find(ni => ni.name.toLowerCase() === selectedColor.toLowerCase());
+      if (namedMatch) return namedMatch.url;
+    }
+
+    // Check variant selections in priority order
+    for (const type of priorities) {
+      const value = selectedVariants[type];
+      if (!value) continue;
+      const namedMatch = namedImages.find(ni => ni.name.toLowerCase() === value.toLowerCase());
+      if (namedMatch) return namedMatch.url;
+    }
+
+    return null;
+  }, [selectedColor, selectedVariants, availableColors, namedImages]);
+
+  const handleVariantChange = (type: string, value: string) => {
+    setSelectedVariants(prev => ({ ...prev, [type]: value }));
+  };
 
   if (loading) {
     return (
@@ -109,23 +146,29 @@ const ProductDetail = () => {
       return;
     }
 
+    const variantLabel = Object.entries(selectedVariants)
+      .filter(([_, v]) => v)
+      .map(([_, v]) => v)
+      .join('-');
+    const cartId = [product.id, selectedColor, variantLabel].filter(Boolean).join('-');
+
     addItem({
-      id: `${product.id}-${selectedColor}`,
+      id: cartId,
       name: product.name,
       price: product.retail_price,
       wholesalePrice: product.wholesale_price || 0,
       quantity,
       color: selectedColor,
-      image: colorImage || product.image_url || '/placeholder.svg',
+      image: resolvedImage || product.image_url || '/placeholder.svg',
       category: product.category,
     });
     
     toast.success(`${product.name} added to cart!`);
   };
 
-  // Build the gallery images - if a color-specific image exists, show it first
-  const galleryMainImage = colorImage || product.image_url || '/placeholder.svg';
-  const galleryAdditional = colorImage
+  // Build gallery images - resolved variant image takes priority
+  const galleryMainImage = resolvedImage || product.image_url || '/placeholder.svg';
+  const galleryAdditional = resolvedImage
     ? [product.image_url, ...(product.additional_images || [])].filter(Boolean) as string[]
     : product.additional_images || undefined;
 
@@ -197,7 +240,7 @@ const ProductDetail = () => {
           {/* Options */}
           <div className="space-y-4 mb-6">
             {/* Color Selector */}
-            {availableColors.length > 0 && (
+            {hasColors && (
               <div>
                 <label className="block text-sm font-medium text-foreground mb-3">
                   Color {isHairExtension && <span className="text-destructive">*</span>}
@@ -244,32 +287,22 @@ const ProductDetail = () => {
                     <AlertCircle className="w-3 h-3" /> Please select a color
                   </p>
                 )}
-                {selectedColorData && (
-                  <div className="mt-3 flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                    {selectedColorData.hex2 ? (
-                      <svg width={36} height={36}>
-                        <defs>
-                          <linearGradient id="selected-grad" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor={selectedColorData.hex} />
-                            <stop offset="45%" stopColor={selectedColorData.hex} />
-                            <stop offset="55%" stopColor={selectedColorData.hex2} />
-                            <stop offset="100%" stopColor={selectedColorData.hex2} />
-                          </linearGradient>
-                        </defs>
-                        <circle cx={18} cy={18} r={16} fill="url(#selected-grad)" stroke="hsl(var(--border))" strokeWidth="1" />
-                      </svg>
-                    ) : (
-                      <div
-                        className="w-9 h-9 rounded-full border border-border"
-                        style={{ backgroundColor: selectedColorData.hex }}
-                      />
-                    )}
-                    <span className="text-sm font-medium text-foreground">
-                      Selected: {selectedColorData.name}
-                    </span>
+                {selectedColor && (
+                  <div className="mt-3 text-sm text-muted-foreground">
+                    Selected: <span className="font-medium text-foreground">{selectedColor}</span>
                   </div>
                 )}
               </div>
+            )}
+
+            {/* Other Variant Selectors (Weight, Capacity, Size, Quantity) */}
+            {hasVariants && (
+              <ProductVariantSelector
+                variantGroups={variantGroups}
+                namedImages={namedImages}
+                selectedVariants={selectedVariants}
+                onVariantChange={handleVariantChange}
+              />
             )}
 
             {/* Quantity */}
@@ -310,7 +343,7 @@ const ProductDetail = () => {
             {canAddToCart ? 'Add to Cart' : 'Select Color Above'}
           </Button>
           
-          {isHairExtension && availableColors.length > 0 && !canAddToCart && (
+          {isHairExtension && hasColors && !canAddToCart && (
             <p className="text-sm text-muted-foreground text-center mt-2">
               Please select a color to add to cart
             </p>

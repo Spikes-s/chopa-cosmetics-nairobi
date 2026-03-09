@@ -12,6 +12,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Plus, Pencil, Trash2, Search, Upload, Image, X, AlertTriangle, Calendar, Palette } from 'lucide-react';
 import { format, parseISO, differenceInDays, addMonths, isBefore } from 'date-fns';
 import ColorPickerDialog from './ColorPickerDialog';
+import VariantManager, { VariantGroup } from './VariantManager';
+import NamedImageUploader, { NamedImage } from './NamedImageUploader';
 
 interface CustomColor {
   name: string;
@@ -79,6 +81,8 @@ const ProductsManager = () => {
     sale_price: '',
     sale_ends_at: '',
     sale_label: '',
+    variant_groups: [] as VariantGroup[],
+    named_images: [] as NamedImage[],
   });
 
   const fetchCategories = async () => {
@@ -148,6 +152,8 @@ const ProductsManager = () => {
       sale_price: '',
       sale_ends_at: '',
       sale_label: '',
+      variant_groups: [],
+      named_images: [],
     });
     setEditingProduct(null);
   };
@@ -174,6 +180,8 @@ const ProductsManager = () => {
       sale_price: (product as any).sale_price?.toString() || '',
       sale_ends_at: (product as any).sale_ends_at ? new Date((product as any).sale_ends_at).toISOString().slice(0, 16) : '',
       sale_label: (product as any).sale_label || '',
+      variant_groups: variations?.variant_groups || [],
+      named_images: variations?.named_images || [],
     });
     setIsDialogOpen(true);
   };
@@ -389,10 +397,18 @@ const ProductsManager = () => {
 
     const stockQty = parseInt(formData.stock_quantity) || 0;
     
-    // Build variations object with colors - cast to any for JSON compatibility
-    const variations = formData.colors.length > 0 
-      ? { colors: formData.colors.map(c => ({ name: c.name, hex: c.hex })) } as any
-      : null;
+    // Build variations object - cast to any for JSON compatibility
+    const variations: any = {};
+    if (formData.colors.length > 0) {
+      variations.colors = formData.colors.map(c => ({ name: c.name, hex: c.hex, ...(c as any).hex2 ? { hex2: (c as any).hex2 } : {} }));
+    }
+    if (formData.variant_groups.length > 0) {
+      variations.variant_groups = formData.variant_groups;
+    }
+    if (formData.named_images.length > 0) {
+      variations.named_images = formData.named_images;
+    }
+    const finalVariations = Object.keys(variations).length > 0 ? variations : null;
 
     const productData = {
       name: formData.name,
@@ -408,7 +424,7 @@ const ProductsManager = () => {
       in_stock: stockQty > 0,
       stock_quantity: stockQty,
       expiry_date: formData.expiry_date || null,
-      variations,
+      variations: finalVariations,
       sale_price: formData.sale_price ? parseFloat(formData.sale_price) : null,
       sale_ends_at: formData.sale_ends_at ? new Date(formData.sale_ends_at).toISOString() : null,
       sale_label: formData.sale_label || null,
@@ -783,6 +799,18 @@ const ProductsManager = () => {
                   )}
                 </div>
               )}
+
+              {/* Variant Groups (Weight, Capacity, Size, Quantity) */}
+              <VariantManager
+                variantGroups={formData.variant_groups}
+                onChange={(groups) => setFormData({ ...formData, variant_groups: groups })}
+              />
+
+              {/* Named Images for Variant Linking */}
+              <NamedImageUploader
+                namedImages={formData.named_images}
+                onChange={(images) => setFormData({ ...formData, named_images: images })}
+              />
 
               {/* Flash Sale Section */}
               <div className="space-y-3 p-4 rounded-lg border border-destructive/30 bg-destructive/5">
