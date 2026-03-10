@@ -150,7 +150,8 @@ const ProductDetail = () => {
 
   const wholesaleThreshold = product.wholesale_min_qty || 6;
   const isWholesale = quantity >= wholesaleThreshold;
-  const currentPrice = isWholesale && product.wholesale_price ? product.wholesale_price : product.retail_price;
+  const baseRetailPrice = variantPrice ?? product.retail_price;
+  const currentPrice = isWholesale && product.wholesale_price ? product.wholesale_price : baseRetailPrice;
   const totalPrice = currentPrice * quantity;
 
   const handleAddToCart = () => {
