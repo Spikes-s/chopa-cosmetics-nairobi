@@ -240,7 +240,8 @@ const ProductDetail = () => {
 
             <div className="mt-4 pt-4 border-t border-border">
               <p className="text-sm text-muted-foreground">
-                <span className="text-foreground font-medium">Retail:</span> Ksh {product.retail_price.toLocaleString()}
+                <span className="text-foreground font-medium">Retail:</span> Ksh {baseRetailPrice.toLocaleString()}
+                {variantPrice && <span className="text-xs ml-1 text-primary">(variant price)</span>}
               </p>
               {product.wholesale_price && (
                 <p className="text-sm text-muted-foreground">
