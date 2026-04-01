@@ -891,17 +891,22 @@ export type Database = {
           category: string | null
           created_at: string | null
           description: string | null
+          display_section: string | null
           expiry_date: string | null
           id: string | null
           image_url: string | null
           in_stock: boolean | null
           name: string | null
           retail_price: number | null
+          sale_ends_at: string | null
+          sale_label: string | null
+          sale_price: number | null
           stock_quantity: number | null
           subcategory: string | null
           updated_at: string | null
           variations: Json | null
           wholesale_min_qty: number | null
+          wholesale_price: number | null
         }
         Insert: {
           additional_images?: string[] | null
@@ -909,17 +914,22 @@ export type Database = {
           category?: string | null
           created_at?: string | null
           description?: string | null
+          display_section?: string | null
           expiry_date?: string | null
           id?: string | null
           image_url?: string | null
           in_stock?: boolean | null
           name?: string | null
           retail_price?: number | null
+          sale_ends_at?: string | null
+          sale_label?: string | null
+          sale_price?: number | null
           stock_quantity?: number | null
           subcategory?: string | null
           updated_at?: string | null
           variations?: Json | null
           wholesale_min_qty?: number | null
+          wholesale_price?: number | null
         }
         Update: {
           additional_images?: string[] | null
@@ -927,17 +937,22 @@ export type Database = {
           category?: string | null
           created_at?: string | null
           description?: string | null
+          display_section?: string | null
           expiry_date?: string | null
           id?: string | null
           image_url?: string | null
           in_stock?: boolean | null
           name?: string | null
           retail_price?: number | null
+          sale_ends_at?: string | null
+          sale_label?: string | null
+          sale_price?: number | null
           stock_quantity?: number | null
           subcategory?: string | null
           updated_at?: string | null
           variations?: Json | null
           wholesale_min_qty?: number | null
+          wholesale_price?: number | null
         }
         Relationships: []
       }
