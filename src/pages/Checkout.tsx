@@ -30,6 +30,7 @@ const Checkout = () => {
     notes: '',
     mpesaCode: '',
   });
+  const [paymentMethod, setPaymentMethod] = useState<'express' | 'manual'>('express');
   const [hasPaid, setHasPaid] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
