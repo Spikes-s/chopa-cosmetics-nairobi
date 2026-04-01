@@ -38,7 +38,7 @@ const SearchBar = ({ className, placeholder = "Search products...", isMobile = f
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const debounceRef = useRef<NodeJS.Timeout>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
   // Fetch suggestions with debounce - searches database products
   const fetchSuggestions = useCallback(async (searchQuery: string) => {
