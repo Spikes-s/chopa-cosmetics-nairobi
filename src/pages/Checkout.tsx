@@ -10,8 +10,9 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { Check, Truck, MapPin, Loader2 } from 'lucide-react';
+import { Check, Truck, MapPin, Loader2, Smartphone, FileText } from 'lucide-react';
 import DeliveryLocationSelect from '@/components/DeliveryLocationSelect';
+import MpesaExpressPayment from '@/components/MpesaExpressPayment';
 
 const Checkout = () => {
   const navigate = useNavigate();
