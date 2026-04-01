@@ -70,7 +70,7 @@ const Index = () => {
 
       // Fetch products from database
       const { data: allProducts } = await supabase
-        .from('products')
+        .from('public_products')
         .select('id, name, retail_price, wholesale_price, image_url, category, in_stock, description')
         .eq('in_stock', true);
 

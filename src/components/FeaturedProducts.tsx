@@ -25,7 +25,7 @@ const FeaturedProducts = () => {
   const fetchProducts = async () => {
     // Fetch featured products (default for new products) or any with display_section = 'featured'
     const { data, error } = await supabase
-      .from('products')
+      .from('public_products')
       .select('id, name, retail_price, wholesale_price, wholesale_min_qty, image_url, category, subcategory, in_stock, description, display_section')
       .or('display_section.eq.featured,display_section.is.null')
       .order('created_at', { ascending: false })
