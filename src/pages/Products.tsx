@@ -62,7 +62,7 @@ const Products = () => {
   const fetchProducts = async () => {
     setIsLoading(true);
     let query = supabase
-      .from('products')
+      .from('public_products')
       .select('id, name, description, retail_price, wholesale_price, category, subcategory, image_url, in_stock')
       .order('created_at', { ascending: false });
 

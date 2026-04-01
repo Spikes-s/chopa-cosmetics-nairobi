@@ -28,7 +28,7 @@ const SmartRecommendations = ({ currentProductId, category, subcategory }: Smart
     const fetchRecommendations = async () => {
       // First try same subcategory, then same category
       let query = supabase
-        .from('products')
+        .from('public_products')
         .select('id, name, retail_price, wholesale_price, image_url, category, subcategory, in_stock, description')
         .neq('id', currentProductId)
         .eq('in_stock', true);
@@ -46,7 +46,7 @@ const SmartRecommendations = ({ currentProductId, category, subcategory }: Smart
       } else if (subcategory) {
         // Fallback: same category
         const { data: fallback } = await supabase
-          .from('products')
+          .from('public_products')
           .select('id, name, retail_price, wholesale_price, image_url, category, subcategory, in_stock, description')
           .neq('id', currentProductId)
           .eq('category', category)

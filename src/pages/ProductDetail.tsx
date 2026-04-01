@@ -60,7 +60,7 @@ const ProductDetail = () => {
     const fetchProduct = async () => {
       if (!id) { setNotFound(true); setLoading(false); return; }
       const { data, error } = await supabase
-        .from('products')
+        .from('public_products')
         .select('*')
         .eq('id', id)
         .maybeSingle();

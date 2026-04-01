@@ -38,7 +38,7 @@ const SearchBar = ({ className, placeholder = "Search products...", isMobile = f
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const debounceRef = useRef<NodeJS.Timeout>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
   // Fetch suggestions with debounce - searches database products
   const fetchSuggestions = useCallback(async (searchQuery: string) => {
@@ -53,7 +53,7 @@ const SearchBar = ({ className, placeholder = "Search products...", isMobile = f
       
       // Search products
       const { data: products, error: prodError } = await supabase
-        .from('products')
+        .from('public_products')
         .select('id, name, category, image_url, retail_price')
         .or(`name.ilike.%${escapedQuery}%,category.ilike.%${escapedQuery}%,subcategory.ilike.%${escapedQuery}%`)
         .limit(6);

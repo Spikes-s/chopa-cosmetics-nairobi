@@ -105,7 +105,7 @@ const FlashSales = () => {
   useEffect(() => {
     const fetchFlashSales = async () => {
       const { data, error } = await supabase
-        .from('products')
+        .from('public_products')
         .select('id, name, retail_price, wholesale_price, image_url, category, subcategory, in_stock, description, sale_price, sale_ends_at, sale_label')
         .not('sale_price', 'is', null)
         .not('sale_ends_at', 'is', null)
