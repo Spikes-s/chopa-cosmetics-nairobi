@@ -311,52 +311,98 @@ const Checkout = () => {
                 <CardTitle className="text-xl">Payment</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="bg-muted/50 rounded-lg p-6 mb-6">
-                  <h3 className="font-semibold text-foreground mb-2">
-                    M-Pesa – Buy Goods & Services
-                  </h3>
-                  <p className="text-3xl font-bold text-accent mb-4">
-                    Till Number: 4623226
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Please pay the exact amount shown in the order summary, then paste the full M-Pesa message below.
-                  </p>
-                </div>
-
-                <div className="space-y-4 mb-6">
-                  <div>
-                    <Label htmlFor="mpesaCode">Full M-Pesa Confirmation Message</Label>
-                    <Textarea
-                      id="mpesaCode"
-                      value={formData.mpesaCode}
-                      onChange={(e) => setFormData({ ...formData, mpesaCode: e.target.value })}
-                      placeholder="Paste the complete M-Pesa confirmation message here...&#10;&#10;Example: SJK7XXXXXX Confirmed. Ksh1,000.00 paid to CHOPA COSMETICS..."
-                      rows={4}
-                      className="font-mono text-sm"
-                      required
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Copy and paste the entire M-Pesa confirmation SMS you received
-                    </p>
-                  </div>
-                </div>
-
-                <Button
-                  type="button"
-                  variant={hasPaid ? 'gold' : 'outline'}
-                  className="w-full"
-                  onClick={() => setHasPaid(!hasPaid)}
-                  disabled={!formData.mpesaCode.trim()}
+                {/* Payment Method Toggle */}
+                <RadioGroup
+                  value={paymentMethod}
+                  onValueChange={(value) => {
+                    setPaymentMethod(value as 'express' | 'manual');
+                    setHasPaid(false);
+                    setFormData({ ...formData, mpesaCode: '' });
+                  }}
+                  className="grid grid-cols-2 gap-3 mb-6"
                 >
-                  {hasPaid ? (
-                    <>
-                      <Check className="w-4 h-4 mr-2" />
-                      Payment Confirmed
-                    </>
-                  ) : (
-                    'I Have Paid'
-                  )}
-                </Button>
+                  <div className={`flex items-center space-x-2 p-3 rounded-lg border cursor-pointer transition-colors ${paymentMethod === 'express' ? 'border-primary bg-primary/5' : 'border-border'}`}>
+                    <RadioGroupItem value="express" id="pay-express" />
+                    <Label htmlFor="pay-express" className="flex items-center gap-1.5 cursor-pointer text-sm">
+                      <Smartphone className="w-4 h-4" />
+                      M-PESA Express
+                    </Label>
+                  </div>
+                  <div className={`flex items-center space-x-2 p-3 rounded-lg border cursor-pointer transition-colors ${paymentMethod === 'manual' ? 'border-primary bg-primary/5' : 'border-border'}`}>
+                    <RadioGroupItem value="manual" id="pay-manual" />
+                    <Label htmlFor="pay-manual" className="flex items-center gap-1.5 cursor-pointer text-sm">
+                      <FileText className="w-4 h-4" />
+                      Pay Manually
+                    </Label>
+                  </div>
+                </RadioGroup>
+
+                {/* M-PESA Express */}
+                {paymentMethod === 'express' && (
+                  <MpesaExpressPayment
+                    amount={totalWithDelivery}
+                    onSuccess={(receiptNumber) => {
+                      setFormData({ ...formData, mpesaCode: receiptNumber });
+                      setHasPaid(true);
+                      toast.success('Payment confirmed via M-PESA Express!');
+                    }}
+                    onError={(msg) => {
+                      toast.error(msg);
+                    }}
+                  />
+                )}
+
+                {/* Manual Payment */}
+                {paymentMethod === 'manual' && (
+                  <>
+                    <div className="bg-muted/50 rounded-lg p-6 mb-6">
+                      <h3 className="font-semibold text-foreground mb-2">
+                        M-Pesa – Buy Goods & Services
+                      </h3>
+                      <p className="text-3xl font-bold text-accent mb-4">
+                        Till Number: 4623226
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Please pay the exact amount shown in the order summary, then paste the full M-Pesa message below.
+                      </p>
+                    </div>
+
+                    <div className="space-y-4 mb-6">
+                      <div>
+                        <Label htmlFor="mpesaCode">Full M-Pesa Confirmation Message</Label>
+                        <Textarea
+                          id="mpesaCode"
+                          value={formData.mpesaCode}
+                          onChange={(e) => setFormData({ ...formData, mpesaCode: e.target.value })}
+                          placeholder="Paste the complete M-Pesa confirmation message here...&#10;&#10;Example: SJK7XXXXXX Confirmed. Ksh1,000.00 paid to CHOPA COSMETICS..."
+                          rows={4}
+                          className="font-mono text-sm"
+                          required
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Copy and paste the entire M-Pesa confirmation SMS you received
+                        </p>
+                      </div>
+                    </div>
+
+                    <Button
+                      type="button"
+                      variant={hasPaid ? 'gold' : 'outline'}
+                      className="w-full"
+                      onClick={() => setHasPaid(!hasPaid)}
+                      disabled={!formData.mpesaCode.trim()}
+                    >
+                      {hasPaid ? (
+                        <>
+                          <Check className="w-4 h-4 mr-2" />
+                          Payment Confirmed
+                        </>
+                      ) : (
+                        'I Have Paid'
+                      )}
+                    </Button>
+                  </>
+                )}
               </CardContent>
             </Card>
 
