@@ -20,7 +20,18 @@ const Checkout = () => {
   const { items, totalWithWholesale, clearCart } = useCart();
   const [deliveryMethod, setDeliveryMethod] = useState<'delivery' | 'pickup'>('delivery');
   const [deliveryLocation, setDeliveryLocation] = useState('cbd');
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string;
+    phone: string;
+    email: string;
+    address: string;
+    pickupDate: string;
+    pickupTime: string;
+    notes: string;
+    mpesaCode: string;
+    mpesaPhone: string;
+    mpesaScreenshot?: File;
+  }>({
     name: '',
     phone: '',
     email: '',
@@ -29,6 +40,7 @@ const Checkout = () => {
     pickupTime: '',
     notes: '',
     mpesaCode: '',
+    mpesaPhone: '',
   });
   const [paymentMethod, setPaymentMethod] = useState<'express' | 'manual'>('express');
   const [hasPaid, setHasPaid] = useState(false);
