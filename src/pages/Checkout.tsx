@@ -20,7 +20,18 @@ const Checkout = () => {
   const { items, totalWithWholesale, clearCart } = useCart();
   const [deliveryMethod, setDeliveryMethod] = useState<'delivery' | 'pickup'>('delivery');
   const [deliveryLocation, setDeliveryLocation] = useState('cbd');
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string;
+    phone: string;
+    email: string;
+    address: string;
+    pickupDate: string;
+    pickupTime: string;
+    notes: string;
+    mpesaCode: string;
+    mpesaPhone: string;
+    mpesaScreenshot?: File;
+  }>({
     name: '',
     phone: '',
     email: '',
@@ -29,6 +40,7 @@ const Checkout = () => {
     pickupTime: '',
     notes: '',
     mpesaCode: '',
+    mpesaPhone: '',
   });
   const [paymentMethod, setPaymentMethod] = useState<'express' | 'manual'>('express');
   const [hasPaid, setHasPaid] = useState(false);
@@ -124,16 +136,16 @@ const Checkout = () => {
         sessionStorage.setItem('order_tokens', JSON.stringify(existingTokens));
       }
 
-      toast.success('Order submitted successfully! We will contact you shortly.', {
-        position: 'top-center',
-        style: {
-          background: '#22c55e',
-          color: 'white',
-          border: 'none',
+      clearCart();
+      navigate('/order-success', {
+        state: {
+          orderId: result.order.id,
+          customerName: formData.name.trim(),
+          total: totalWithDelivery,
+          deliveryType: deliveryMethod,
+          itemCount: items.reduce((sum: number, item: any) => sum + item.quantity, 0),
         },
       });
-      clearCart();
-      navigate('/');
     } catch (err) {
       console.error('Order submission error:', err);
       toast.error('Failed to submit order. Please try again.');
@@ -356,31 +368,61 @@ const Checkout = () => {
                 {paymentMethod === 'manual' && (
                   <>
                     <div className="bg-muted/50 rounded-lg p-6 mb-6">
-                      <h3 className="font-semibold text-foreground mb-2">
-                        M-Pesa – Buy Goods & Services
+                      <h3 className="font-semibold text-foreground mb-1">
+                        M-Pesa – Buy Goods &amp; Services
                       </h3>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Business Name: <span className="font-semibold text-foreground">Chopa Cosmetics Ltd</span>
+                      </p>
                       <p className="text-3xl font-bold text-accent mb-4">
                         Till Number: 4623226
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        Please pay the exact amount shown in the order summary, then paste the full M-Pesa message below.
+                        Pay <span className="font-semibold text-foreground">Ksh {totalWithDelivery.toLocaleString()}</span> then confirm below.
                       </p>
                     </div>
 
                     <div className="space-y-4 mb-6">
                       <div>
-                        <Label htmlFor="mpesaCode">Full M-Pesa Confirmation Message</Label>
-                        <Textarea
+                        <Label htmlFor="mpesaPhone">Phone Number Used for Payment</Label>
+                        <Input
+                          id="mpesaPhone"
+                          type="tel"
+                          value={formData.mpesaPhone || ''}
+                          onChange={(e) => setFormData({ ...formData, mpesaPhone: e.target.value })}
+                          placeholder="e.g., 0712345678"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="mpesaCode">M-Pesa Transaction Code</Label>
+                        <Input
                           id="mpesaCode"
                           value={formData.mpesaCode}
-                          onChange={(e) => setFormData({ ...formData, mpesaCode: e.target.value })}
-                          placeholder="Paste the complete M-Pesa confirmation message here...&#10;&#10;Example: SJK7XXXXXX Confirmed. Ksh1,000.00 paid to CHOPA COSMETICS..."
-                          rows={4}
-                          className="font-mono text-sm"
+                          onChange={(e) => setFormData({ ...formData, mpesaCode: e.target.value.toUpperCase() })}
+                          placeholder="e.g., SJK7XXXXXX"
+                          className="font-mono tracking-wider"
                           required
                         />
+                      </div>
+                      <div>
+                        <Label htmlFor="mpesaScreenshot">Payment Screenshot (Optional)</Label>
+                        <Input
+                          id="mpesaScreenshot"
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file && file.size > 5 * 1024 * 1024) {
+                              toast.error('File must be under 5MB');
+                              e.target.value = '';
+                              return;
+                            }
+                            setFormData({ ...formData, mpesaScreenshot: file || undefined });
+                          }}
+                          className="cursor-pointer"
+                        />
                         <p className="text-xs text-muted-foreground mt-1">
-                          Copy and paste the entire M-Pesa confirmation SMS you received
+                          Upload a screenshot of your M-Pesa confirmation (max 5MB)
                         </p>
                       </div>
                     </div>

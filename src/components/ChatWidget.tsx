@@ -321,10 +321,10 @@ const ChatWidget = () => {
                           </p>
                           <div className="grid grid-cols-2 gap-2 w-full">
                             {[
+                              { label: '🛒 Place an Order', msg: 'I want to place an order' },
                               { label: '📍 Store Location', msg: 'Where are you located?' },
-                              { label: '🚚 Delivery Charges', msg: 'What are your delivery charges?' },
+                              { label: '🚚 Delivery Info', msg: 'What are your delivery charges?' },
                               { label: '💰 Wholesale Prices', msg: 'What are your wholesale prices?' },
-                              { label: '📦 Product Availability', msg: 'How can I check product availability?' },
                             ].map((qr) => (
                               <button
                                 key={qr.label}
