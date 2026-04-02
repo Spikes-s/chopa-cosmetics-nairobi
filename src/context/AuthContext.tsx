@@ -1,6 +1,7 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useRef, useCallback, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface AuthContextType {
   user: User | null;
@@ -30,6 +31,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+  const ACTIVITY_KEY = 'chopa_last_activity';
+  const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const updateLastActivity = useCallback(() => {
+    localStorage.setItem(ACTIVITY_KEY, Date.now().toString());
+  }, []);
+
+  const handleInactivityLogout = useCallback(async () => {
+    toast.info('Session expired due to inactivity');
+    await supabase.auth.signOut();
+    setIsAdmin(false);
+  }, []);
+
+  const resetInactivityTimer = useCallback(() => {
+    if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+    updateLastActivity();
+    inactivityTimerRef.current = setTimeout(handleInactivityLogout, INACTIVITY_TIMEOUT);
+  }, [handleInactivityLogout, updateLastActivity]);
+
+  // Check if session expired while away (tab/browser closed > 30 min)
+  const checkSessionExpiry = useCallback(() => {
+    const lastActivity = localStorage.getItem(ACTIVITY_KEY);
+    if (lastActivity) {
+      const elapsed = Date.now() - parseInt(lastActivity, 10);
+      if (elapsed > INACTIVITY_TIMEOUT) {
+        return true; // expired
+      }
+    }
+    return false;
+  }, []);
+
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -37,13 +70,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Defer admin check with setTimeout
         if (session?.user) {
           setTimeout(() => {
             checkAdminRole().then(setIsAdmin);
           }, 0);
+          resetInactivityTimer();
         } else {
           setIsAdmin(false);
+          if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
         }
         setIsLoading(false);
       }
@@ -55,53 +89,50 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(session?.user ?? null);
       
       if (session?.user) {
+        // Check if user was away too long
+        if (checkSessionExpiry()) {
+          toast.info('Session expired due to inactivity');
+          supabase.auth.signOut();
+          setIsLoading(false);
+          return;
+        }
         checkAdminRole().then(setIsAdmin);
+        resetInactivityTimer();
       }
       setIsLoading(false);
     });
 
-    // Auto-logout on tab/browser close (not on reload)
-    const handleBeforeUnload = () => {
-      // Set a flag; if user returns (reload), we'll clear it
-      sessionStorage.setItem('chopa_closing', 'true');
-    };
-
-    // On load, check if we were closing (means tab was closed and reopened = new session)
-    const wasClosing = sessionStorage.getItem('chopa_closing');
-    if (wasClosing) {
-      sessionStorage.removeItem('chopa_closing');
-      // Tab was closed then reopened — sign out to force re-login
-      supabase.auth.signOut();
-    }
-
-    // Use visibilitychange + timeout to detect real tab close vs reload
-    let closeTimeout: ReturnType<typeof setTimeout> | null = null;
-    
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        // Start a timeout — if we don't come back in 3s, sign out
-        closeTimeout = setTimeout(() => {
-          supabase.auth.signOut();
-        }, 3000);
-      } else {
-        // User came back (tab switch or reload) — cancel the logout
-        if (closeTimeout) {
-          clearTimeout(closeTimeout);
-          closeTimeout = null;
-        }
+    // Activity tracking — throttled to once per 60s
+    let lastTracked = Date.now();
+    const trackActivity = () => {
+      if (Date.now() - lastTracked > 60000) {
+        lastTracked = Date.now();
+        resetInactivityTimer();
       }
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
+    const events = ['mousedown', 'keydown', 'scroll', 'touchstart', 'mousemove', 'click'];
+    events.forEach(e => window.addEventListener(e, trackActivity, { passive: true }));
+
+    // When tab becomes visible again, check expiry
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        if (checkSessionExpiry()) {
+          handleInactivityLogout();
+        } else {
+          resetInactivityTimer();
+        }
+      }
+    };
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       subscription.unsubscribe();
-      window.removeEventListener('beforeunload', handleBeforeUnload);
+      events.forEach(e => window.removeEventListener(e, trackActivity));
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      if (closeTimeout) clearTimeout(closeTimeout);
+      if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
     };
-  }, []);
+  }, [resetInactivityTimer, checkSessionExpiry, handleInactivityLogout]);
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
