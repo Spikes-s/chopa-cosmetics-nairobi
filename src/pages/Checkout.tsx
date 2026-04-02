@@ -124,16 +124,16 @@ const Checkout = () => {
         sessionStorage.setItem('order_tokens', JSON.stringify(existingTokens));
       }
 
-      toast.success('Order submitted successfully! We will contact you shortly.', {
-        position: 'top-center',
-        style: {
-          background: '#22c55e',
-          color: 'white',
-          border: 'none',
+      clearCart();
+      navigate('/order-success', {
+        state: {
+          orderId: result.order.id,
+          customerName: formData.name.trim(),
+          total: totalWithDelivery,
+          deliveryType: deliveryMethod,
+          itemCount: items.reduce((sum: number, item: any) => sum + item.quantity, 0),
         },
       });
-      clearCart();
-      navigate('/');
     } catch (err) {
       console.error('Order submission error:', err);
       toast.error('Failed to submit order. Please try again.');
