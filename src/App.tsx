@@ -38,6 +38,7 @@ import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import MyOrders from "./pages/MyOrders";
+import OrderSuccess from "./pages/OrderSuccess";
 import Wallet from "./pages/Wallet";
 import PWAInstallPrompt from "./components/PWAInstallPrompt";
 
