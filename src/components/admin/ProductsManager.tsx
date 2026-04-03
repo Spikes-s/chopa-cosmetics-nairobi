@@ -439,6 +439,7 @@ const ProductsManager = () => {
         .update(productData)
         .eq('id', editingProduct.id);
 
+      setIsSaving(false);
       if (error) {
         toast({
           title: 'Error',
@@ -459,6 +460,7 @@ const ProductsManager = () => {
         .from('products')
         .insert([productData]);
 
+      setIsSaving(false);
       if (error) {
         toast({
           title: 'Error',
