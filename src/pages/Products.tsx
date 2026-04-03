@@ -316,9 +316,14 @@ const Products = () => {
               subcategory: product.subcategory || '',
               description: product.description || '',
               inStock: product.in_stock ?? true,
-            }} />
+            }} onQuickView={setQuickViewProduct} />
           ))}
         </div>
+        <ProductQuickView
+          product={quickViewProduct}
+          isOpen={!!quickViewProduct}
+          onClose={() => setQuickViewProduct(null)}
+        />
       ) : (
         <div className="text-center py-16">
           <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-muted flex items-center justify-center">
