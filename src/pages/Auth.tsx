@@ -226,14 +226,14 @@ const Auth = ({ isModal = false, onClose }: AuthProps) => {
             )}
           </div>
 
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Please wait...
-              </>
-            ) : mode === 'login' ? 'Sign In' : 'Create Account'}
-          </Button>
+          <LoadingButton 
+            type="submit" 
+            className="w-full" 
+            loading={isLoading}
+            loadingText={mode === 'login' ? 'Signing in…' : 'Creating account…'}
+          >
+            {mode === 'login' ? 'Sign In' : 'Create Account'}
+          </LoadingButton>
         </form>
 
         <div className="mt-6 text-center">
