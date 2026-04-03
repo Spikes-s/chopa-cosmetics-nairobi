@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Pencil, Trash2, Search, Upload, Image, X, AlertTriangle, Calendar, Palette } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Upload, Image, X, AlertTriangle, Calendar, Palette, Loader2 } from 'lucide-react';
 import { format, parseISO, differenceInDays, addMonths, isBefore } from 'date-fns';
 import ColorPickerDialog from './ColorPickerDialog';
 import VariantManager, { VariantGroup } from './VariantManager';
