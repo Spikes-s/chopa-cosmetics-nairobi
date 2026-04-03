@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import ProductCard from '@/components/ProductCard';
+import ProductQuickView from '@/components/ProductQuickView';
+import { Product } from '@/data/products';
 import CategoryCard from '@/components/CategoryCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -44,6 +46,7 @@ const Products = () => {
   const [products, setProducts] = useState<DBProduct[]>([]);
   const [categories, setCategories] = useState<DBCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
 
   // Fetch categories from database
   const fetchCategories = async () => {
@@ -301,21 +304,28 @@ const Products = () => {
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
       ) : filteredProducts.length > 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
-          {filteredProducts.map((product) => (
-            <ProductCard key={product.id} product={{
-              id: product.id,
-              name: product.name,
-              price: product.retail_price,
-              wholesalePrice: product.wholesale_price || 0,
-              image: product.image_url || '/placeholder.svg',
-              category: product.category,
-              subcategory: product.subcategory || '',
-              description: product.description || '',
-              inStock: product.in_stock ?? true,
-            }} />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
+            {filteredProducts.map((product) => (
+              <ProductCard key={product.id} product={{
+                id: product.id,
+                name: product.name,
+                price: product.retail_price,
+                wholesalePrice: product.wholesale_price || 0,
+                image: product.image_url || '/placeholder.svg',
+                category: product.category,
+                subcategory: product.subcategory || '',
+                description: product.description || '',
+                inStock: product.in_stock ?? true,
+              }} onQuickView={setQuickViewProduct} />
+            ))}
+          </div>
+          <ProductQuickView
+            product={quickViewProduct}
+            isOpen={!!quickViewProduct}
+            onClose={() => setQuickViewProduct(null)}
+          />
+        </>
       ) : (
         <div className="text-center py-16">
           <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-muted flex items-center justify-center">

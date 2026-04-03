@@ -10,9 +10,10 @@ import { toast } from 'sonner';
 
 interface ProductCardProps {
   product: Product;
+  onQuickView?: (product: Product) => void;
 }
 
-const ProductCard = ({ product }: ProductCardProps) => {
+const ProductCard = ({ product, onQuickView }: ProductCardProps) => {
   const { addItem } = useCart();
   const navigate = useNavigate();
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -46,6 +47,12 @@ const ProductCard = ({ product }: ProductCardProps) => {
     toast.success(`${product.name} added to cart!`);
   };
 
+  const handleQuickView = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onQuickView?.(product);
+  };
+
   return (
     <Card variant="gradient" className="group overflow-hidden hover:shadow-xl hover:shadow-accent/10 transition-all duration-500 sparkle-hover hover:gold-glow">
       <Link to={`/product/${product.id}`}>
@@ -66,23 +73,25 @@ const ProductCard = ({ product }: ProductCardProps) => {
           
           {/* Quick Actions */}
           <div className="absolute bottom-3 left-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300">
+            {onQuickView && (
+              <Button
+                variant="glass"
+                size="sm"
+                className="flex-1"
+                onClick={handleQuickView}
+              >
+                <Eye className="w-4 h-4 mr-1" />
+                Quick View
+              </Button>
+            )}
             <Button
               variant="glass"
               size="sm"
               className="flex-1"
               onClick={handleAddToCart}
             >
-              {isExtension ? (
-                <>
-                  <Eye className="w-4 h-4 mr-1" />
-                  Select Color
-                </>
-              ) : (
-                <>
-                  <ShoppingCart className="w-4 h-4 mr-1" />
-                  Add to Cart
-                </>
-              )}
+              <ShoppingCart className="w-4 h-4 mr-1" />
+              {isExtension ? 'Select' : 'Add'}
             </Button>
           </div>
 
