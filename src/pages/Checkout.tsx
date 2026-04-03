@@ -450,22 +450,17 @@ const Checkout = () => {
               </CardContent>
             </Card>
 
-            <Button
+            <LoadingButton
               type="submit"
               variant="gradient"
               size="xl"
               className="w-full"
-              disabled={!hasPaid || isSubmitting}
+              disabled={!hasPaid}
+              loading={isSubmitting}
+              loadingText="Placing your order…"
             >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Submitting...
-                </>
-              ) : (
-                'Submit Order'
-              )}
-            </Button>
+              Submit Order
+            </LoadingButton>
           </form>
         </div>
 
