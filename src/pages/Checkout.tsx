@@ -47,6 +47,9 @@ const Checkout = () => {
   const [paymentMethod, setPaymentMethod] = useState<'express' | 'manual'>('express');
   const [hasPaid, setHasPaid] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [orderOverlay, setOrderOverlay] = useState<{ open: boolean; status: 'processing' | 'success' | 'error'; message: string }>({
+    open: false, status: 'processing', message: ''
+  });
 
   // No delivery fee displayed - paid to driver
   const totalWithDelivery = totalWithWholesale;
