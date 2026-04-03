@@ -395,6 +395,8 @@ const ProductsManager = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSaving) return;
+    setIsSaving(true);
 
     const stockQty = parseInt(formData.stock_quantity) || 0;
     
