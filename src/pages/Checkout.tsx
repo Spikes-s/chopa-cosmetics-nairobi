@@ -528,6 +528,19 @@ const Checkout = () => {
           </Card>
         </div>
       </div>
+
+      <ProcessingOverlay
+        isOpen={orderOverlay.open}
+        status={orderOverlay.status}
+        title={
+          orderOverlay.status === 'processing' ? 'Placing Your Order…' :
+          orderOverlay.status === 'success' ? 'Order Placed!' :
+          'Order Failed'
+        }
+        message={orderOverlay.message}
+        onClose={() => setOrderOverlay({ ...orderOverlay, open: false })}
+        onRetry={orderOverlay.status === 'error' ? () => setOrderOverlay({ ...orderOverlay, open: false }) : undefined}
+      />
     </div>
   );
 };
