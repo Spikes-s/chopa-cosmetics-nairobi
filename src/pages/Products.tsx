@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import ProductCard from '@/components/ProductCard';
+import ProductQuickView from '@/components/ProductQuickView';
+import { Product } from '@/data/products';
 import CategoryCard from '@/components/CategoryCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';

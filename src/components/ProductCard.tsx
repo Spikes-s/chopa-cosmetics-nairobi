@@ -73,23 +73,25 @@ const ProductCard = ({ product, onQuickView }: ProductCardProps) => {
           
           {/* Quick Actions */}
           <div className="absolute bottom-3 left-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300">
+            {onQuickView && (
+              <Button
+                variant="glass"
+                size="sm"
+                className="flex-1"
+                onClick={handleQuickView}
+              >
+                <Eye className="w-4 h-4 mr-1" />
+                Quick View
+              </Button>
+            )}
             <Button
               variant="glass"
               size="sm"
               className="flex-1"
               onClick={handleAddToCart}
             >
-              {isExtension ? (
-                <>
-                  <Eye className="w-4 h-4 mr-1" />
-                  Select Color
-                </>
-              ) : (
-                <>
-                  <ShoppingCart className="w-4 h-4 mr-1" />
-                  Add to Cart
-                </>
-              )}
+              <ShoppingCart className="w-4 h-4 mr-1" />
+              {isExtension ? 'Select' : 'Add'}
             </Button>
           </div>
 
