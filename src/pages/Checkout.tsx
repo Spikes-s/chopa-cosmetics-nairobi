@@ -79,11 +79,11 @@ const Checkout = () => {
       return;
     }
 
-    if (isSubmitting) return; // Prevent duplicate submissions
+    if (isSubmitting) return;
     setIsSubmitting(true);
+    setOrderOverlay({ open: true, status: 'processing', message: 'Placing your order…' });
 
     try {
-      // Prepare order items with full details for server processing
       const orderItems = items.map(item => ({
         id: item.id,
         quantity: item.quantity,
@@ -95,9 +95,6 @@ const Checkout = () => {
         image: item.image,
       }));
 
-      console.log('Submitting order with items:', orderItems);
-
-      // Call secure edge function for server-side validation and order creation
       const { data: result, error } = await supabase.functions.invoke('validate-order', {
         body: {
           user_id: user?.id || null,
@@ -108,24 +105,20 @@ const Checkout = () => {
           mpesa_code: formData.mpesaCode.trim(),
           delivery_type: deliveryMethod,
           delivery_address: deliveryMethod === 'delivery' ? `${deliveryLocation} - ${formData.address}` : undefined,
-          delivery_fee: 0, // Fee paid to driver directly
+          delivery_fee: 0,
           pickup_date: deliveryMethod === 'pickup' ? formData.pickupDate : undefined,
           pickup_time: deliveryMethod === 'pickup' ? formData.pickupTime : undefined,
         },
       });
 
-      console.log('Order response:', result, error);
-
       if (error) {
-        console.error('Order submission error:', error);
-        toast.error(error.message || 'Failed to submit order. Please try again.');
+        setOrderOverlay({ open: true, status: 'error', message: error.message || 'Failed to submit order. Please try again.' });
         setIsSubmitting(false);
         return;
       }
 
       if (!result.success) {
-        console.error('Order validation error:', result.error);
-        toast.error(result.error || 'Failed to validate order. Please try again.');
+        setOrderOverlay({ open: true, status: 'error', message: result.error || 'Failed to validate order. Please try again.' });
         setIsSubmitting(false);
         return;
       }
@@ -141,19 +134,23 @@ const Checkout = () => {
         sessionStorage.setItem('order_tokens', JSON.stringify(existingTokens));
       }
 
-      clearCart();
-      navigate('/order-success', {
-        state: {
-          orderId: result.order.id,
-          customerName: formData.name.trim(),
-          total: totalWithDelivery,
-          deliveryType: deliveryMethod,
-          itemCount: items.reduce((sum: number, item: any) => sum + item.quantity, 0),
-        },
-      });
+      setOrderOverlay({ open: true, status: 'success', message: 'Order placed successfully! 🎉' });
+      
+      setTimeout(() => {
+        clearCart();
+        navigate('/order-success', {
+          state: {
+            orderId: result.order.id,
+            customerName: formData.name.trim(),
+            total: totalWithDelivery,
+            deliveryType: deliveryMethod,
+            itemCount: items.reduce((sum: number, item: any) => sum + item.quantity, 0),
+          },
+        });
+      }, 1500);
     } catch (err) {
       console.error('Order submission error:', err);
-      toast.error('Failed to submit order. Please try again.');
+      setOrderOverlay({ open: true, status: 'error', message: 'Network error. Please check your connection and try again.' });
       setIsSubmitting(false);
     }
   };
