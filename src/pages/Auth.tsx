@@ -2,13 +2,12 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
-import { Loader2 } from 'lucide-react';
+import { LoadingButton } from '@/components/ui/loading-button';
 
 const authSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -226,14 +225,14 @@ const Auth = ({ isModal = false, onClose }: AuthProps) => {
             )}
           </div>
 
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Please wait...
-              </>
-            ) : mode === 'login' ? 'Sign In' : 'Create Account'}
-          </Button>
+          <LoadingButton 
+            type="submit" 
+            className="w-full" 
+            loading={isLoading}
+            loadingText={mode === 'login' ? 'Signing in…' : 'Creating account…'}
+          >
+            {mode === 'login' ? 'Sign In' : 'Create Account'}
+          </LoadingButton>
         </form>
 
         <div className="mt-6 text-center">

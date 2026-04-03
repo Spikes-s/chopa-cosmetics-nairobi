@@ -3,14 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { Check, Truck, MapPin, Loader2, Smartphone, FileText } from 'lucide-react';
+import { Check, Truck, MapPin, Smartphone, FileText } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { LoadingButton } from '@/components/ui/loading-button';
+import ProcessingOverlay from '@/components/ProcessingOverlay';
 import DeliveryLocationSelect from '@/components/DeliveryLocationSelect';
 import MpesaExpressPayment from '@/components/MpesaExpressPayment';
 
@@ -45,6 +47,9 @@ const Checkout = () => {
   const [paymentMethod, setPaymentMethod] = useState<'express' | 'manual'>('express');
   const [hasPaid, setHasPaid] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [orderOverlay, setOrderOverlay] = useState<{ open: boolean; status: 'processing' | 'success' | 'error'; message: string }>({
+    open: false, status: 'processing', message: ''
+  });
 
   // No delivery fee displayed - paid to driver
   const totalWithDelivery = totalWithWholesale;
@@ -74,11 +79,11 @@ const Checkout = () => {
       return;
     }
 
-    if (isSubmitting) return; // Prevent duplicate submissions
+    if (isSubmitting) return;
     setIsSubmitting(true);
+    setOrderOverlay({ open: true, status: 'processing', message: 'Placing your order…' });
 
     try {
-      // Prepare order items with full details for server processing
       const orderItems = items.map(item => ({
         id: item.id,
         quantity: item.quantity,
@@ -90,9 +95,6 @@ const Checkout = () => {
         image: item.image,
       }));
 
-      console.log('Submitting order with items:', orderItems);
-
-      // Call secure edge function for server-side validation and order creation
       const { data: result, error } = await supabase.functions.invoke('validate-order', {
         body: {
           user_id: user?.id || null,
@@ -103,24 +105,20 @@ const Checkout = () => {
           mpesa_code: formData.mpesaCode.trim(),
           delivery_type: deliveryMethod,
           delivery_address: deliveryMethod === 'delivery' ? `${deliveryLocation} - ${formData.address}` : undefined,
-          delivery_fee: 0, // Fee paid to driver directly
+          delivery_fee: 0,
           pickup_date: deliveryMethod === 'pickup' ? formData.pickupDate : undefined,
           pickup_time: deliveryMethod === 'pickup' ? formData.pickupTime : undefined,
         },
       });
 
-      console.log('Order response:', result, error);
-
       if (error) {
-        console.error('Order submission error:', error);
-        toast.error(error.message || 'Failed to submit order. Please try again.');
+        setOrderOverlay({ open: true, status: 'error', message: error.message || 'Failed to submit order. Please try again.' });
         setIsSubmitting(false);
         return;
       }
 
       if (!result.success) {
-        console.error('Order validation error:', result.error);
-        toast.error(result.error || 'Failed to validate order. Please try again.');
+        setOrderOverlay({ open: true, status: 'error', message: result.error || 'Failed to validate order. Please try again.' });
         setIsSubmitting(false);
         return;
       }
@@ -136,19 +134,23 @@ const Checkout = () => {
         sessionStorage.setItem('order_tokens', JSON.stringify(existingTokens));
       }
 
-      clearCart();
-      navigate('/order-success', {
-        state: {
-          orderId: result.order.id,
-          customerName: formData.name.trim(),
-          total: totalWithDelivery,
-          deliveryType: deliveryMethod,
-          itemCount: items.reduce((sum: number, item: any) => sum + item.quantity, 0),
-        },
-      });
+      setOrderOverlay({ open: true, status: 'success', message: 'Order placed successfully! 🎉' });
+      
+      setTimeout(() => {
+        clearCart();
+        navigate('/order-success', {
+          state: {
+            orderId: result.order.id,
+            customerName: formData.name.trim(),
+            total: totalWithDelivery,
+            deliveryType: deliveryMethod,
+            itemCount: items.reduce((sum: number, item: any) => sum + item.quantity, 0),
+          },
+        });
+      }, 1500);
     } catch (err) {
       console.error('Order submission error:', err);
-      toast.error('Failed to submit order. Please try again.');
+      setOrderOverlay({ open: true, status: 'error', message: 'Network error. Please check your connection and try again.' });
       setIsSubmitting(false);
     }
   };
@@ -448,22 +450,17 @@ const Checkout = () => {
               </CardContent>
             </Card>
 
-            <Button
+            <LoadingButton
               type="submit"
               variant="gradient"
               size="xl"
               className="w-full"
-              disabled={!hasPaid || isSubmitting}
+              disabled={!hasPaid}
+              loading={isSubmitting}
+              loadingText="Placing your order…"
             >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Submitting...
-                </>
-              ) : (
-                'Submit Order'
-              )}
-            </Button>
+              Submit Order
+            </LoadingButton>
           </form>
         </div>
 
@@ -531,6 +528,19 @@ const Checkout = () => {
           </Card>
         </div>
       </div>
+
+      <ProcessingOverlay
+        isOpen={orderOverlay.open}
+        status={orderOverlay.status}
+        title={
+          orderOverlay.status === 'processing' ? 'Placing Your Order…' :
+          orderOverlay.status === 'success' ? 'Order Placed!' :
+          'Order Failed'
+        }
+        message={orderOverlay.message}
+        onClose={() => setOrderOverlay({ ...orderOverlay, open: false })}
+        onRetry={orderOverlay.status === 'error' ? () => setOrderOverlay({ ...orderOverlay, open: false }) : undefined}
+      />
     </div>
   );
 };

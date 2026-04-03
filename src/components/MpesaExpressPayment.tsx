@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Smartphone, CheckCircle2, XCircle } from 'lucide-react';
+import { Smartphone, CheckCircle2, XCircle, Phone } from 'lucide-react';
+import { LoadingButton } from '@/components/ui/loading-button';
+import ProcessingOverlay from '@/components/ProcessingOverlay';
 
 interface MpesaExpressPaymentProps {
   amount: number;
@@ -36,14 +37,14 @@ const MpesaExpressPayment = ({ amount, onSuccess, onError }: MpesaExpressPayment
 
   const startPolling = (checkoutRequestId: string) => {
     let attempts = 0;
-    const maxAttempts = 12; // 60 seconds (5s intervals)
+    const maxAttempts = 24; // 2 minutes (5s intervals)
 
     pollRef.current = setInterval(async () => {
       attempts++;
       if (attempts > maxAttempts) {
         clearInterval(pollRef.current);
         setStatus('failed');
-        setStatusMessage('Payment verification timed out. If you paid, use the manual method below.');
+        setStatusMessage('Payment not confirmed. Please try again or use the manual payment option.');
         onError('Payment verification timed out');
         return;
       }
@@ -53,17 +54,17 @@ const MpesaExpressPayment = ({ amount, onSuccess, onError }: MpesaExpressPayment
           body: { checkout_request_id: checkoutRequestId },
         });
 
-        if (error) return; // Keep polling
+        if (error) return;
 
         if (data.status === 'completed') {
           clearInterval(pollRef.current);
           setStatus('completed');
-          setStatusMessage(`Payment confirmed! Receipt: ${data.mpesa_receipt_number}`);
+          setStatusMessage(`Payment successful ✅\nReceipt: ${data.mpesa_receipt_number}`);
           onSuccess(data.mpesa_receipt_number);
         } else if (data.status === 'failed') {
           clearInterval(pollRef.current);
           setStatus('failed');
-          setStatusMessage(data.result_desc || 'Payment failed. Please try again.');
+          setStatusMessage(data.result_desc || 'Payment failed or cancelled. Please try again.');
           onError(data.result_desc || 'Payment failed');
         } else if (data.status === 'cancelled') {
           clearInterval(pollRef.current);
@@ -85,7 +86,7 @@ const MpesaExpressPayment = ({ amount, onSuccess, onError }: MpesaExpressPayment
     }
 
     setStatus('sending');
-    setStatusMessage('Sending payment prompt to your phone...');
+    setStatusMessage('Sending payment request to your phone…');
 
     try {
       const { data, error } = await supabase.functions.invoke('mpesa-stk-push', {
@@ -102,11 +103,11 @@ const MpesaExpressPayment = ({ amount, onSuccess, onError }: MpesaExpressPayment
 
       checkoutIdRef.current = data.checkout_request_id;
       setStatus('waiting');
-      setStatusMessage('Check your phone for the M-PESA prompt. Enter your PIN to pay.');
+      setStatusMessage('Please check your phone and enter your M-Pesa PIN');
       startPolling(data.checkout_request_id);
     } catch (err) {
       setStatus('failed');
-      setStatusMessage('Network error. Please try again.');
+      setStatusMessage('Network error. Please check your connection and try again.');
       onError('Network error');
     }
   };
@@ -116,6 +117,9 @@ const MpesaExpressPayment = ({ amount, onSuccess, onError }: MpesaExpressPayment
     setStatus('idle');
     setStatusMessage('');
   };
+
+  // Show processing overlay for sending/waiting states
+  const showOverlay = status === 'sending' || status === 'waiting';
 
   return (
     <div className="space-y-4">
@@ -135,46 +139,47 @@ const MpesaExpressPayment = ({ amount, onSuccess, onError }: MpesaExpressPayment
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
           placeholder="e.g., 0712345678"
-          disabled={status === 'sending' || status === 'waiting'}
+          disabled={status !== 'idle' && status !== 'failed' && status !== 'cancelled'}
         />
       </div>
 
-      {status === 'idle' && (
-        <Button
+      {(status === 'idle') && (
+        <LoadingButton
           type="button"
           variant="gradient"
           className="w-full"
           onClick={handleSendSTKPush}
           disabled={!phone.trim()}
         >
-          <Smartphone className="w-4 h-4 mr-2" />
+          <Phone className="w-4 h-4 mr-2" />
           Pay Ksh {amount.toLocaleString()} via M-PESA
-        </Button>
+        </LoadingButton>
       )}
 
-      {(status === 'sending' || status === 'waiting') && (
-        <div className="flex items-center gap-3 p-4 rounded-lg bg-primary/10 border border-primary/20">
-          <Loader2 className="w-5 h-5 animate-spin text-primary shrink-0" />
-          <p className="text-sm text-foreground">{statusMessage}</p>
-        </div>
-      )}
+      {/* Processing overlay */}
+      <ProcessingOverlay
+        isOpen={showOverlay}
+        status="processing"
+        title={status === 'sending' ? 'Sending Payment Request…' : 'Waiting for Payment…'}
+        message={statusMessage}
+      />
 
       {status === 'completed' && (
-        <div className="flex items-center gap-3 p-4 rounded-lg bg-accent/10 border border-accent/20">
+        <div className="flex items-center gap-3 p-4 rounded-lg bg-accent/10 border border-accent/20 animate-fade-in">
           <CheckCircle2 className="w-5 h-5 text-accent shrink-0" />
-          <p className="text-sm text-foreground font-medium">{statusMessage}</p>
+          <p className="text-sm text-foreground font-medium whitespace-pre-line">{statusMessage}</p>
         </div>
       )}
 
       {(status === 'failed' || status === 'cancelled') && (
-        <div className="space-y-3">
+        <div className="space-y-3 animate-fade-in">
           <div className="flex items-center gap-3 p-4 rounded-lg bg-destructive/10 border border-destructive/20">
             <XCircle className="w-5 h-5 text-destructive shrink-0" />
             <p className="text-sm text-foreground">{statusMessage}</p>
           </div>
-          <Button type="button" variant="outline" className="w-full" onClick={handleRetry}>
+          <LoadingButton type="button" variant="outline" className="w-full" onClick={handleRetry}>
             Try Again
-          </Button>
+          </LoadingButton>
         </div>
       )}
     </div>

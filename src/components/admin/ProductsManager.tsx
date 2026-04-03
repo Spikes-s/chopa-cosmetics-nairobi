@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Pencil, Trash2, Search, Upload, Image, X, AlertTriangle, Calendar, Palette } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Upload, Image, X, AlertTriangle, Calendar, Palette, Loader2 } from 'lucide-react';
 import { format, parseISO, differenceInDays, addMonths, isBefore } from 'date-fns';
 import ColorPickerDialog from './ColorPickerDialog';
 import VariantManager, { VariantGroup } from './VariantManager';
@@ -53,6 +53,7 @@ const ProductsManager = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [uploadingAdditional, setUploadingAdditional] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -394,6 +395,8 @@ const ProductsManager = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSaving) return;
+    setIsSaving(true);
 
     const stockQty = parseInt(formData.stock_quantity) || 0;
     
@@ -436,6 +439,7 @@ const ProductsManager = () => {
         .update(productData)
         .eq('id', editingProduct.id);
 
+      setIsSaving(false);
       if (error) {
         toast({
           title: 'Error',
@@ -456,6 +460,7 @@ const ProductsManager = () => {
         .from('products')
         .insert([productData]);
 
+      setIsSaving(false);
       if (error) {
         toast({
           title: 'Error',
@@ -850,8 +855,12 @@ const ProductsManager = () => {
                 </div>
               </div>
 
-              <Button type="submit" className="w-full" disabled={isUploading}>
-                {editingProduct ? 'Update Product' : 'Create Product'}
+              <Button type="submit" className="w-full" disabled={isUploading || isSaving}>
+                {isSaving ? (
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{editingProduct ? 'Updating…' : 'Creating…'}</>
+                ) : (
+                  editingProduct ? 'Update Product' : 'Create Product'
+                )}
               </Button>
             </form>
           </DialogContent>
