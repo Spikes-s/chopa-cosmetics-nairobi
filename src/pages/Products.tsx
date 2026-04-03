@@ -304,26 +304,28 @@ const Products = () => {
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
       ) : filteredProducts.length > 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
-          {filteredProducts.map((product) => (
-            <ProductCard key={product.id} product={{
-              id: product.id,
-              name: product.name,
-              price: product.retail_price,
-              wholesalePrice: product.wholesale_price || 0,
-              image: product.image_url || '/placeholder.svg',
-              category: product.category,
-              subcategory: product.subcategory || '',
-              description: product.description || '',
-              inStock: product.in_stock ?? true,
-            }} onQuickView={setQuickViewProduct} />
-          ))}
-        </div>
-        <ProductQuickView
-          product={quickViewProduct}
-          isOpen={!!quickViewProduct}
-          onClose={() => setQuickViewProduct(null)}
-        />
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
+            {filteredProducts.map((product) => (
+              <ProductCard key={product.id} product={{
+                id: product.id,
+                name: product.name,
+                price: product.retail_price,
+                wholesalePrice: product.wholesale_price || 0,
+                image: product.image_url || '/placeholder.svg',
+                category: product.category,
+                subcategory: product.subcategory || '',
+                description: product.description || '',
+                inStock: product.in_stock ?? true,
+              }} onQuickView={setQuickViewProduct} />
+            ))}
+          </div>
+          <ProductQuickView
+            product={quickViewProduct}
+            isOpen={!!quickViewProduct}
+            onClose={() => setQuickViewProduct(null)}
+          />
+        </>
       ) : (
         <div className="text-center py-16">
           <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-muted flex items-center justify-center">
