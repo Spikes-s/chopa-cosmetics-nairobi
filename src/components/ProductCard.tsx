@@ -10,9 +10,10 @@ import { toast } from 'sonner';
 
 interface ProductCardProps {
   product: Product;
+  onQuickView?: (product: Product) => void;
 }
 
-const ProductCard = ({ product }: ProductCardProps) => {
+const ProductCard = ({ product, onQuickView }: ProductCardProps) => {
   const { addItem } = useCart();
   const navigate = useNavigate();
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -44,6 +45,12 @@ const ProductCard = ({ product }: ProductCardProps) => {
     });
     
     toast.success(`${product.name} added to cart!`);
+  };
+
+  const handleQuickView = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onQuickView?.(product);
   };
 
   return (
