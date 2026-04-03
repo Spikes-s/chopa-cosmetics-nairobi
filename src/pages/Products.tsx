@@ -46,6 +46,7 @@ const Products = () => {
   const [products, setProducts] = useState<DBProduct[]>([]);
   const [categories, setCategories] = useState<DBCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
 
   // Fetch categories from database
   const fetchCategories = async () => {
