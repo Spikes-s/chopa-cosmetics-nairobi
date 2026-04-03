@@ -53,6 +53,7 @@ const ProductsManager = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [uploadingAdditional, setUploadingAdditional] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
