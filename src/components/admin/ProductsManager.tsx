@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,11 +9,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Pencil, Trash2, Search, Upload, Image, X, AlertTriangle, Calendar, Palette, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Upload, Image, X, AlertTriangle, Calendar, Palette, Loader2, Scissors, Save } from 'lucide-react';
 import { format, parseISO, differenceInDays, addMonths, isBefore } from 'date-fns';
 import ColorPickerDialog from './ColorPickerDialog';
 import VariantManager, { VariantGroup } from './VariantManager';
 import NamedImageUploader, { NamedImage } from './NamedImageUploader';
+import HairExtensionSectionsManager from './HairExtensionSectionsManager';
 
 interface CustomColor {
   name: string;
@@ -987,6 +988,9 @@ const ProductsManager = () => {
         onColorsConfirmed={handleColorsConfirmed}
         existingColors={formData.colors}
       />
+
+      {/* Hair Extensions Sections Manager */}
+      <HairExtensionSectionsManager />
     </div>
   );
 };

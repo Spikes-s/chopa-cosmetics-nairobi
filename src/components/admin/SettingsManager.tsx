@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Save, Image, MapPin, Phone, Mail, Clock, Plus, Scissors, X } from 'lucide-react';
+import { Save, Image, MapPin, Phone, Mail, Clock } from 'lucide-react';
 import SuperAdminControls from './SuperAdminControls';
 import { useAuth } from '@/context/AuthContext';
 
@@ -19,10 +19,8 @@ interface SiteSettings {
   email: string;
   hours: string;
   map_url: string;
-  hair_extension_sections: string[];
 }
 
-const DEFAULT_SECTIONS = ['Braids', 'Crotchets', 'Weaves', 'Wigs', 'Brazilian Wool', 'Extensions'];
 
 const SettingsManager = () => {
   const { user } = useAuth();
@@ -34,11 +32,9 @@ const SettingsManager = () => {
     email: 'info@chopa.co.ke',
     hours: '7:30 AM – 9:00 PM',
     map_url: '',
-    hair_extension_sections: DEFAULT_SECTIONS,
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
-  const [newSection, setNewSection] = useState('');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -62,9 +58,6 @@ const SettingsManager = () => {
           email: settingsMap.email || prev.email,
           hours: settingsMap.hours || prev.hours,
           map_url: settingsMap.map_url || prev.map_url,
-          hair_extension_sections: settingsMap.hair_extension_sections 
-            ? JSON.parse(settingsMap.hair_extension_sections) 
-            : prev.hair_extension_sections,
         }));
       }
       setIsFetching(false);
@@ -73,30 +66,8 @@ const SettingsManager = () => {
     fetchSettings();
   }, []);
 
-  const addSection = () => {
-    const trimmed = newSection.trim();
-    if (!trimmed) return;
-    if (settings.hair_extension_sections.includes(trimmed)) {
-      toast({ title: 'Section already exists', variant: 'destructive' });
-      return;
-    }
-    setSettings({
-      ...settings,
-      hair_extension_sections: [...settings.hair_extension_sections, trimmed],
-    });
-    setNewSection('');
-  };
 
-  const removeSection = (section: string) => {
-    if (DEFAULT_SECTIONS.includes(section)) {
-      toast({ title: 'Cannot remove default sections', variant: 'destructive' });
-      return;
-    }
-    setSettings({
-      ...settings,
-      hair_extension_sections: settings.hair_extension_sections.filter(s => s !== section),
-    });
-  };
+
 
   const saveSetting = async (key: string, value: string) => {
     const { data: existing } = await supabase
@@ -129,7 +100,6 @@ const SettingsManager = () => {
         saveSetting('email', settings.email),
         saveSetting('hours', settings.hours),
         saveSetting('map_url', settings.map_url),
-        saveSetting('hair_extension_sections', JSON.stringify(settings.hair_extension_sections)),
       ]);
 
       toast({
@@ -284,43 +254,8 @@ const SettingsManager = () => {
         </CardContent>
       </Card>
 
-      <Card className="glass-card">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Scissors className="w-5 h-5" />
-            Hair Extensions Sections
-          </CardTitle>
-          <CardDescription>
-            Manage subcategories under Hair Extensions. Add new sections without code changes.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-wrap gap-2">
-            {settings.hair_extension_sections.map(section => (
-              <Badge key={section} variant="secondary" className="flex items-center gap-1 px-3 py-1">
-                {section}
-                {!DEFAULT_SECTIONS.includes(section) && (
-                  <button onClick={() => removeSection(section)} className="ml-1 hover:text-destructive">
-                    <X className="w-3 h-3" />
-                  </button>
-                )}
-              </Badge>
-            ))}
-          </div>
-          <div className="flex gap-2">
-            <Input
-              placeholder="New section name..."
-              value={newSection}
-              onChange={(e) => setNewSection(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && addSection()}
-            />
-            <Button onClick={addSection} variant="outline" className="gap-2">
-              <Plus className="w-4 h-4" />
-              Add Section
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+
+
 
       <Button onClick={handleSaveAll} disabled={isLoading} className="gap-2 w-full md:w-auto">
         <Save className="w-4 h-4" />
