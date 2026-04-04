@@ -11,6 +11,7 @@ import { ThemeProvider } from "@/context/ThemeContext";
 import LoadingScreen from "@/components/LoadingScreen";
 import ScrollToTop from "@/components/ScrollToTop";
 import Header from "@/components/Header";
+import GlobalBackButton from "@/components/GlobalBackButton";
 import Footer from "@/components/Footer";
 import ChatWidget from "@/components/ChatWidget";
 import FloatingCartButton from "@/components/FloatingCartButton";
