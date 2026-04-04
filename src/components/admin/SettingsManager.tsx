@@ -35,7 +35,6 @@ const SettingsManager = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
-  const [newSection, setNewSection] = useState('');
   const { toast } = useToast();
 
   useEffect(() => {
