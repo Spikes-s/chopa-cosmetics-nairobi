@@ -66,30 +66,8 @@ const SettingsManager = () => {
     fetchSettings();
   }, []);
 
-  const addSection = () => {
-    const trimmed = newSection.trim();
-    if (!trimmed) return;
-    if (settings.hair_extension_sections.includes(trimmed)) {
-      toast({ title: 'Section already exists', variant: 'destructive' });
-      return;
-    }
-    setSettings({
-      ...settings,
-      hair_extension_sections: [...settings.hair_extension_sections, trimmed],
-    });
-    setNewSection('');
-  };
 
-  const removeSection = (section: string) => {
-    if (DEFAULT_SECTIONS.includes(section)) {
-      toast({ title: 'Cannot remove default sections', variant: 'destructive' });
-      return;
-    }
-    setSettings({
-      ...settings,
-      hair_extension_sections: settings.hair_extension_sections.filter(s => s !== section),
-    });
-  };
+
 
   const saveSetting = async (key: string, value: string) => {
     const { data: existing } = await supabase
