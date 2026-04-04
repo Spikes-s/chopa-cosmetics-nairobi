@@ -14,6 +14,7 @@ import { format, parseISO, differenceInDays, addMonths, isBefore } from 'date-fn
 import ColorPickerDialog from './ColorPickerDialog';
 import VariantManager, { VariantGroup } from './VariantManager';
 import NamedImageUploader, { NamedImage } from './NamedImageUploader';
+import HairExtensionSectionsManager from './HairExtensionSectionsManager';
 
 interface CustomColor {
   name: string;

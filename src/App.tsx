@@ -109,6 +109,7 @@ const AppContent = () => {
     <div className="min-h-screen mirage-bg">
       <ScrollToTop />
       {!isAdminRoute && <Header />}
+      {!isAdminRoute && <GlobalBackButton />}
       <main className={!isAdminRoute ? "pt-20 md:pt-24" : ""}>
         <Routes>
           <Route path="/" element={<Index />} />
