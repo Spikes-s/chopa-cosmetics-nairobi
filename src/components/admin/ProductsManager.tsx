@@ -987,6 +987,9 @@ const ProductsManager = () => {
         onColorsConfirmed={handleColorsConfirmed}
         existingColors={formData.colors}
       />
+
+      {/* Hair Extensions Sections Manager */}
+      <HairExtensionSectionsManager />
     </div>
   );
 };
