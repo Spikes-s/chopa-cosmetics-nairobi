@@ -58,9 +58,6 @@ const SettingsManager = () => {
           email: settingsMap.email || prev.email,
           hours: settingsMap.hours || prev.hours,
           map_url: settingsMap.map_url || prev.map_url,
-          hair_extension_sections: settingsMap.hair_extension_sections 
-            ? JSON.parse(settingsMap.hair_extension_sections) 
-            : prev.hair_extension_sections,
         }));
       }
       setIsFetching(false);
