@@ -254,43 +254,8 @@ const SettingsManager = () => {
         </CardContent>
       </Card>
 
-      <Card className="glass-card">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Scissors className="w-5 h-5" />
-            Hair Extensions Sections
-          </CardTitle>
-          <CardDescription>
-            Manage subcategories under Hair Extensions. Add new sections without code changes.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-wrap gap-2">
-            {settings.hair_extension_sections.map(section => (
-              <Badge key={section} variant="secondary" className="flex items-center gap-1 px-3 py-1">
-                {section}
-                {!DEFAULT_SECTIONS.includes(section) && (
-                  <button onClick={() => removeSection(section)} className="ml-1 hover:text-destructive">
-                    <X className="w-3 h-3" />
-                  </button>
-                )}
-              </Badge>
-            ))}
-          </div>
-          <div className="flex gap-2">
-            <Input
-              placeholder="New section name..."
-              value={newSection}
-              onChange={(e) => setNewSection(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && addSection()}
-            />
-            <Button onClick={addSection} variant="outline" className="gap-2">
-              <Plus className="w-4 h-4" />
-              Add Section
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+
+
 
       <Button onClick={handleSaveAll} disabled={isLoading} className="gap-2 w-full md:w-auto">
         <Save className="w-4 h-4" />
