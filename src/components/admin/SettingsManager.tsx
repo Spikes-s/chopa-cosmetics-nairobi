@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Save, Image, MapPin, Phone, Mail, Clock, Plus, Scissors, X } from 'lucide-react';
+import { Save, Image, MapPin, Phone, Mail, Clock } from 'lucide-react';
 import SuperAdminControls from './SuperAdminControls';
 import { useAuth } from '@/context/AuthContext';
 

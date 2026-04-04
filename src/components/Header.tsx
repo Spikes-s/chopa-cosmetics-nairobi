@@ -226,7 +226,7 @@ const Header = () => {
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
           <nav className="md:hidden border-t border-border/50 py-4 animate-fade-in">
-            <div className="flex flex-col space-y-3">
+            <div className="flex flex-col space-y-1">
               <Link
                 to="/products"
                 className="text-foreground/80 hover:text-foreground transition-colors font-body px-2 py-2"
@@ -248,6 +248,44 @@ const Header = () => {
               >
                 Contact
               </Link>
+              {user && (
+                <>
+                  <Link
+                    to="/my-orders"
+                    className="text-foreground/80 hover:text-foreground transition-colors font-body px-2 py-2"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    My Orders
+                  </Link>
+                  <Link
+                    to="/wallet"
+                    className="text-foreground/80 hover:text-foreground transition-colors font-body px-2 py-2"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    My Wallet
+                  </Link>
+                </>
+              )}
+
+              {/* Shop by Category */}
+              {categories.length > 0 && (
+                <div className="border-t border-border/50 mt-2 pt-2">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2 py-1">
+                    Shop by Category
+                  </p>
+                  {categories.map((cat) => (
+                    <Link
+                      key={cat.id}
+                      to={`/products?category=${cat.slug}`}
+                      className="flex items-center justify-between text-foreground/80 hover:text-foreground transition-colors font-body px-2 py-2"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <span>{cat.name}</span>
+                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                    </Link>
+                  ))}
+                </div>
+              )}
             </div>
           </nav>
         )}

@@ -99,10 +99,6 @@ const Index = () => {
 
   return (
     <div>
-      {/* Hamburger Menu - Home Page Only */}
-      <div className="fixed top-20 right-4 z-50 md:hidden">
-        <HamburgerCategoryMenu />
-      </div>
 
       {/* Hero Section */}
       <section className="relative min-h-[80vh] flex items-center justify-center overflow-hidden">
