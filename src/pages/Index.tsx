@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import ProductCard from '@/components/ProductCard';
 import CategoryCard from '@/components/CategoryCard';
-import HamburgerCategoryMenu from '@/components/HamburgerCategoryMenu';
+
 import FeaturedProducts from '@/components/FeaturedProducts';
 import FlashSales from '@/components/FlashSales';
 import BundleDeals from '@/components/BundleDeals';
