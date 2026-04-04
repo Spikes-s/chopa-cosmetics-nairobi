@@ -100,7 +100,6 @@ const SettingsManager = () => {
         saveSetting('email', settings.email),
         saveSetting('hours', settings.hours),
         saveSetting('map_url', settings.map_url),
-        saveSetting('hair_extension_sections', JSON.stringify(settings.hair_extension_sections)),
       ]);
 
       toast({
