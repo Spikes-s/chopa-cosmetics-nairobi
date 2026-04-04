@@ -32,7 +32,6 @@ const SettingsManager = () => {
     email: 'info@chopa.co.ke',
     hours: '7:30 AM – 9:00 PM',
     map_url: '',
-    hair_extension_sections: DEFAULT_SECTIONS,
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
