@@ -19,10 +19,8 @@ interface SiteSettings {
   email: string;
   hours: string;
   map_url: string;
-  hair_extension_sections: string[];
 }
 
-const DEFAULT_SECTIONS = ['Braids', 'Crotchets', 'Weaves', 'Wigs', 'Brazilian Wool', 'Extensions'];
 
 const SettingsManager = () => {
   const { user } = useAuth();
