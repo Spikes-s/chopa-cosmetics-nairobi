@@ -9,12 +9,11 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { Check, Truck, MapPin, Smartphone, FileText } from 'lucide-react';
+import { Check, Truck, MapPin, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { LoadingButton } from '@/components/ui/loading-button';
 import ProcessingOverlay from '@/components/ProcessingOverlay';
 import DeliveryLocationSelect from '@/components/DeliveryLocationSelect';
-import MpesaExpressPayment from '@/components/MpesaExpressPayment';
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -44,7 +43,6 @@ const Checkout = () => {
     mpesaCode: '',
     mpesaPhone: '',
   });
-  const [paymentMethod, setPaymentMethod] = useState<'express' | 'manual'>('express');
   const [hasPaid, setHasPaid] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderOverlay, setOrderOverlay] = useState<{ open: boolean; status: 'processing' | 'success' | 'error'; message: string }>({
@@ -319,134 +317,104 @@ const Checkout = () => {
               </CardContent>
             </Card>
 
-            {/* Payment */}
+            {/* Payment - Manual Only */}
             <Card variant="gradient">
               <CardHeader>
-                <CardTitle className="text-xl">Payment</CardTitle>
+                <CardTitle className="text-xl flex items-center gap-2">
+                  <FileText className="w-5 h-5" />
+                  Payment via M-Pesa
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                {/* Payment Method Toggle */}
-                <RadioGroup
-                  value={paymentMethod}
-                  onValueChange={(value) => {
-                    setPaymentMethod(value as 'express' | 'manual');
-                    setHasPaid(false);
-                    setFormData({ ...formData, mpesaCode: '' });
-                  }}
-                  className="grid grid-cols-2 gap-3 mb-6"
+                {/* Step-by-step instructions */}
+                <div className="bg-muted/50 rounded-lg p-6 mb-6">
+                  <h3 className="font-semibold text-foreground mb-3">
+                    How to Pay
+                  </h3>
+                  <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
+                    <li>Open <span className="font-semibold text-foreground">M-Pesa</span> on your phone</li>
+                    <li>Select <span className="font-semibold text-foreground">Lipa na M-Pesa</span></li>
+                    <li>Select <span className="font-semibold text-foreground">Buy Goods and Services</span></li>
+                    <li>Enter Till Number: <span className="font-bold text-accent text-lg">4623226</span></li>
+                    <li>Enter Amount: <span className="font-semibold text-foreground">Ksh {totalWithDelivery.toLocaleString()}</span></li>
+                    <li>Enter your <span className="font-semibold text-foreground">M-Pesa PIN</span> and confirm</li>
+                    <li>Enter the transaction code below</li>
+                  </ol>
+                </div>
+
+                <div className="bg-primary/5 rounded-lg p-4 mb-6 text-center border border-primary/20">
+                  <p className="text-sm text-muted-foreground mb-1">
+                    Business Name: <span className="font-semibold text-foreground">Chopa Cosmetics Ltd</span>
+                  </p>
+                  <p className="text-3xl font-bold text-accent">
+                    Till: 4623226
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Amount: <span className="font-semibold text-foreground">Ksh {totalWithDelivery.toLocaleString()}</span>
+                  </p>
+                </div>
+
+                <div className="space-y-4 mb-6">
+                  <div>
+                    <Label htmlFor="mpesaPhone">Phone Number Used for Payment</Label>
+                    <Input
+                      id="mpesaPhone"
+                      type="tel"
+                      value={formData.mpesaPhone || ''}
+                      onChange={(e) => setFormData({ ...formData, mpesaPhone: e.target.value })}
+                      placeholder="e.g., 0712345678"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="mpesaCode">M-Pesa Transaction Code *</Label>
+                    <Input
+                      id="mpesaCode"
+                      value={formData.mpesaCode}
+                      onChange={(e) => setFormData({ ...formData, mpesaCode: e.target.value.toUpperCase() })}
+                      placeholder="e.g., SJK7XXXXXX"
+                      className="font-mono tracking-wider"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="mpesaScreenshot">Payment Screenshot (Optional)</Label>
+                    <Input
+                      id="mpesaScreenshot"
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file && file.size > 5 * 1024 * 1024) {
+                          toast.error('File must be under 5MB');
+                          e.target.value = '';
+                          return;
+                        }
+                        setFormData({ ...formData, mpesaScreenshot: file || undefined });
+                      }}
+                      className="cursor-pointer"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Upload a screenshot of your M-Pesa confirmation (max 5MB)
+                    </p>
+                  </div>
+                </div>
+
+                <Button
+                  type="button"
+                  variant={hasPaid ? 'gold' : 'outline'}
+                  className="w-full"
+                  onClick={() => setHasPaid(!hasPaid)}
+                  disabled={!formData.mpesaCode.trim()}
                 >
-                  <div className={`flex items-center space-x-2 p-3 rounded-lg border cursor-pointer transition-colors ${paymentMethod === 'express' ? 'border-primary bg-primary/5' : 'border-border'}`}>
-                    <RadioGroupItem value="express" id="pay-express" />
-                    <Label htmlFor="pay-express" className="flex items-center gap-1.5 cursor-pointer text-sm">
-                      <Smartphone className="w-4 h-4" />
-                      M-PESA Express
-                    </Label>
-                  </div>
-                  <div className={`flex items-center space-x-2 p-3 rounded-lg border cursor-pointer transition-colors ${paymentMethod === 'manual' ? 'border-primary bg-primary/5' : 'border-border'}`}>
-                    <RadioGroupItem value="manual" id="pay-manual" />
-                    <Label htmlFor="pay-manual" className="flex items-center gap-1.5 cursor-pointer text-sm">
-                      <FileText className="w-4 h-4" />
-                      Pay Manually
-                    </Label>
-                  </div>
-                </RadioGroup>
-
-                {/* M-PESA Express */}
-                {paymentMethod === 'express' && (
-                  <MpesaExpressPayment
-                    amount={totalWithDelivery}
-                    onSuccess={(receiptNumber) => {
-                      setFormData({ ...formData, mpesaCode: receiptNumber });
-                      setHasPaid(true);
-                      toast.success('Payment confirmed via M-PESA Express!');
-                    }}
-                    onError={(msg) => {
-                      toast.error(msg);
-                    }}
-                  />
-                )}
-
-                {/* Manual Payment */}
-                {paymentMethod === 'manual' && (
-                  <>
-                    <div className="bg-muted/50 rounded-lg p-6 mb-6">
-                      <h3 className="font-semibold text-foreground mb-1">
-                        M-Pesa – Buy Goods &amp; Services
-                      </h3>
-                      <p className="text-sm text-muted-foreground mb-2">
-                        Business Name: <span className="font-semibold text-foreground">Chopa Cosmetics Ltd</span>
-                      </p>
-                      <p className="text-3xl font-bold text-accent mb-4">
-                        Till Number: 4623226
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        Pay <span className="font-semibold text-foreground">Ksh {totalWithDelivery.toLocaleString()}</span> then confirm below.
-                      </p>
-                    </div>
-
-                    <div className="space-y-4 mb-6">
-                      <div>
-                        <Label htmlFor="mpesaPhone">Phone Number Used for Payment</Label>
-                        <Input
-                          id="mpesaPhone"
-                          type="tel"
-                          value={formData.mpesaPhone || ''}
-                          onChange={(e) => setFormData({ ...formData, mpesaPhone: e.target.value })}
-                          placeholder="e.g., 0712345678"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="mpesaCode">M-Pesa Transaction Code</Label>
-                        <Input
-                          id="mpesaCode"
-                          value={formData.mpesaCode}
-                          onChange={(e) => setFormData({ ...formData, mpesaCode: e.target.value.toUpperCase() })}
-                          placeholder="e.g., SJK7XXXXXX"
-                          className="font-mono tracking-wider"
-                          required
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="mpesaScreenshot">Payment Screenshot (Optional)</Label>
-                        <Input
-                          id="mpesaScreenshot"
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file && file.size > 5 * 1024 * 1024) {
-                              toast.error('File must be under 5MB');
-                              e.target.value = '';
-                              return;
-                            }
-                            setFormData({ ...formData, mpesaScreenshot: file || undefined });
-                          }}
-                          className="cursor-pointer"
-                        />
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Upload a screenshot of your M-Pesa confirmation (max 5MB)
-                        </p>
-                      </div>
-                    </div>
-
-                    <Button
-                      type="button"
-                      variant={hasPaid ? 'gold' : 'outline'}
-                      className="w-full"
-                      onClick={() => setHasPaid(!hasPaid)}
-                      disabled={!formData.mpesaCode.trim()}
-                    >
-                      {hasPaid ? (
-                        <>
-                          <Check className="w-4 h-4 mr-2" />
-                          Payment Confirmed
-                        </>
-                      ) : (
-                        'I Have Paid'
-                      )}
-                    </Button>
-                  </>
-                )}
+                  {hasPaid ? (
+                    <>
+                      <Check className="w-4 h-4 mr-2" />
+                      Payment Confirmed
+                    </>
+                  ) : (
+                    'I Have Paid'
+                  )}
+                </Button>
               </CardContent>
             </Card>
 
