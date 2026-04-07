@@ -89,7 +89,7 @@ const ReviewForm = ({ productId, onReviewSubmitted }: ReviewFormProps) => {
             rating,
             review_text: reviewText.trim() || null,
             review_images: reviewImages,
-          } as any);
+          });
 
         if (error) throw error;
         return true;
