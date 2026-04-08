@@ -24,7 +24,7 @@ const GlobalBackButton = () => {
       variant="ghost"
       size="sm"
       onClick={handleBack}
-      className="fixed top-[72px] left-3 z-30 md:top-[84px] md:left-4 rounded-full bg-background/80 backdrop-blur-sm border border-border/50 shadow-sm hover:bg-muted gap-1.5 px-3"
+      className="fixed top-[120px] left-3 z-40 md:top-[90px] md:left-4 rounded-full bg-background/90 backdrop-blur-sm border border-border/50 shadow-md hover:bg-muted gap-1.5 px-3"
       aria-label="Go back"
     >
       <ArrowLeft className="w-4 h-4" />

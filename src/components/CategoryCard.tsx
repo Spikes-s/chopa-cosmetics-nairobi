@@ -34,8 +34,8 @@ const CategoryCard = ({ category }: CategoryCardProps) => {
         </div>
       )}
 
-      {/* Overlay gradient */}
-      <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent z-10" />
+      {/* Overlay gradient - lighter so images show through */}
+      <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/30 to-transparent z-10" />
 
       {/* Content */}
       <div className="relative z-20 h-full flex flex-col justify-end p-4 md:p-6">
