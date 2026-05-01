@@ -4,7 +4,7 @@ import useAdminAutoLogout from '@/hooks/useAdminAutoLogout';
 import { useAuth } from '@/context/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { LogOut, Package, ShoppingBag, BarChart3, MessageSquare, Settings, Users, Home, Monitor, RotateCcw, FolderTree, UserCog, MapPin, Gift } from 'lucide-react';
+import { LogOut, Package, ShoppingBag, BarChart3, MessageSquare, Settings, Users, Home, Monitor, RotateCcw, FolderTree, UserCog, MapPin, Gift, Star } from 'lucide-react';
 import ProductsManager from '@/components/admin/ProductsManager';
 import OrdersManager from '@/components/admin/OrdersManager';
 import SalesAnalytics from '@/components/admin/SalesAnalytics';
@@ -17,6 +17,7 @@ import CategoriesManager from '@/components/admin/CategoriesManager';
 import RolesManager from '@/components/admin/RolesManager';
 import BranchesManager from '@/components/admin/BranchesManager';
 import BundleDealsManager from '@/components/admin/BundleDealsManager';
+import ReviewsManager from '@/components/admin/ReviewsManager';
 import ThemeToggle from '@/components/ThemeToggle';
 import { VisitorCounter } from '@/components/admin/VisitorCounter';
 
@@ -127,6 +128,10 @@ const AdminDashboard = () => {
               <Gift className="w-4 h-4" />
               <span>Bundles</span>
             </TabsTrigger>
+            <TabsTrigger value="reviews" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-4">
+              <Star className="w-4 h-4" />
+              <span>Reviews</span>
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="pos" className="space-y-4">
@@ -175,6 +180,10 @@ const AdminDashboard = () => {
 
           <TabsContent value="bundles" className="space-y-4">
             <BundleDealsManager />
+          </TabsContent>
+
+          <TabsContent value="reviews" className="space-y-4">
+            <ReviewsManager />
           </TabsContent>
         </Tabs>
       </div>
