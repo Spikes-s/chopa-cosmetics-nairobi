@@ -116,7 +116,10 @@ const Reviews = () => {
 
             <ReviewForm
               productId={selectedProductId === 'all' ? '' : selectedProductId}
-              onReviewSubmitted={handleReviewSubmitted}
+              onReviewSubmitted={() => {
+                const productId = selectedProductId === 'all' ? undefined : selectedProductId;
+                loadReviews(productId);
+              }}
             />
           </CardContent>
         </Card>
