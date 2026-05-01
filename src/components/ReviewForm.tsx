@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 import { LoadingButton } from '@/components/ui/loading-button';
+import { submitReview, validateReviewInput } from '@/lib/reviews';
 
 interface ReviewFormProps {
   productId: string;
@@ -22,7 +23,7 @@ const ReviewForm = ({ productId, onReviewSubmitted }: ReviewFormProps) => {
   const [submitting, setSubmitting] = useState(false);
   const [images, setImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -64,40 +65,33 @@ const ReviewForm = ({ productId, onReviewSubmitted }: ReviewFormProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) { toast.error('Please sign in to leave a review'); return; }
-    if (rating === 0) { toast.error('Please select a rating'); return; }
     if (submitting) return;
 
-    setSubmitting(true);
-
-    // Timeout fallback - 15 seconds max
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      timeoutRef.current = setTimeout(() => {
-        reject(new Error('Request timed out. Please try again.'));
-      }, 15000);
+    const resolvedName = customerName.trim() || user.email?.split('@')[0] || '';
+    const errors = validateReviewInput({
+      productId,
+      customerName: resolvedName,
+      rating,
+      reviewText,
     });
 
+    const firstError = errors.productId || errors.rating || errors.customerName || errors.reviewText;
+    if (firstError) {
+      toast.error(firstError);
+      return;
+    }
+
+    setSubmitting(true);
     try {
-      const submitPromise = (async () => {
-        const reviewImages = images.length > 0 ? await uploadImages() : [];
+      const reviewImages = images.length > 0 ? await uploadImages() : [];
 
-        const { error } = await supabase
-          .from('product_reviews')
-          .insert({
-            product_id: productId,
-            user_id: user.id,
-            customer_name: customerName.trim() || user.email?.split('@')[0] || 'Anonymous',
-            rating,
-            review_text: reviewText.trim() || null,
-            review_images: reviewImages,
-          });
-
-        if (error) throw error;
-        return true;
-      })();
-
-      await Promise.race([submitPromise, timeoutPromise]);
-
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      await submitReview({
+        productId,
+        customerName: resolvedName,
+        rating,
+        reviewText,
+        reviewImages,
+      });
 
       toast.success('Review submitted successfully!');
       setRating(0);
@@ -105,11 +99,11 @@ const ReviewForm = ({ productId, onReviewSubmitted }: ReviewFormProps) => {
       setCustomerName('');
       setImages([]);
       setImagePreviews([]);
+      if (fileInputRef.current) fileInputRef.current.value = '';
       onReviewSubmitted();
     } catch (error: any) {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
       console.error('Review submission error:', error);
-      toast.error(error.message || 'Failed to submit review. Please try again.');
+      toast.error(error?.message || 'Failed to submit review. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -162,7 +156,7 @@ const ReviewForm = ({ productId, onReviewSubmitted }: ReviewFormProps) => {
       </div>
 
       <div>
-        <Label htmlFor="reviewText">Your Review (optional)</Label>
+        <Label htmlFor="reviewText">Your Review *</Label>
         <Textarea
           id="reviewText"
           value={reviewText}
@@ -170,10 +164,10 @@ const ReviewForm = ({ productId, onReviewSubmitted }: ReviewFormProps) => {
           placeholder="Share your experience with this product..."
           rows={3}
           disabled={submitting}
+          required
         />
       </div>
 
-      {/* Photo Upload */}
       <div>
         <Label className="mb-2 block">Add Photos (optional, max 3)</Label>
         <div className="flex flex-wrap gap-2 mb-2">
@@ -193,7 +187,7 @@ const ReviewForm = ({ productId, onReviewSubmitted }: ReviewFormProps) => {
           {images.length < 3 && !submitting && (
             <label className="w-16 h-16 rounded-lg border-2 border-dashed border-border hover:border-primary/50 flex items-center justify-center cursor-pointer transition-colors">
               <Camera className="w-5 h-5 text-muted-foreground" />
-              <input type="file" accept="image/*" onChange={handleImageSelect} className="hidden" />
+              <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageSelect} className="hidden" />
             </label>
           )}
         </div>
@@ -201,7 +195,7 @@ const ReviewForm = ({ productId, onReviewSubmitted }: ReviewFormProps) => {
 
       <LoadingButton
         type="submit"
-        disabled={rating === 0}
+        disabled={rating === 0 || !productId}
         loading={submitting}
         loadingText="Submitting…"
       >
