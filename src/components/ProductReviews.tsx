@@ -1,139 +1,114 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import ProductRating from './ProductRating';
 import ReviewForm from './ReviewForm';
+import ReviewStatsCard from './reviews/ReviewStats';
+import ReviewCard from './reviews/ReviewCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { User } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
-
-interface Review {
-  id: string;
-  customer_name: string | null;
-  rating: number;
-  review_text: string | null;
-  review_images: string[] | null;
-  created_at: string;
-}
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { fetchReviews, type ReviewRecord, type ReviewStats, type ReviewSort } from '@/lib/reviews';
 
 interface ProductReviewsProps {
   productId: string;
 }
 
+const PAGE_SIZE = 5;
+
 const ProductReviews = ({ productId }: ProductReviewsProps) => {
-  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviews, setReviews] = useState<ReviewRecord[]>([]);
+  const [stats, setStats] = useState<ReviewStats>({ total: 0, average: 0, breakdown: {} });
   const [loading, setLoading] = useState(true);
-  const [averageRating, setAverageRating] = useState(0);
+  const [sort, setSort] = useState<ReviewSort>('newest');
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
-  const fetchReviews = async () => {
-    const { data, error } = await supabase
-      .from('product_reviews')
-      .select('id, customer_name, rating, review_text, review_images, created_at')
-      .eq('product_id', productId)
-      .eq('is_approved', true)
-      .order('created_at', { ascending: false });
-
-    if (!error && data) {
-      setReviews(data);
-      if (data.length > 0) {
-        const avg = data.reduce((sum, r) => sum + r.rating, 0) / data.length;
-        setAverageRating(Math.round(avg * 10) / 10);
-      }
+  const load = useCallback(async () => {
+    if (!productId) return;
+    setLoading(true);
+    try {
+      const result = await fetchReviews({ productId, sort, pageSize: 50 });
+      setReviews(result.reviews);
+      setStats(result.stats);
+    } catch (e) {
+      console.error('Failed to load reviews', e);
+      setReviews([]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  };
+  }, [productId, sort]);
 
+  useEffect(() => { load(); }, [load]);
+
+  // Realtime updates so the section refreshes after new submissions
   useEffect(() => {
-    fetchReviews();
-    
-    // Subscribe to realtime updates
+    if (!productId) return;
     const channel = supabase
       .channel(`reviews-${productId}`)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
         table: 'product_reviews',
-        filter: `product_id=eq.${productId}`
-      }, () => {
-        fetchReviews();
-      })
+        filter: `product_id=eq.${productId}`,
+      }, () => load())
       .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [productId, load]);
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [productId]);
-
-  if (loading) {
-    return (
-      <div className="animate-pulse space-y-4">
-        <div className="h-8 bg-muted rounded w-48" />
-        <div className="h-24 bg-muted rounded" />
-      </div>
-    );
-  }
+  const visible = reviews.slice(0, visibleCount);
 
   return (
     <Card variant="glass" className="mt-8">
       <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <span>Customer Reviews</span>
-          {reviews.length > 0 && (
-            <div className="flex items-center gap-2">
-              <ProductRating rating={Math.round(averageRating)} size="lg" showCount={false} />
-              <span className="text-lg font-semibold">{averageRating}</span>
-              <span className="text-sm text-muted-foreground">({reviews.length} reviews)</span>
-            </div>
-          )}
-        </CardTitle>
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <CardTitle>Customer Reviews</CardTitle>
+          <Select value={sort} onValueChange={(v) => { setSort(v as ReviewSort); setVisibleCount(PAGE_SIZE); }}>
+            <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="newest">Newest first</SelectItem>
+              <SelectItem value="oldest">Oldest first</SelectItem>
+              <SelectItem value="highest">Highest rated</SelectItem>
+              <SelectItem value="lowest">Lowest rated</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Review Form */}
-        <div className="bg-muted/30 rounded-lg p-4">
-          <h4 className="font-semibold mb-3">Write a Review</h4>
-          <ReviewForm productId={productId} onReviewSubmitted={fetchReviews} />
-        </div>
-
-        <Separator />
-
-        {/* Reviews List */}
-        {reviews.length === 0 ? (
-          <p className="text-center text-muted-foreground py-4">
-            No reviews yet. Be the first to review this product!
-          </p>
-        ) : (
-          <div className="space-y-4">
-            {reviews.map((review) => (
-              <div key={review.id} className="bg-muted/20 rounded-lg p-4">
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                      <User className="w-4 h-4 text-primary" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-sm">{review.customer_name || 'Anonymous'}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatDistanceToNow(new Date(review.created_at), { addSuffix: true })}
-                      </p>
-                    </div>
-                  </div>
-                  <ProductRating rating={review.rating} size="sm" showCount={false} />
-                </div>
-                {review.review_text && (
-                  <p className="text-sm text-muted-foreground mt-2">{review.review_text}</p>
-                )}
-                {review.review_images && review.review_images.length > 0 && (
-                  <div className="flex gap-2 mt-3">
-                    {review.review_images.map((img, i) => (
-                      <a key={i} href={img} target="_blank" rel="noopener noreferrer" className="w-16 h-16 rounded-lg overflow-hidden border border-border hover:opacity-80 transition-opacity">
-                        <img src={img} alt="Review photo" className="w-full h-full object-cover" loading="lazy" />
-                      </a>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
+        {loading ? (
+          <div className="space-y-3">
+            <div className="h-20 animate-pulse rounded-lg bg-muted" />
+            <div className="h-20 animate-pulse rounded-lg bg-muted" />
           </div>
+        ) : (
+          <>
+            {stats.total > 0 ? (
+              <ReviewStatsCard stats={stats} />
+            ) : (
+              <p className="text-center text-sm text-muted-foreground">No reviews yet. Be the first to review!</p>
+            )}
+
+            <Separator />
+
+            <div className="bg-muted/30 rounded-lg p-4">
+              <h4 className="font-semibold mb-3">Write a Review</h4>
+              <ReviewForm productId={productId} onReviewSubmitted={load} />
+            </div>
+
+            {visible.length > 0 && (
+              <>
+                <Separator />
+                <div className="space-y-3">
+                  {visible.map((review) => (
+                    <ReviewCard key={review.id} review={review} />
+                  ))}
+                </div>
+                {visibleCount < reviews.length && (
+                  <Button variant="outline" className="w-full" onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}>
+                    Show more reviews
+                  </Button>
+                )}
+              </>
+            )}
+          </>
         )}
       </CardContent>
     </Card>
