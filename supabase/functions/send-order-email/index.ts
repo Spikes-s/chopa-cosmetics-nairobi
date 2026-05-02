@@ -25,9 +25,13 @@ interface OrderData {
   user_id: string | null;
 }
 
+const escapeHtml = (s: string): string =>
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
 const getEmailContent = (order: OrderData, emailType: string) => {
+  const safeName = escapeHtml(order.customer_name);
   const itemsList = order.items
-    .map(item => `<li>${item.quantity}x ${item.name} - Ksh ${item.price.toLocaleString()}</li>`)
+    .map(item => `<li>${item.quantity}x ${escapeHtml(item.name)} - Ksh ${item.price.toLocaleString()}</li>`)
     .join('');
 
   const baseStyles = `
@@ -54,7 +58,7 @@ const getEmailContent = (order: OrderData, emailType: string) => {
               <h1>Thank You for Your Order!</h1>
             </div>
             <div class="content">
-              <p>Hi ${order.customer_name},</p>
+              <p>Hi ${safeName},</p>
               <p>We've received your order and it's being processed.</p>
               <p class="order-id">Order ID: ${order.id.slice(0, 8)}</p>
               ${order.mpesa_code ? `<p><strong>M-Pesa Code:</strong> ${order.mpesa_code}</p>` : ''}
@@ -81,7 +85,7 @@ const getEmailContent = (order: OrderData, emailType: string) => {
               <h1>Payment Confirmed! ✓</h1>
             </div>
             <div class="content">
-              <p>Hi ${order.customer_name},</p>
+              <p>Hi ${safeName},</p>
               <p>Your payment of <span class="total">Ksh ${order.total.toLocaleString()}</span> has been confirmed.</p>
               <p class="order-id">Order ID: ${order.id.slice(0, 8)}</p>
               <p>Your order is now being prepared. We'll notify you when it's ready!</p>
@@ -103,7 +107,7 @@ const getEmailContent = (order: OrderData, emailType: string) => {
               <h1>Your Order is Ready! 🎉</h1>
             </div>
             <div class="content">
-              <p>Hi ${order.customer_name},</p>
+              <p>Hi ${safeName},</p>
               <p>Great news! Your order is ready ${order.delivery_type === 'delivery' ? 'for delivery' : 'for pickup at our store'}.</p>
               <p class="order-id">Order ID: ${order.id.slice(0, 8)}</p>
               ${order.delivery_type === 'pickup' ? '<p><strong>Location:</strong> KAKA HOUSE</p><p><strong>Hours:</strong> 7:30 AM – 9:00 PM</p>' : '<p>Our delivery team will contact you shortly.</p>'}
@@ -125,7 +129,7 @@ const getEmailContent = (order: OrderData, emailType: string) => {
               <h1>Order Complete! 💖</h1>
             </div>
             <div class="content">
-              <p>Hi ${order.customer_name},</p>
+              <p>Hi ${safeName},</p>
               <p>Your order has been completed successfully. Thank you for shopping with us!</p>
               <p class="order-id">Order ID: ${order.id.slice(0, 8)}</p>
               <p>We hope you love your products. See you again soon!</p>
