@@ -25,9 +25,13 @@ interface OrderData {
   user_id: string | null;
 }
 
+const escapeHtml = (s: string): string =>
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
 const getEmailContent = (order: OrderData, emailType: string) => {
+  const safeName = escapeHtml(order.customer_name);
   const itemsList = order.items
-    .map(item => `<li>${item.quantity}x ${item.name} - Ksh ${item.price.toLocaleString()}</li>`)
+    .map(item => `<li>${item.quantity}x ${escapeHtml(item.name)} - Ksh ${item.price.toLocaleString()}</li>`)
     .join('');
 
   const baseStyles = `
