@@ -103,19 +103,17 @@ const validateRequest = (body: any): { valid: boolean; error?: string; data?: Or
     return { valid: false, error: 'Order cannot contain more than 50 different items' };
   }
 
-const validatedItems: OrderItem[] = [];
+  const validatedItems: OrderItem[] = [];
   for (const item of body.items) {
     if (!item.id || typeof item.id !== 'string') {
       return { valid: false, error: 'Each item must have a valid ID' };
     }
-    // Allow both UUID and string IDs (for local product data compatibility)
     if (item.id.length < 1 || item.id.length > 100) {
       return { valid: false, error: 'Invalid item ID format' };
     }
     if (typeof item.quantity !== 'number' || !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 999) {
       return { valid: false, error: 'Item quantity must be between 1 and 999' };
     }
-    // Include optional item details from client for local products
     validatedItems.push({ 
       id: item.id, 
       quantity: item.quantity,
@@ -204,8 +202,9 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
     
-    if (!supabaseUrl || !supabaseServiceKey) {
+    if (!supabaseUrl || !supabaseServiceKey || !supabaseAnonKey) {
       console.error('Missing environment variables');
       return new Response(
         JSON.stringify({ success: false, error: 'Server configuration error' }),
@@ -215,6 +214,20 @@ const handler = async (req: Request): Promise<Response> => {
     
     // Create service role client for database operations
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // --- AUTH: Verify caller identity ---
+    const authHeader = req.headers.get('Authorization');
+    let verifiedUserId: string | null = null;
+
+    if (authHeader?.startsWith('Bearer ')) {
+      const authClient = createClient(supabaseUrl, supabaseAnonKey, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: claimsData, error: claimsError } = await authClient.auth.getClaims(authHeader.replace('Bearer ', ''));
+      if (!claimsError && claimsData?.claims?.sub) {
+        verifiedUserId = claimsData.claims.sub as string;
+      }
+    }
 
     // Enforce request body size limit (100KB max)
     const contentLength = parseInt(req.headers.get('content-length') || '0');
@@ -238,6 +251,11 @@ const handler = async (req: Request): Promise<Response> => {
 
     const orderData = validation.data!;
 
+    // --- AUTH: Determine the user_id to use ---
+    // If authenticated, always use the verified user ID (ignore client-supplied value)
+    // If not authenticated, force null (guest order)
+    const resolvedUserId = verifiedUserId || null;
+
     // Rate limiting check - max 5 orders per hour per phone
     const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
     const { data: recentOrders, error: rateLimitError } = await supabase
@@ -255,7 +273,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Try to fetch product prices from database (for database products)
+    // Try to fetch product prices from database
     const productIds = orderData.items.map(item => item.id);
     const { data: dbProducts, error: productsError } = await supabase
       .from('products')
@@ -263,7 +281,7 @@ const handler = async (req: Request): Promise<Response> => {
       .in('id', productIds);
 
     if (productsError) {
-      console.error('Products fetch error (non-fatal):', productsError);
+      console.error('Products fetch error:', productsError);
     }
 
     // Create a map of database products for quick lookup
@@ -274,67 +292,48 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Found ${dbProductMap.size} products in database out of ${productIds.length} requested`);
 
-    // Calculate prices - use database products where available, fall back to client-provided data
+    // Reject any items not found in the database — never trust client prices
+    const missingItems = orderData.items.filter(item => !dbProductMap.has(item.id));
+    if (missingItems.length > 0) {
+      const missingNames = missingItems.map(i => i.name || i.id).join(', ');
+      console.error('Items not found in database:', missingNames);
+      return new Response(
+        JSON.stringify({ error: 'Some items are no longer available. Please refresh and try again.' }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Calculate prices using only server-side database values
     let subtotal = 0;
-    const unavailableItems: string[] = [];
     
     const orderItems = orderData.items.map(item => {
-      const dbProduct = dbProductMap.get(item.id);
+      const dbProduct = dbProductMap.get(item.id)!;
       
-      if (dbProduct) {
-        // Database product - use server-validated prices
-        if (dbProduct.in_stock === false) {
-          unavailableItems.push('item');
-          throw new Error('Some items in your order are currently unavailable');
-        }
-        if (dbProduct.stock_quantity !== null && dbProduct.stock_quantity < item.quantity) {
-          throw new Error('Some items have insufficient stock. Please adjust quantities');
-        }
-
-        const isBraid = dbProduct.category.toLowerCase().includes('braid');
-        const threshold = dbProduct.wholesale_min_qty || (isBraid ? 10 : 6);
-        const isWholesale = item.quantity >= threshold && dbProduct.wholesale_price !== null && dbProduct.wholesale_price > 0;
-        const unitPrice = isWholesale ? dbProduct.wholesale_price! : dbProduct.retail_price;
-        const itemTotal = unitPrice * item.quantity;
-        
-        subtotal += itemTotal;
-
-        return {
-          id: dbProduct.id,
-          name: dbProduct.name,
-          quantity: item.quantity,
-          price: unitPrice,
-          priceType: isWholesale ? 'wholesale' : 'retail',
-          image: dbProduct.image_url,
-          color: item.color,
-          size: item.size,
-        };
-      } else {
-        // Local product - use client-provided data with basic validation
-        if (!item.name || !item.price) {
-          throw new Error('Invalid order data. Please refresh and try again');
-        }
-
-        const isBraid = (item.name || '').toLowerCase().includes('braid');
-        const threshold = isBraid ? 10 : 6;
-        const hasWholesale = item.wholesalePrice && item.wholesalePrice > 0;
-        const isWholesale = item.quantity >= threshold && hasWholesale;
-        const unitPrice = isWholesale ? item.wholesalePrice! : item.price;
-        const itemTotal = unitPrice * item.quantity;
-        
-        subtotal += itemTotal;
-
-        return {
-          id: item.id,
-          name: item.name,
-          quantity: item.quantity,
-          price: unitPrice,
-          priceType: isWholesale ? 'wholesale' : 'retail',
-          image: item.image,
-          color: item.color,
-          size: item.size,
-        };
+      if (dbProduct.in_stock === false) {
+        throw new Error('Some items in your order are currently unavailable');
       }
+      if (dbProduct.stock_quantity !== null && dbProduct.stock_quantity < item.quantity) {
+        throw new Error('Some items have insufficient stock. Please adjust quantities');
+      }
+
+      const isBraid = dbProduct.category.toLowerCase().includes('braid');
+      const threshold = dbProduct.wholesale_min_qty || (isBraid ? 10 : 6);
+      const isWholesale = item.quantity >= threshold && dbProduct.wholesale_price !== null && dbProduct.wholesale_price > 0;
+      const unitPrice = isWholesale ? dbProduct.wholesale_price! : dbProduct.retail_price;
+      const itemTotal = unitPrice * item.quantity;
+      
+      subtotal += itemTotal;
+
+      return {
+        id: dbProduct.id,
+        name: dbProduct.name,
+        quantity: item.quantity,
+        price: unitPrice,
+        priceType: isWholesale ? 'wholesale' : 'retail',
+        image: dbProduct.image_url,
+        color: item.color,
+        size: item.size,
+      };
     });
 
     const deliveryFee = orderData.delivery_fee || 0;
@@ -342,14 +341,13 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Generate order token for guest order tracking
     const orderToken = crypto.randomUUID();
-    // Set token expiration to 90 days from now
     const orderTokenExpiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString();
 
-    // Insert order with SERVER-CALCULATED values
+    // Insert order with SERVER-CALCULATED values and VERIFIED user_id
     const { data: createdOrder, error: insertError } = await supabase
       .from('orders')
       .insert({
-        user_id: orderData.user_id || null,
+        user_id: resolvedUserId,
         customer_name: orderData.customer_name,
         customer_phone: orderData.customer_phone,
         customer_email: orderData.customer_email || null,
@@ -380,10 +378,6 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('Order created successfully:', createdOrder.id);
 
-    console.log('Order created successfully:', createdOrder.id);
-
-    // Return minimal response - client generates and stores token locally before API call
-    // No need to return order_token since client already has it
     return new Response(
       JSON.stringify({ 
         success: true, 
@@ -397,13 +391,11 @@ const handler = async (req: Request): Promise<Response> => {
     );
 
   } catch (error: any) {
-    console.error('Error in validate-order function:', error.message, error.stack);
+    console.error('Error in validate-order function:', error.message);
     
-    // Map internal errors to generic user-friendly messages
     let userMessage = 'An error occurred processing your order. Please try again';
     const errorMsg = (error.message || '').toLowerCase();
     
-    // Only expose safe, user-action-oriented messages
     if (errorMsg.includes('unavailable') || errorMsg.includes('out of stock')) {
       userMessage = 'Some items in your order are currently unavailable';
     } else if (errorMsg.includes('insufficient stock') || errorMsg.includes('quantities')) {
@@ -411,7 +403,6 @@ const handler = async (req: Request): Promise<Response> => {
     } else if (errorMsg.includes('invalid order data') || errorMsg.includes('refresh')) {
       userMessage = 'Invalid order data. Please refresh and try again';
     }
-    // All other errors get generic message - no internal details exposed
     
     return new Response(
       JSON.stringify({ success: false, error: userMessage }),
