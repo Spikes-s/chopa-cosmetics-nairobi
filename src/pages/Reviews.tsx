@@ -58,6 +58,19 @@ const Reviews = () => {
 
   useEffect(() => { loadReviews(); }, [loadReviews]);
 
+  // Realtime: auto-refresh when any review is added/updated/deleted
+  useEffect(() => {
+    const channel = supabase
+      .channel('reviews-global')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'product_reviews',
+      }, () => loadReviews())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [loadReviews]);
+
   // Sync URL params
   useEffect(() => {
     const params: Record<string, string> = {};
