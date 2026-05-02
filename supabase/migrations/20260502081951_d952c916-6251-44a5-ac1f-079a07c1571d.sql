@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Anyone can view products" ON public.products;
