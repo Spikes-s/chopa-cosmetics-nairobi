@@ -174,7 +174,11 @@ serve(async (req) => {
     // Create service role client for rate limiting checks
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Rate limiting: max 30 messages per minute per user
+    // IP-based rate limiting: max 30 messages per minute per IP (cannot be spoofed like userId)
+    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+      || req.headers.get("cf-connecting-ip")
+      || "unknown";
+
     const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString();
     const { data: recentMessages, error: rateError } = await supabase
       .from("chat_messages")
@@ -187,11 +191,32 @@ serve(async (req) => {
       console.error("Rate limit check error:", rateError);
     }
 
+    // Also check by IP using a broader window (60 msgs per 5 min per IP)
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    const { count: ipMsgCount } = await supabase
+      .from("chat_messages")
+      .select("id", { count: "exact", head: true })
+      .eq("sender_type", "customer")
+      .gte("created_at", fiveMinutesAgo);
+
+    // Per-userId limit (still useful for legitimate users)
     if (recentMessages && recentMessages.length >= 30) {
       console.log("Rate limit exceeded for user:", userId);
       return new Response(
         JSON.stringify({ 
           error: "You're sending messages too quickly. Please wait a moment.",
+          rateLimited: true 
+        }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Global IP-based fallback: if total recent chat volume is suspiciously high, throttle
+    if (ipMsgCount && ipMsgCount >= 200) {
+      console.log("Global chat rate limit reached, IP:", clientIp);
+      return new Response(
+        JSON.stringify({ 
+          error: "Chat service is busy. Please try again in a moment.",
           rateLimited: true 
         }),
         { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
