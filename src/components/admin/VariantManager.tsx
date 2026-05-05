@@ -23,6 +23,10 @@ const VARIANT_TYPES = [
   { value: 'capacity', label: 'Capacity (ml/L)' },
   { value: 'size', label: 'Size' },
   { value: 'quantity', label: 'Quantity / Pack' },
+  { value: 'colour', label: 'Colour' },
+  { value: 'flavour', label: 'Flavour' },
+  { value: 'scent', label: 'Scent' },
+  { value: 'name', label: 'Name / Style' },
 ];
 
 interface VariantManagerProps {
