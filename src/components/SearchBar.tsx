@@ -93,7 +93,6 @@ const SearchBar = ({ className, placeholder = "Search products...", isMobile = f
           results.push(prod);
         });
       }
-      }
 
       setSuggestions(results);
     } catch (err) {
