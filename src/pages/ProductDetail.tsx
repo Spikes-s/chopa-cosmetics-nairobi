@@ -115,7 +115,7 @@ const ProductDetail = () => {
 
   // Resolve variant-specific price (first match wins by priority)
   const variantPrice = useMemo(() => {
-    const priorities = ['weight', 'capacity', 'size', 'quantity'];
+    const priorities = ['weight', 'capacity', 'size', 'quantity', 'colour', 'flavour', 'scent', 'name'];
     for (const type of priorities) {
       const value = selectedVariants[type];
       if (!value) continue;
