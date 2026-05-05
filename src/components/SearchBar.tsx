@@ -295,6 +295,7 @@ const SearchBar = ({ className, placeholder = "Search products...", isMobile = f
                 </li>
               ))}
             </ul>
+            </>
           ) : query.length >= 2 ? (
             <div className="py-4 text-center text-muted-foreground text-sm">
               No products found for "{query}"
