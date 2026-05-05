@@ -58,6 +58,41 @@ const HamburgerCategoryMenu = () => {
           </SheetTitle>
         </SheetHeader>
         <div className="mt-6 space-y-1">
+          {/* Quick Links */}
+          <Link
+            to="/my-orders"
+            onClick={() => setIsOpen(false)}
+            className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
+                <Package className="w-5 h-5 text-accent" />
+              </div>
+              <span className="font-medium text-foreground group-hover:text-primary transition-colors">
+                My Orders
+              </span>
+            </div>
+            <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+          </Link>
+          <Link
+            to="/reviews"
+            onClick={() => setIsOpen(false)}
+            className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Star className="w-5 h-5 text-primary" />
+              </div>
+              <span className="font-medium text-foreground group-hover:text-primary transition-colors">
+                Reviews
+              </span>
+            </div>
+            <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+          </Link>
+
+          <div className="border-t border-border my-2" />
+
+          {/* Categories */}
           {isLoading ? (
             <div className="flex justify-center py-8">
               <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
