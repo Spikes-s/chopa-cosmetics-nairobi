@@ -577,6 +577,7 @@ export type Database = {
           sale_ends_at: string | null
           sale_label: string | null
           sale_price: number | null
+          search_tags: string | null
           stock_quantity: number | null
           subcategory: string | null
           updated_at: string
@@ -601,6 +602,7 @@ export type Database = {
           sale_ends_at?: string | null
           sale_label?: string | null
           sale_price?: number | null
+          search_tags?: string | null
           stock_quantity?: number | null
           subcategory?: string | null
           updated_at?: string
@@ -625,6 +627,7 @@ export type Database = {
           sale_ends_at?: string | null
           sale_label?: string | null
           sale_price?: number | null
+          search_tags?: string | null
           stock_quantity?: number | null
           subcategory?: string | null
           updated_at?: string
@@ -954,6 +957,7 @@ export type Database = {
           sale_ends_at: string | null
           sale_label: string | null
           sale_price: number | null
+          search_tags: string | null
           stock_quantity: number | null
           subcategory: string | null
           updated_at: string | null
@@ -977,6 +981,7 @@ export type Database = {
           sale_ends_at?: string | null
           sale_label?: string | null
           sale_price?: number | null
+          search_tags?: string | null
           stock_quantity?: number | null
           subcategory?: string | null
           updated_at?: string | null
@@ -1000,6 +1005,7 @@ export type Database = {
           sale_ends_at?: string | null
           sale_label?: string | null
           sale_price?: number | null
+          search_tags?: string | null
           stock_quantity?: number | null
           subcategory?: string | null
           updated_at?: string | null
@@ -1046,6 +1052,8 @@ export type Database = {
         Args: { product_id: string; quantity_sold: number }
         Returns: undefined
       }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
       app_role: "admin" | "customer" | "super_admin"
