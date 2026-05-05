@@ -163,7 +163,8 @@ const ProductDetail = () => {
     const variantLabel = Object.entries(selectedVariants)
       .filter(([_, v]) => v)
       .map(([_, v]) => v)
-      .join('-');
+      .join(', ');
+    const fullVariantLabel = [selectedColor, variantLabel].filter(Boolean).join(', ');
     const cartId = [product.id, selectedColor, variantLabel].filter(Boolean).join('-');
 
     addItem({
@@ -173,6 +174,7 @@ const ProductDetail = () => {
       wholesalePrice: product.wholesale_price || 0,
       quantity,
       color: selectedColor,
+      variant: fullVariantLabel || undefined,
       image: resolvedImage || product.image_url || '/placeholder.svg',
       category: product.category,
     });
