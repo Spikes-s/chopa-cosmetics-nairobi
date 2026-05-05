@@ -50,20 +50,22 @@ const SearchBar = ({ className, placeholder = "Search products...", isMobile = f
 
     setIsLoading(true);
     try {
-      const escapedQuery = searchQuery.replace(/[%_]/g, '\\$&');
+      const filterStr = buildSearchFilter(searchQuery);
       
-      // Search products
+      // Search products using expanded + fuzzy-friendly filters
       const { data: products, error: prodError } = await supabase
         .from('public_products')
-        .select('id, name, category, image_url, retail_price')
-        .or(`name.ilike.%${escapedQuery}%,category.ilike.%${escapedQuery}%,subcategory.ilike.%${escapedQuery}%`)
-        .limit(6);
+        .select('id, name, category, image_url, retail_price, search_tags')
+        .or(filterStr)
+        .limit(12);
 
-      // Search categories
+      // Search categories with expanded terms
+      const expanded = expandQuery(searchQuery);
+      const catFilter = expanded.map(t => `name.ilike.%${t.replace(/[%_]/g, '\\$&')}%`).join(',');
       const { data: categories, error: catError } = await supabase
         .from('categories')
         .select('id, name, slug')
-        .ilike('name', `%${escapedQuery}%`)
+        .or(catFilter)
         .eq('is_active', true)
         .limit(3);
 
@@ -76,11 +78,21 @@ const SearchBar = ({ className, placeholder = "Search products...", isMobile = f
         });
       }
       
-      // Add product matches
+      // Add product matches, sorted by fuzzy relevance
       if (!prodError && products) {
-        products.forEach(prod => {
-          results.push({ ...prod, type: 'product' });
+        const scored = products.map(prod => ({
+          ...prod,
+          type: 'product' as const,
+          score: Math.max(
+            fuzzyScore(searchQuery, prod.name),
+            fuzzyScore(searchQuery, prod.search_tags || '')
+          ),
+        }));
+        scored.sort((a, b) => b.score - a.score);
+        scored.slice(0, 8).forEach(prod => {
+          results.push(prod);
         });
+      }
       }
 
       setSuggestions(results);
