@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
-import { Package, Phone, MapPin, Clock, Gift, Bell, CheckCircle, Archive, Search, X } from 'lucide-react';
+import { Package, Phone, MapPin, Clock, Gift, Bell, CheckCircle, Archive, Search, X, Printer } from 'lucide-react';
+import { printReceipt } from '@/lib/receipt';
 import { toast as sonnerToast } from 'sonner';
 
 interface Order {
