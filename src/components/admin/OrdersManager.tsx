@@ -400,12 +400,23 @@ const OrdersManager = () => {
             <p className="text-muted-foreground mb-1 flex items-center gap-1">
               <Package className="w-3 h-3" /> Items
             </p>
-            <ul className="space-y-1">
-              {Array.isArray(order.items) && order.items.map((item: any, idx: number) => (
-                <li key={idx}>
-                  {item.quantity}x {item.name} - Ksh {item.price}
-                </li>
-              ))}
+            <ul className="space-y-2">
+              {Array.isArray(order.items) && order.items.map((item: any, idx: number) => {
+                const variantInfo = [item.color, item.variant].filter(Boolean).join(', ');
+                return (
+                  <li key={idx} className="flex items-center gap-2">
+                    {item.image && (
+                      <img src={item.image} alt={item.name} className="w-8 h-8 rounded object-cover flex-shrink-0" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm">{item.quantity}x {item.name} - Ksh {item.price}</span>
+                      {variantInfo && (
+                        <p className="text-xs text-muted-foreground">{variantInfo}</p>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           </div>
           <div>
