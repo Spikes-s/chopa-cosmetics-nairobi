@@ -101,7 +101,7 @@ const Products = () => {
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       // Import and use fuzzy + multilingual search
-      const { fuzzyScore, expandQuery } = require('@/lib/search-utils');
+      // Use fuzzy + multilingual search from imported utils
       const expanded = expandQuery(query);
       filtered = filtered.filter((p) => {
         const searchable = [
