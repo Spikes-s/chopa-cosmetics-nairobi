@@ -249,6 +249,13 @@ const SearchBar = ({ className, placeholder = "Search products...", isMobile = f
               <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
             </div>
           ) : suggestions.length > 0 ? (
+            <>
+              {expandQuery(query).length > 1 && (
+                <div className="px-4 py-1.5 bg-primary/5 border-b border-border flex items-center gap-1.5 text-xs text-primary">
+                  <Sparkles className="w-3 h-3" />
+                  <span>Smart search expanded your query</span>
+                </div>
+              )}
             <ul className="py-1">
               {suggestions.map((suggestion, index) => (
                 <li key={`${suggestion.type}-${suggestion.id}`}>
