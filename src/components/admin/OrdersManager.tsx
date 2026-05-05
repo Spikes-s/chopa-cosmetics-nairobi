@@ -513,6 +513,20 @@ const OrdersManager = () => {
             </Button>
           </div>
         )}
+
+        {isCompletedView && (
+          <div className="flex justify-end pt-2 border-t border-border/50">
+            <Button
+              onClick={() => printReceipt(order)}
+              size="sm"
+              variant="outline"
+              className="gap-1"
+            >
+              <Printer className="w-4 h-4" />
+              Print Receipt
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
