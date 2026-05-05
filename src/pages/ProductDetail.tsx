@@ -91,7 +91,7 @@ const ProductDetail = () => {
   // Find the best matching image based on selected options
   // Priority: 1. Color, 2. Weight, 3. Size, 4. Quantity
   const resolvedImage = useMemo(() => {
-    const priorities = ['color', 'weight', 'capacity', 'size', 'quantity'];
+    const priorities = ['color', 'colour', 'weight', 'capacity', 'size', 'quantity', 'flavour', 'scent', 'name'];
     
     // Check color-specific image first
     if (selectedColor) {
