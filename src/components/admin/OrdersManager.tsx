@@ -494,6 +494,16 @@ const OrdersManager = () => {
             )}
 
             <Button
+              onClick={() => printReceipt(order)}
+              size="sm"
+              variant="outline"
+              className="gap-1"
+            >
+              <Printer className="w-4 h-4" />
+              Print
+            </Button>
+
+            <Button
               onClick={() => completeOrder(order.id)}
               size="sm"
               className="bg-green-600 hover:bg-green-700 text-white ml-auto"
