@@ -8,6 +8,7 @@ import { Product } from '@/data/products';
 import CategoryCard from '@/components/CategoryCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { fuzzyScore, expandQuery } from '@/lib/search-utils';
 import { Search, X, ArrowLeft, Loader2 } from 'lucide-react';
 import {
   Select,
