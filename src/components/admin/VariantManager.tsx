@@ -23,6 +23,10 @@ const VARIANT_TYPES = [
   { value: 'capacity', label: 'Capacity (ml/L)' },
   { value: 'size', label: 'Size' },
   { value: 'quantity', label: 'Quantity / Pack' },
+  { value: 'colour', label: 'Colour' },
+  { value: 'flavour', label: 'Flavour' },
+  { value: 'scent', label: 'Scent' },
+  { value: 'name', label: 'Name / Style' },
 ];
 
 interface VariantManagerProps {
@@ -140,7 +144,7 @@ const VariantManager = ({ variantGroups, onChange }: VariantManagerProps) => {
               value={activeGroupIndex === gi ? newOptionValue : ''}
               onFocus={() => setActiveGroupIndex(gi)}
               onChange={(e) => { setActiveGroupIndex(gi); setNewOptionValue(e.target.value); }}
-              placeholder={`Option name (e.g. ${group.type === 'weight' ? '250g' : group.type === 'capacity' ? '250ml' : group.type === 'size' ? 'Small' : 'Pack of 3'})`}
+              placeholder={`Option name (e.g. ${group.type === 'weight' ? '250g' : group.type === 'capacity' ? '250ml' : group.type === 'size' ? 'Small' : group.type === 'quantity' ? 'Pack of 3' : group.type === 'colour' ? 'Red' : group.type === 'flavour' ? 'Vanilla' : group.type === 'scent' ? 'Lavender' : 'Absolute'})`}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addOption(gi); } }}
               className="text-sm flex-1"
             />

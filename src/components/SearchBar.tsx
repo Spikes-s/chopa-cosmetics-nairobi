@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, X, Loader2 } from 'lucide-react';
+import { Search, X, Loader2, Sparkles } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
+import { buildSearchFilter, fuzzyScore, expandQuery } from '@/lib/search-utils';
 
 interface ProductSuggestion {
   id: string;
@@ -49,20 +50,22 @@ const SearchBar = ({ className, placeholder = "Search products...", isMobile = f
 
     setIsLoading(true);
     try {
-      const escapedQuery = searchQuery.replace(/[%_]/g, '\\$&');
+      const filterStr = buildSearchFilter(searchQuery);
       
-      // Search products
+      // Search products using expanded + fuzzy-friendly filters
       const { data: products, error: prodError } = await supabase
         .from('public_products')
-        .select('id, name, category, image_url, retail_price')
-        .or(`name.ilike.%${escapedQuery}%,category.ilike.%${escapedQuery}%,subcategory.ilike.%${escapedQuery}%`)
-        .limit(6);
+        .select('id, name, category, image_url, retail_price, search_tags')
+        .or(filterStr)
+        .limit(12);
 
-      // Search categories
+      // Search categories with expanded terms
+      const expanded = expandQuery(searchQuery);
+      const catFilter = expanded.map(t => `name.ilike.%${t.replace(/[%_]/g, '\\$&')}%`).join(',');
       const { data: categories, error: catError } = await supabase
         .from('categories')
         .select('id, name, slug')
-        .ilike('name', `%${escapedQuery}%`)
+        .or(catFilter)
         .eq('is_active', true)
         .limit(3);
 
@@ -75,10 +78,19 @@ const SearchBar = ({ className, placeholder = "Search products...", isMobile = f
         });
       }
       
-      // Add product matches
+      // Add product matches, sorted by fuzzy relevance
       if (!prodError && products) {
-        products.forEach(prod => {
-          results.push({ ...prod, type: 'product' });
+        const scored = products.map(prod => ({
+          ...prod,
+          type: 'product' as const,
+          score: Math.max(
+            fuzzyScore(searchQuery, prod.name),
+            fuzzyScore(searchQuery, prod.search_tags || '')
+          ),
+        }));
+        scored.sort((a, b) => b.score - a.score);
+        scored.slice(0, 8).forEach(prod => {
+          results.push(prod);
         });
       }
 
@@ -237,6 +249,13 @@ const SearchBar = ({ className, placeholder = "Search products...", isMobile = f
               <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
             </div>
           ) : suggestions.length > 0 ? (
+            <>
+              {expandQuery(query).length > 1 && (
+                <div className="px-4 py-1.5 bg-primary/5 border-b border-border flex items-center gap-1.5 text-xs text-primary">
+                  <Sparkles className="w-3 h-3" />
+                  <span>Smart search expanded your query</span>
+                </div>
+              )}
             <ul className="py-1">
               {suggestions.map((suggestion, index) => (
                 <li key={`${suggestion.type}-${suggestion.id}`}>
@@ -276,6 +295,7 @@ const SearchBar = ({ className, placeholder = "Search products...", isMobile = f
                 </li>
               ))}
             </ul>
+            </>
           ) : query.length >= 2 ? (
             <div className="py-4 text-center text-muted-foreground text-sm">
               No products found for "{query}"
