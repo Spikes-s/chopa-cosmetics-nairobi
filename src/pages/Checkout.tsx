@@ -90,6 +90,7 @@ const Checkout = () => {
         wholesalePrice: item.wholesalePrice,
         color: item.color,
         size: item.size,
+        variant: item.variant,
         image: item.image,
       }));
 

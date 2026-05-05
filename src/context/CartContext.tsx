@@ -13,6 +13,7 @@ interface CartItem {
   color?: string;
   image?: string;
   category: string;
+  variant?: string; // e.g. "Vanilla, 250ml"
 }
 
 interface CartContextType {

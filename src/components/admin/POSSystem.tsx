@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { printReceipt as printReceiptUtil } from '@/lib/receipt';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -386,9 +387,10 @@ const POSSystem = () => {
     }
   };
 
-  // Print receipt (simulated)
-  const printReceipt = () => {
-    window.print();
+  // Print receipt using the shared receipt utility
+  const handlePrintReceipt = () => {
+    if (!lastOrder) return;
+    printReceiptUtil(lastOrder);
   };
 
   // Quick cash buttons
@@ -917,7 +919,7 @@ const POSSystem = () => {
           )}
 
           <div className="flex gap-2 mt-4 print:hidden">
-            <Button variant="outline" className="flex-1 gap-2" onClick={printReceipt}>
+            <Button variant="outline" className="flex-1 gap-2" onClick={handlePrintReceipt}>
               <Printer className="w-4 h-4" />
               Print Receipt
             </Button>

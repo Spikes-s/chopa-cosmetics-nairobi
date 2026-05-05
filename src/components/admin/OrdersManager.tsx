@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
-import { Package, Phone, MapPin, Clock, Gift, Bell, CheckCircle, Archive, Search, X } from 'lucide-react';
+import { Package, Phone, MapPin, Clock, Gift, Bell, CheckCircle, Archive, Search, X, Printer } from 'lucide-react';
+import { printReceipt } from '@/lib/receipt';
 import { toast as sonnerToast } from 'sonner';
 
 interface Order {
@@ -399,12 +400,23 @@ const OrdersManager = () => {
             <p className="text-muted-foreground mb-1 flex items-center gap-1">
               <Package className="w-3 h-3" /> Items
             </p>
-            <ul className="space-y-1">
-              {Array.isArray(order.items) && order.items.map((item: any, idx: number) => (
-                <li key={idx}>
-                  {item.quantity}x {item.name} - Ksh {item.price}
-                </li>
-              ))}
+            <ul className="space-y-2">
+              {Array.isArray(order.items) && order.items.map((item: any, idx: number) => {
+                const variantInfo = [item.color, item.variant].filter(Boolean).join(', ');
+                return (
+                  <li key={idx} className="flex items-center gap-2">
+                    {item.image && (
+                      <img src={item.image} alt={item.name} className="w-8 h-8 rounded object-cover flex-shrink-0" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm">{item.quantity}x {item.name} - Ksh {item.price}</span>
+                      {variantInfo && (
+                        <p className="text-xs text-muted-foreground">{variantInfo}</p>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           </div>
           <div>
@@ -482,12 +494,36 @@ const OrdersManager = () => {
             )}
 
             <Button
+              onClick={() => printReceipt(order)}
+              size="sm"
+              variant="outline"
+              className="gap-1"
+            >
+              <Printer className="w-4 h-4" />
+              Print
+            </Button>
+
+            <Button
               onClick={() => completeOrder(order.id)}
               size="sm"
               className="bg-green-600 hover:bg-green-700 text-white ml-auto"
             >
               <CheckCircle className="w-4 h-4 mr-1" />
               Complete Order
+            </Button>
+          </div>
+        )}
+
+        {isCompletedView && (
+          <div className="flex justify-end pt-2 border-t border-border/50">
+            <Button
+              onClick={() => printReceipt(order)}
+              size="sm"
+              variant="outline"
+              className="gap-1"
+            >
+              <Printer className="w-4 h-4" />
+              Print Receipt
             </Button>
           </div>
         )}

@@ -91,7 +91,7 @@ const ProductDetail = () => {
   // Find the best matching image based on selected options
   // Priority: 1. Color, 2. Weight, 3. Size, 4. Quantity
   const resolvedImage = useMemo(() => {
-    const priorities = ['color', 'weight', 'capacity', 'size', 'quantity'];
+    const priorities = ['color', 'colour', 'weight', 'capacity', 'size', 'quantity', 'flavour', 'scent', 'name'];
     
     // Check color-specific image first
     if (selectedColor) {
@@ -115,7 +115,7 @@ const ProductDetail = () => {
 
   // Resolve variant-specific price (first match wins by priority)
   const variantPrice = useMemo(() => {
-    const priorities = ['weight', 'capacity', 'size', 'quantity'];
+    const priorities = ['weight', 'capacity', 'size', 'quantity', 'colour', 'flavour', 'scent', 'name'];
     for (const type of priorities) {
       const value = selectedVariants[type];
       if (!value) continue;
@@ -163,7 +163,8 @@ const ProductDetail = () => {
     const variantLabel = Object.entries(selectedVariants)
       .filter(([_, v]) => v)
       .map(([_, v]) => v)
-      .join('-');
+      .join(', ');
+    const fullVariantLabel = [selectedColor, variantLabel].filter(Boolean).join(', ');
     const cartId = [product.id, selectedColor, variantLabel].filter(Boolean).join('-');
 
     addItem({
@@ -173,6 +174,7 @@ const ProductDetail = () => {
       wholesalePrice: product.wholesale_price || 0,
       quantity,
       color: selectedColor,
+      variant: fullVariantLabel || undefined,
       image: resolvedImage || product.image_url || '/placeholder.svg',
       category: product.category,
     });

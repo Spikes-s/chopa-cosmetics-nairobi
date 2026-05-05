@@ -144,21 +144,26 @@ const MyOrders = () => {
                       <div>
                         <h4 className="text-sm font-medium text-foreground mb-3">Items</h4>
                         <div className="space-y-2">
-                          {items.map((item: any, i: number) => (
-                            <div key={i} className="flex items-center gap-3 text-sm">
-                              {item.image && (
-                                <img src={item.image} alt={item.name} className="w-10 h-10 rounded-lg object-cover" />
-                              )}
-                              <div className="flex-1 min-w-0">
-                                <p className="font-medium text-foreground truncate">{item.name}</p>
-                                {item.color && <p className="text-xs text-muted-foreground">Color: {item.color}</p>}
+                          {items.map((item: any, i: number) => {
+                            const variantInfo = [item.color, item.variant].filter(Boolean).join(', ');
+                            return (
+                              <div key={i} className="flex items-center gap-3 text-sm">
+                                {item.image && (
+                                  <img src={item.image} alt={item.name} className="w-10 h-10 rounded-lg object-cover" />
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-medium text-foreground truncate">{item.name}</p>
+                                  {variantInfo && (
+                                    <p className="text-xs text-muted-foreground">{variantInfo}</p>
+                                  )}
+                                </div>
+                                <span className="text-muted-foreground">x{item.quantity}</span>
+                                <span className="font-medium text-foreground">
+                                  Ksh {(item.price * item.quantity).toLocaleString()}
+                                </span>
                               </div>
-                              <span className="text-muted-foreground">x{item.quantity}</span>
-                              <span className="font-medium text-foreground">
-                                Ksh {(item.price * item.quantity).toLocaleString()}
-                              </span>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </div>
 
