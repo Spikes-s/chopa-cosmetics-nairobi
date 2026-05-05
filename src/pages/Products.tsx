@@ -99,13 +99,28 @@ const Products = () => {
     // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (p) =>
-          p.name.toLowerCase().includes(query) ||
-          (p.description || '').toLowerCase().includes(query) ||
-          p.category.toLowerCase().includes(query) ||
-          (p.subcategory || '').toLowerCase().includes(query)
-      );
+      // Import and use fuzzy + multilingual search
+      const { fuzzyScore, expandQuery } = require('@/lib/search-utils');
+      const expanded = expandQuery(query);
+      filtered = filtered.filter((p) => {
+        const searchable = [
+          p.name, p.description || '', p.category, p.subcategory || '',
+          (p as any).search_tags || ''
+        ].join(' ').toLowerCase();
+        // Check expanded terms
+        for (const term of expanded) {
+          if (searchable.includes(term)) return true;
+        }
+        // Fuzzy fallback
+        return fuzzyScore(query, searchable) > 30;
+      });
+      // Sort by relevance
+      filtered.sort((a, b) => {
+        const aText = [a.name, (a as any).search_tags || ''].join(' ');
+        const bText = [b.name, (b as any).search_tags || ''].join(' ');
+        return Math.max(fuzzyScore(query, bText), ...expanded.map(t => fuzzyScore(t, bText)))
+             - Math.max(fuzzyScore(query, aText), ...expanded.map(t => fuzzyScore(t, aText)));
+      });
     }
 
     // Category filter
