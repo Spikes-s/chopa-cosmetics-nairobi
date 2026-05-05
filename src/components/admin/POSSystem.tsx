@@ -919,7 +919,7 @@ const POSSystem = () => {
           )}
 
           <div className="flex gap-2 mt-4 print:hidden">
-            <Button variant="outline" className="flex-1 gap-2" onClick={printReceipt}>
+            <Button variant="outline" className="flex-1 gap-2" onClick={handlePrintReceipt}>
               <Printer className="w-4 h-4" />
               Print Receipt
             </Button>
