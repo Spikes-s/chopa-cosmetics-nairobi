@@ -386,9 +386,11 @@ const POSSystem = () => {
     }
   };
 
-  // Print receipt (simulated)
-  const printReceipt = () => {
-    window.print();
+  // Print receipt using the shared receipt utility
+  const handlePrintReceipt = () => {
+    if (!lastOrder) return;
+    const { printReceipt: doPrint } = require('@/lib/receipt');
+    doPrint(lastOrder);
   };
 
   // Quick cash buttons
