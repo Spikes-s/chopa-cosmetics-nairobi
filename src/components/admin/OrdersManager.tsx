@@ -548,7 +548,6 @@ const OrdersManager = () => {
               <FileDown className="w-4 h-4" />
               PDF
             </Button>
-            </Button>
           </div>
         )}
       </CardContent>
