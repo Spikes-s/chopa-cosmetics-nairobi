@@ -4,7 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, Package } from 'lucide-react';
+import { ArrowLeft, Package, FileDown } from 'lucide-react';
+import { downloadReceiptPDF } from '@/lib/receipt';
 import OrderTracker from '@/components/OrderTracker';
 
 interface Order {
@@ -19,6 +20,13 @@ interface Order {
   created_at: string;
   status_history: any;
   payment_status: string;
+  receipt_number: string | null;
+  customer_name: string;
+  customer_phone: string;
+  customer_email: string | null;
+  mpesa_code: string | null;
+  pickup_date: string | null;
+  pickup_time: string | null;
 }
 
 const MyOrders = () => {
@@ -37,7 +45,7 @@ const MyOrders = () => {
     const fetchOrders = async () => {
       const { data, error } = await supabase
         .from('orders')
-        .select('id, order_status, delivery_type, delivery_address, items, subtotal, delivery_fee, total, created_at, status_history, payment_status')
+        .select('id, order_status, delivery_type, delivery_address, items, subtotal, delivery_fee, total, created_at, status_history, payment_status, receipt_number, customer_name, customer_phone, customer_email, mpesa_code, pickup_date, pickup_time')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
