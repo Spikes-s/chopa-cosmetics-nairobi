@@ -89,7 +89,7 @@ const ProductDetail = () => {
   }, [isHairExtension, hasColors, selectedColor]);
 
   // Find the best matching image based on selected options
-  // Priority: 1. Color, 2. Weight, 3. Size, 4. Quantity
+  // Priority: 1. Color image, 2. Variant option image, 3. Named image match, 4. Fallback to product image
   const resolvedImage = useMemo(() => {
     const priorities = ['color', 'colour', 'weight', 'capacity', 'size', 'quantity', 'flavour', 'scent', 'name'];
     
@@ -106,12 +106,17 @@ const ProductDetail = () => {
     for (const type of priorities) {
       const value = selectedVariants[type];
       if (!value) continue;
+      // Check if the variant option itself has an image
+      const group = variantGroups.find(g => g.type === type);
+      const option = group?.options.find(o => o.name === value);
+      if (option?.image) return option.image;
+      // Then check named images
       const namedMatch = namedImages.find(ni => ni.name.toLowerCase() === value.toLowerCase());
       if (namedMatch) return namedMatch.url;
     }
 
     return null;
-  }, [selectedColor, selectedVariants, availableColors, namedImages]);
+  }, [selectedColor, selectedVariants, availableColors, namedImages, variantGroups]);
 
   // Resolve variant-specific price (first match wins by priority)
   const variantPrice = useMemo(() => {
