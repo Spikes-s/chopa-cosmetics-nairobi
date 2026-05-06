@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
 import { Package, Phone, MapPin, Clock, Gift, Bell, CheckCircle, Archive, Search, X, Printer } from 'lucide-react';
-import { printReceipt } from '@/lib/receipt';
+import { printReceipt, downloadReceiptPDF } from '@/lib/receipt';
 import { toast as sonnerToast } from 'sonner';
 
 interface Order {
@@ -369,6 +369,9 @@ const OrdersManager = () => {
               </p>
             )}
             <p className="text-xs text-muted-foreground mt-1">
+              {order.receipt_number && (
+                <span className="font-mono text-primary mr-2">{order.receipt_number}</span>
+              )}
               ID: {order.id.slice(0, 8)} • {format(new Date(order.created_at), 'PPp')}
             </p>
           </div>
