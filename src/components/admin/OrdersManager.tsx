@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
-import { Package, Phone, MapPin, Clock, Gift, Bell, CheckCircle, Archive, Search, X, Printer } from 'lucide-react';
+import { Package, Phone, MapPin, Clock, Gift, Bell, CheckCircle, Archive, Search, X, Printer, FileDown } from 'lucide-react';
 import { printReceipt, downloadReceiptPDF } from '@/lib/receipt';
 import { toast as sonnerToast } from 'sonner';
 
@@ -508,6 +508,16 @@ const OrdersManager = () => {
             </Button>
 
             <Button
+              onClick={() => downloadReceiptPDF(order)}
+              size="sm"
+              variant="outline"
+              className="gap-1"
+            >
+              <FileDown className="w-4 h-4" />
+              PDF
+            </Button>
+
+            <Button
               onClick={() => completeOrder(order.id)}
               size="sm"
               className="bg-green-600 hover:bg-green-700 text-white ml-auto"
@@ -519,7 +529,7 @@ const OrdersManager = () => {
         )}
 
         {isCompletedView && (
-          <div className="flex justify-end pt-2 border-t border-border/50">
+          <div className="flex gap-2 justify-end pt-2 border-t border-border/50">
             <Button
               onClick={() => printReceipt(order)}
               size="sm"
@@ -528,6 +538,16 @@ const OrdersManager = () => {
             >
               <Printer className="w-4 h-4" />
               Print Receipt
+            </Button>
+            <Button
+              onClick={() => downloadReceiptPDF(order)}
+              size="sm"
+              variant="outline"
+              className="gap-1"
+            >
+              <FileDown className="w-4 h-4" />
+              PDF
+            </Button>
             </Button>
           </div>
         )}
