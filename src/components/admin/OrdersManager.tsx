@@ -33,6 +33,7 @@ interface Order {
   mpesa_code?: string | null;
   status_history?: any;
   completed_at?: string | null;
+  receipt_number?: string | null;
 }
 
 const OrdersManager = () => {
