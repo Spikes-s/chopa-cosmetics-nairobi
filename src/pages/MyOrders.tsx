@@ -4,7 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, Package } from 'lucide-react';
+import { ArrowLeft, Package, FileDown } from 'lucide-react';
+import { downloadReceiptPDF } from '@/lib/receipt';
 import OrderTracker from '@/components/OrderTracker';
 
 interface Order {
@@ -19,6 +20,13 @@ interface Order {
   created_at: string;
   status_history: any;
   payment_status: string;
+  receipt_number: string | null;
+  customer_name: string;
+  customer_phone: string;
+  customer_email: string | null;
+  mpesa_code: string | null;
+  pickup_date: string | null;
+  pickup_time: string | null;
 }
 
 const MyOrders = () => {
@@ -37,7 +45,7 @@ const MyOrders = () => {
     const fetchOrders = async () => {
       const { data, error } = await supabase
         .from('orders')
-        .select('id, order_status, delivery_type, delivery_address, items, subtotal, delivery_fee, total, created_at, status_history, payment_status')
+        .select('id, order_status, delivery_type, delivery_address, items, subtotal, delivery_fee, total, created_at, status_history, payment_status, receipt_number, customer_name, customer_phone, customer_email, mpesa_code, pickup_date, pickup_time')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -105,9 +113,16 @@ const MyOrders = () => {
                     className="w-full text-left"
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs text-muted-foreground font-mono">
-                        #{order.id.slice(0, 8).toUpperCase()}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground font-mono">
+                          #{order.id.slice(0, 8).toUpperCase()}
+                        </span>
+                        {order.receipt_number && (
+                          <span className="text-xs font-mono text-primary font-medium">
+                            {order.receipt_number}
+                          </span>
+                        )}
+                      </div>
                       <span className="text-xs text-muted-foreground">
                         {new Date(order.created_at).toLocaleDateString()}
                       </span>
@@ -132,14 +147,17 @@ const MyOrders = () => {
                     </div>
                   </button>
 
-                  {/* Expanded: Order Tracker + Items */}
-                  {isExpanded && (
-                    <div className="mt-6 pt-6 border-t border-border space-y-6">
-                      <OrderTracker
-                        currentStatus={order.order_status}
-                        statusHistory={Array.isArray(order.status_history) ? order.status_history : []}
-                      />
+                  {/* Order Status Timeline - always visible */}
+                  <div className="mt-4 pt-4 border-t border-border">
+                    <OrderTracker
+                      currentStatus={order.order_status}
+                      statusHistory={Array.isArray(order.status_history) ? order.status_history : []}
+                    />
+                  </div>
 
+                  {/* Expanded: Items + Details */}
+                  {isExpanded && (
+                    <div className="mt-4 pt-4 border-t border-border space-y-4">
                       {/* Items list */}
                       <div>
                         <h4 className="text-sm font-medium text-foreground mb-3">Items</h4>
@@ -173,6 +191,17 @@ const MyOrders = () => {
                           <span className="text-muted-foreground">{order.delivery_address}</span>
                         </div>
                       )}
+
+                      {/* Download PDF Receipt */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        onClick={() => downloadReceiptPDF(order)}
+                      >
+                        <FileDown className="w-4 h-4" />
+                        Download Receipt
+                      </Button>
                     </div>
                   )}
                 </CardContent>

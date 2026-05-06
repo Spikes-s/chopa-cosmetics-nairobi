@@ -34,7 +34,9 @@ const ProductVariantSelector = ({
 }: ProductVariantSelectorProps) => {
   if (variantGroups.length === 0) return null;
 
-  const getOptionImage = (optionName: string): string | null => {
+  const getOptionImage = (option: VariantOption, optionName: string): string | null => {
+    // Priority: 1. Option's own image, 2. Named image match, 3. null
+    if (option.image) return option.image;
     const match = namedImages.find(
       (img) => img.name.toLowerCase() === optionName.toLowerCase()
     );
@@ -53,7 +55,7 @@ const ProductVariantSelector = ({
             <div className="flex flex-wrap gap-2">
               {group.options.map((option) => {
                 const isSelected = selectedValue === option.name;
-                const optImage = getOptionImage(option.name);
+                const optImage = getOptionImage(option, option.name);
                 return (
                   <button
                     key={option.name}
