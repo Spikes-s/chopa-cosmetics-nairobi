@@ -204,8 +204,6 @@ const MyOrders = () => {
                       </Button>
                     </div>
                   )}
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             );
