@@ -113,9 +113,16 @@ const MyOrders = () => {
                     className="w-full text-left"
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs text-muted-foreground font-mono">
-                        #{order.id.slice(0, 8).toUpperCase()}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground font-mono">
+                          #{order.id.slice(0, 8).toUpperCase()}
+                        </span>
+                        {order.receipt_number && (
+                          <span className="text-xs font-mono text-primary font-medium">
+                            {order.receipt_number}
+                          </span>
+                        )}
+                      </div>
                       <span className="text-xs text-muted-foreground">
                         {new Date(order.created_at).toLocaleDateString()}
                       </span>
@@ -140,14 +147,17 @@ const MyOrders = () => {
                     </div>
                   </button>
 
-                  {/* Expanded: Order Tracker + Items */}
-                  {isExpanded && (
-                    <div className="mt-6 pt-6 border-t border-border space-y-6">
-                      <OrderTracker
-                        currentStatus={order.order_status}
-                        statusHistory={Array.isArray(order.status_history) ? order.status_history : []}
-                      />
+                  {/* Order Status Timeline - always visible */}
+                  <div className="mt-4 pt-4 border-t border-border">
+                    <OrderTracker
+                      currentStatus={order.order_status}
+                      statusHistory={Array.isArray(order.status_history) ? order.status_history : []}
+                    />
+                  </div>
 
+                  {/* Expanded: Items + Details */}
+                  {isExpanded && (
+                    <div className="mt-4 pt-4 border-t border-border space-y-4">
                       {/* Items list */}
                       <div>
                         <h4 className="text-sm font-medium text-foreground mb-3">Items</h4>
@@ -181,6 +191,19 @@ const MyOrders = () => {
                           <span className="text-muted-foreground">{order.delivery_address}</span>
                         </div>
                       )}
+
+                      {/* Download PDF Receipt */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        onClick={() => downloadReceiptPDF(order)}
+                      >
+                        <FileDown className="w-4 h-4" />
+                        Download Receipt
+                      </Button>
+                    </div>
+                  )}
                     </div>
                   )}
                 </CardContent>
