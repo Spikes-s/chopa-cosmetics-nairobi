@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { printReceipt as printReceiptUtil } from '@/lib/receipt';
+import { printReceipt as printReceiptUtil, downloadReceiptPDF } from '@/lib/receipt';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -927,19 +927,11 @@ const POSSystem = () => {
               variant="secondary" 
               className="flex-1 gap-2" 
               onClick={() => {
-                const receiptContent = document.getElementById('receipt');
-                if (receiptContent) {
-                  const blob = new Blob([receiptContent.outerHTML], { type: 'text/html' });
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement('a');
-                  a.href = url;
-                  a.download = `receipt-${lastOrder?.receipt_number || lastOrder?.id?.slice(0, 8)}.html`;
-                  a.click();
-                  URL.revokeObjectURL(url);
-                }
+                if (lastOrder) downloadReceiptPDF(lastOrder);
               }}
             >
-              Save PDF
+              <Receipt className="w-4 h-4" />
+              Download PDF
             </Button>
           </div>
           <Button className="w-full print:hidden" onClick={() => setShowReceiptDialog(false)}>
