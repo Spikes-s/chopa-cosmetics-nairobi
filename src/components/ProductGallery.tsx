@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight, ZoomIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ProductImageViewer from './ProductImageViewer';
@@ -15,6 +15,21 @@ const ProductGallery = ({ mainImage, additionalImages, productName, productDescr
   const [activeIndex, setActiveIndex] = useState(0);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [fadeIn, setFadeIn] = useState(true);
+  const prevMainRef = useRef(mainImage);
+
+  // When mainImage changes (variant switch), reset to index 0 with fade
+  useEffect(() => {
+    if (prevMainRef.current !== mainImage) {
+      setFadeIn(false);
+      const t = setTimeout(() => {
+        setActiveIndex(0);
+        setFadeIn(true);
+        prevMainRef.current = mainImage;
+      }, 150);
+      return () => clearTimeout(t);
+    }
+  }, [mainImage]);
 
   const goTo = useCallback((index: number) => {
     setActiveIndex((index + allImages.length) % allImages.length);
@@ -40,7 +55,7 @@ const ProductGallery = ({ mainImage, additionalImages, productName, productDescr
         <img
           src={allImages[activeIndex] || '/placeholder.svg'}
           alt={productName}
-          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          className={`w-full h-full object-cover transition-all duration-300 group-hover:scale-105 ${fadeIn ? 'opacity-100' : 'opacity-0'}`}
         />
         
         {/* Zoom hint */}
