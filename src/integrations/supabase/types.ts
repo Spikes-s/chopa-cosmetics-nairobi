@@ -295,6 +295,24 @@ export type Database = {
         }
         Relationships: []
       }
+      founder_protection: {
+        Row: {
+          id: string
+          protected_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          protected_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          protected_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       guest_order_lookups: {
         Row: {
           created_at: string
@@ -700,6 +718,42 @@ export type Database = {
         }
         Relationships: []
       }
+      security_events: {
+        Row: {
+          created_at: string
+          details: Json | null
+          event_type: string
+          id: string
+          ip_address: string | null
+          severity: string
+          target_user_id: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          details?: Json | null
+          event_type: string
+          id?: string
+          ip_address?: string | null
+          severity?: string
+          target_user_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          details?: Json | null
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          severity?: string
+          target_user_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       site_controls: {
         Row: {
           id: string
@@ -1043,6 +1097,18 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      log_security_event: {
+        Args: {
+          _details?: Json
+          _event_type: string
+          _ip_address?: string
+          _severity?: string
+          _target_user_id?: string
+          _user_agent?: string
+          _user_id?: string
+        }
+        Returns: undefined
       }
       mark_guest_order_lookup_success: {
         Args: { _ip_address: string; _order_id: string }
