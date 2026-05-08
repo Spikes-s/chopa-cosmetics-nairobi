@@ -65,9 +65,12 @@ const NotificationBell = () => {
 
   const handleOpen = (open: boolean) => {
     setIsOpen(open);
-    if (open && announcements.length > 0) {
-      const readIds = announcements.map(a => a.id);
-      localStorage.setItem('chopa-read-notifications', JSON.stringify(readIds));
+    if (open && unreadCount > 0) {
+      // Merge with existing read IDs instead of replacing
+      const existingIds: string[] = JSON.parse(localStorage.getItem('chopa-read-notifications') || '[]');
+      const newIds = announcements.map(a => a.id);
+      const merged = [...new Set([...existingIds, ...newIds])];
+      localStorage.setItem('chopa-read-notifications', JSON.stringify(merged));
       setUnreadCount(0);
     }
   };

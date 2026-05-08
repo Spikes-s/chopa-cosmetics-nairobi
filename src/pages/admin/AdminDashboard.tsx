@@ -4,7 +4,7 @@ import useAdminAutoLogout from '@/hooks/useAdminAutoLogout';
 import { useAuth } from '@/context/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { LogOut, Package, ShoppingBag, BarChart3, MessageSquare, Settings, Users, Home, Monitor, RotateCcw, FolderTree, UserCog, MapPin, Gift, Star } from 'lucide-react';
+import { LogOut, Package, ShoppingBag, BarChart3, MessageSquare, Settings, Users, Home, Monitor, RotateCcw, FolderTree, UserCog, MapPin, Gift, Star, ShieldCheck } from 'lucide-react';
 import ProductsManager from '@/components/admin/ProductsManager';
 import OrdersManager from '@/components/admin/OrdersManager';
 import SalesAnalytics from '@/components/admin/SalesAnalytics';
@@ -20,6 +20,7 @@ import BundleDealsManager from '@/components/admin/BundleDealsManager';
 import ReviewsManager from '@/components/admin/ReviewsManager';
 import ThemeToggle from '@/components/ThemeToggle';
 import { VisitorCounter } from '@/components/admin/VisitorCounter';
+import SecurityCenter from '@/components/admin/SecurityCenter';
 
 const AdminDashboard = () => {
   const { user, isAdmin, isLoading, signOut } = useAuth();
@@ -132,6 +133,10 @@ const AdminDashboard = () => {
               <Star className="w-4 h-4" />
               <span>Reviews</span>
             </TabsTrigger>
+            <TabsTrigger value="security" className="gap-2 data-[state=active]:bg-destructive data-[state=active]:text-destructive-foreground px-4">
+              <ShieldCheck className="w-4 h-4" />
+              <span>Security</span>
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="pos" className="space-y-4">
@@ -184,6 +189,10 @@ const AdminDashboard = () => {
 
           <TabsContent value="reviews" className="space-y-4">
             <ReviewsManager />
+          </TabsContent>
+
+          <TabsContent value="security" className="space-y-4">
+            <SecurityCenter />
           </TabsContent>
         </Tabs>
       </div>

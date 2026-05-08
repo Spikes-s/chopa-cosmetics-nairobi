@@ -37,6 +37,7 @@ const RolesManager = () => {
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [isCheckingRole, setIsCheckingRole] = useState(true);
   const [users, setUsers] = useState<UserWithRoles[]>([]);
+  const [founderIds, setFounderIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [pendingAction, setPendingAction] = useState<{
@@ -122,6 +123,10 @@ const RolesManager = () => {
   useEffect(() => {
     if (isSuperAdmin) {
       fetchUsers();
+      // Fetch founder IDs
+      supabase.from('founder_protection').select('user_id').then(({ data }) => {
+        setFounderIds((data || []).map((d: any) => d.user_id));
+      });
     }
   }, [isSuperAdmin]);
 
@@ -344,8 +349,8 @@ const RolesManager = () => {
                   </Button>
                 )}
                 
-                {/* Revoke super_admin role (cannot revoke own) */}
-                {userItem.roles.includes('super_admin') && userItem.user_id !== user?.id && (
+                {/* Revoke super_admin role (cannot revoke own or founder) */}
+                {userItem.roles.includes('super_admin') && userItem.user_id !== user?.id && !founderIds.includes(userItem.user_id) && (
                   <Button
                     size="sm"
                     variant="outline"
@@ -360,6 +365,11 @@ const RolesManager = () => {
                     <ShieldX className="w-4 h-4 mr-1" />
                     Revoke Super Admin
                   </Button>
+                )}
+                {founderIds.includes(userItem.user_id) && (
+                  <Badge variant="outline" className="text-xs border-primary text-primary">
+                    <Shield className="w-3 h-3 mr-1" /> Founder
+                  </Badge>
                 )}
               </div>
             </CardContent>
