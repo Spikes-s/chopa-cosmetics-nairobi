@@ -74,12 +74,20 @@ const OrderSuccess = () => {
       <div className={`transition-all duration-500 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
         <Card variant="gradient" className="mb-6">
           <CardContent className="p-6 text-center">
+            {receiptNumber && (
+              <div className="mb-4 pb-4 border-b border-border">
+                <p className="text-sm text-muted-foreground mb-1 flex items-center justify-center gap-1.5">
+                  <Receipt className="w-4 h-4" /> Receipt Number
+                </p>
+                <p className="text-lg font-bold font-mono gradient-text tracking-wider">{receiptNumber}</p>
+              </div>
+            )}
             <p className="text-sm text-muted-foreground mb-1">Order ID</p>
             <div className="flex items-center justify-center gap-2 mb-4">
               <span className="text-2xl font-bold font-mono text-foreground tracking-wider">
                 #{shortId}
               </span>
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={copyOrderId}>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={copyReceipt}>
                 <Copy className="w-4 h-4" />
               </Button>
             </div>
