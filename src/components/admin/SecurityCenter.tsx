@@ -10,9 +10,17 @@ import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import {
   Shield, ShieldAlert, ShieldCheck, Search, Download, RefreshCw,
-  AlertTriangle, Activity, Lock, UserX, Key, Eye, Loader2
+  AlertTriangle, Activity, Lock, Unlock, UserX, Key, Eye, Loader2
 } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
+
+interface LockedAccount {
+  id: string;
+  email: string;
+  failed_count: number;
+  locked_until: string | null;
+  last_failed_at: string | null;
+}
 
 interface SecurityEvent {
   id: string;
@@ -51,6 +59,27 @@ const SecurityCenter = () => {
   const [search, setSearch] = useState('');
   const [severityFilter, setSeverityFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
+  const [lockedAccounts, setLockedAccounts] = useState<LockedAccount[]>([]);
+  const [unlocking, setUnlocking] = useState<string | null>(null);
+
+  const fetchLockedAccounts = useCallback(async () => {
+    const { data, error } = await (supabase.from as any)('account_lockouts')
+      .select('id, email, failed_count, locked_until, last_failed_at')
+      .or('locked_until.gte.' + new Date().toISOString() + ',failed_count.gte.3')
+      .order('last_failed_at', { ascending: false })
+      .limit(50);
+    if (!error) setLockedAccounts((data as LockedAccount[]) || []);
+  }, []);
+
+  const handleUnlock = async (email: string) => {
+    setUnlocking(email);
+    const { error } = await (supabase.rpc as any)('admin_unlock_account', { _email: email });
+    setUnlocking(null);
+    if (error) { toast.error(error.message || 'Failed to unlock'); return; }
+    toast.success(`Unlocked ${email}`);
+    fetchLockedAccounts();
+    fetchEvents();
+  };
 
   useEffect(() => {
     if (!user) { setChecking(false); return; }
@@ -69,7 +98,7 @@ const SecurityCenter = () => {
     setLoading(false);
   }, [severityFilter, typeFilter]);
 
-  useEffect(() => { if (isSuperAdmin) fetchEvents(); }, [isSuperAdmin, fetchEvents]);
+  useEffect(() => { if (isSuperAdmin) { fetchEvents(); fetchLockedAccounts(); } }, [isSuperAdmin, fetchEvents, fetchLockedAccounts]);
 
   // Realtime
   useEffect(() => {
@@ -165,6 +194,56 @@ const SecurityCenter = () => {
           </Card>
         ))}
       </div>
+
+      <Separator />
+
+      {/* Locked Accounts */}
+      <Card className="glass-card border-orange-500/30">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Lock className="w-4 h-4 text-orange-500" />
+            Locked & Suspicious Accounts
+            <Badge variant="outline" className="ml-1">{lockedAccounts.length}</Badge>
+          </CardTitle>
+          <CardDescription className="text-xs">
+            Accounts auto-lock after 5 failed login attempts within 15 minutes. Unlock immediately if needed.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="pt-0">
+          {lockedAccounts.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-4 text-center">No suspicious accounts at the moment.</p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {lockedAccounts.map(acc => {
+                const isLocked = acc.locked_until && new Date(acc.locked_until) > new Date();
+                return (
+                  <li key={acc.id} className="py-2 flex items-center gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{acc.email}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {acc.failed_count} failed attempt{acc.failed_count === 1 ? '' : 's'}
+                        {acc.last_failed_at && ` · last ${formatDistanceToNow(new Date(acc.last_failed_at), { addSuffix: true })}`}
+                      </p>
+                    </div>
+                    <Badge className={isLocked ? 'bg-destructive text-destructive-foreground' : 'bg-yellow-500 text-black'}>
+                      {isLocked ? 'Locked' : 'Suspicious'}
+                    </Badge>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleUnlock(acc.email)}
+                      disabled={unlocking === acc.email}
+                    >
+                      {unlocking === acc.email ? <Loader2 className="w-3 h-3 animate-spin" /> : <Unlock className="w-3 h-3 mr-1" />}
+                      Unlock
+                    </Button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
 
       <Separator />
 

@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_lockouts: {
+        Row: {
+          created_at: string
+          email: string
+          failed_count: number
+          first_failed_at: string | null
+          id: string
+          last_failed_at: string | null
+          locked_until: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          failed_count?: number
+          first_failed_at?: string | null
+          id?: string
+          last_failed_at?: string | null
+          locked_until?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          failed_count?: number
+          first_failed_at?: string | null
+          id?: string
+          last_failed_at?: string | null
+          locked_until?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       announcements: {
         Row: {
           created_at: string | null
@@ -1071,6 +1104,7 @@ export type Database = {
       }
     }
     Functions: {
+      admin_unlock_account: { Args: { _email: string }; Returns: Json }
       check_guest_order_rate_limit: {
         Args: {
           _ip_address: string
@@ -1080,6 +1114,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      check_login_attempt: { Args: { _email: string }; Returns: Json }
       cleanup_old_guest_order_lookups: { Args: never; Returns: number }
       get_guest_order: {
         Args: { _order_id: string; _order_token: string }
@@ -1114,10 +1149,12 @@ export type Database = {
         Args: { _ip_address: string; _order_id: string }
         Returns: undefined
       }
+      record_failed_login: { Args: { _email: string }; Returns: Json }
       reduce_stock: {
         Args: { product_id: string; quantity_sold: number }
         Returns: undefined
       }
+      reset_login_attempts: { Args: { _email: string }; Returns: undefined }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
     }
