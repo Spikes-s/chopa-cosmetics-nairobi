@@ -135,7 +135,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [resetInactivityTimer, checkSessionExpiry, handleInactivityLogout]);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const cleanEmail = email.trim().toLowerCase();
+
+    // 1. Check if account is currently locked
+    try {
+      const { data: lockData } = await supabase.rpc('check_login_attempt', { _email: cleanEmail });
+      const lock = lockData as { locked?: boolean; remaining_seconds?: number } | null;
+      if (lock?.locked) {
+        const mins = Math.ceil((lock.remaining_seconds || 0) / 60);
+        return { error: new Error(`Account temporarily locked due to too many failed attempts. Try again in ${mins} minute${mins === 1 ? '' : 's'}.`) };
+      }
+    } catch (e) {
+      console.warn('Lockout check failed', e);
+    }
+
+    // 2. Attempt sign-in
+    const { error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
+
+    // 3. Record outcome
+    try {
+      if (error) {
+        const { data: failData } = await supabase.rpc('record_failed_login', { _email: cleanEmail });
+        const fail = failData as { locked?: boolean; failed_count?: number } | null;
+        if (fail?.locked) {
+          return { error: new Error('Too many failed attempts — account locked for 15 minutes for your protection.') };
+        }
+      } else {
+        await supabase.rpc('reset_login_attempts', { _email: cleanEmail });
+      }
+    } catch (e) {
+      console.warn('Login attempt logging failed', e);
+    }
+
     return { error: error as Error | null };
   };
 
