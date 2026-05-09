@@ -140,6 +140,8 @@ const Checkout = () => {
         navigate('/order-success', {
           state: {
             orderId: result.order.id,
+            orderToken: result.order_token,
+            receiptNumber: result.order.receipt_number,
             customerName: formData.name.trim(),
             total: totalWithDelivery,
             deliveryType: deliveryMethod,
