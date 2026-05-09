@@ -98,7 +98,7 @@ const SecurityCenter = () => {
     setLoading(false);
   }, [severityFilter, typeFilter]);
 
-  useEffect(() => { if (isSuperAdmin) fetchEvents(); }, [isSuperAdmin, fetchEvents]);
+  useEffect(() => { if (isSuperAdmin) { fetchEvents(); fetchLockedAccounts(); } }, [isSuperAdmin, fetchEvents, fetchLockedAccounts]);
 
   // Realtime
   useEffect(() => {
