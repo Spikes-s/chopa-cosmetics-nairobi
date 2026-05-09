@@ -59,6 +59,27 @@ const SecurityCenter = () => {
   const [search, setSearch] = useState('');
   const [severityFilter, setSeverityFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
+  const [lockedAccounts, setLockedAccounts] = useState<LockedAccount[]>([]);
+  const [unlocking, setUnlocking] = useState<string | null>(null);
+
+  const fetchLockedAccounts = useCallback(async () => {
+    const { data, error } = await (supabase.from as any)('account_lockouts')
+      .select('id, email, failed_count, locked_until, last_failed_at')
+      .or('locked_until.gte.' + new Date().toISOString() + ',failed_count.gte.3')
+      .order('last_failed_at', { ascending: false })
+      .limit(50);
+    if (!error) setLockedAccounts((data as LockedAccount[]) || []);
+  }, []);
+
+  const handleUnlock = async (email: string) => {
+    setUnlocking(email);
+    const { error } = await (supabase.rpc as any)('admin_unlock_account', { _email: email });
+    setUnlocking(null);
+    if (error) { toast.error(error.message || 'Failed to unlock'); return; }
+    toast.success(`Unlocked ${email}`);
+    fetchLockedAccounts();
+    fetchEvents();
+  };
 
   useEffect(() => {
     if (!user) { setChecking(false); return; }
