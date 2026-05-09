@@ -384,6 +384,7 @@ const handler = async (req: Request): Promise<Response> => {
         order: {
           id: createdOrder.id,
           order_status: createdOrder.order_status,
+          receipt_number: createdOrder.receipt_number,
           created_at: createdOrder.created_at,
         },
       }),
