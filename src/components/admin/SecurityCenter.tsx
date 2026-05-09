@@ -10,9 +10,17 @@ import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import {
   Shield, ShieldAlert, ShieldCheck, Search, Download, RefreshCw,
-  AlertTriangle, Activity, Lock, UserX, Key, Eye, Loader2
+  AlertTriangle, Activity, Lock, Unlock, UserX, Key, Eye, Loader2
 } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
+
+interface LockedAccount {
+  id: string;
+  email: string;
+  failed_count: number;
+  locked_until: string | null;
+  last_failed_at: string | null;
+}
 
 interface SecurityEvent {
   id: string;
