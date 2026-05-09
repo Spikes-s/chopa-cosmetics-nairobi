@@ -197,6 +197,56 @@ const SecurityCenter = () => {
 
       <Separator />
 
+      {/* Locked Accounts */}
+      <Card className="glass-card border-orange-500/30">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Lock className="w-4 h-4 text-orange-500" />
+            Locked & Suspicious Accounts
+            <Badge variant="outline" className="ml-1">{lockedAccounts.length}</Badge>
+          </CardTitle>
+          <CardDescription className="text-xs">
+            Accounts auto-lock after 5 failed login attempts within 15 minutes. Unlock immediately if needed.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="pt-0">
+          {lockedAccounts.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-4 text-center">No suspicious accounts at the moment.</p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {lockedAccounts.map(acc => {
+                const isLocked = acc.locked_until && new Date(acc.locked_until) > new Date();
+                return (
+                  <li key={acc.id} className="py-2 flex items-center gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{acc.email}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {acc.failed_count} failed attempt{acc.failed_count === 1 ? '' : 's'}
+                        {acc.last_failed_at && ` · last ${formatDistanceToNow(new Date(acc.last_failed_at), { addSuffix: true })}`}
+                      </p>
+                    </div>
+                    <Badge className={isLocked ? 'bg-destructive text-destructive-foreground' : 'bg-yellow-500 text-black'}>
+                      {isLocked ? 'Locked' : 'Suspicious'}
+                    </Badge>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleUnlock(acc.email)}
+                      disabled={unlocking === acc.email}
+                    >
+                      {unlocking === acc.email ? <Loader2 className="w-3 h-3 animate-spin" /> : <Unlock className="w-3 h-3 mr-1" />}
+                      Unlock
+                    </Button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+
+      <Separator />
+
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
