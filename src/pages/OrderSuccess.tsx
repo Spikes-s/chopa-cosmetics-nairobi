@@ -2,11 +2,14 @@ import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Package, Copy, ArrowRight, Home } from 'lucide-react';
+import { CheckCircle, Package, Copy, ArrowRight, Home, Receipt } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface OrderSuccessState {
   orderId: string;
+  orderToken?: string;
+  receiptNumber?: string | null;
   customerName: string;
   total: number;
   deliveryType: string;
@@ -18,22 +21,38 @@ const OrderSuccess = () => {
   const navigate = useNavigate();
   const orderData = location.state as OrderSuccessState | null;
   const [showContent, setShowContent] = useState(false);
+  const [receiptNumber, setReceiptNumber] = useState<string | null>(orderData?.receiptNumber || null);
 
   useEffect(() => {
     if (!orderData) {
       navigate('/');
       return;
     }
-    // Staggered animation
     const timer = setTimeout(() => setShowContent(true), 400);
     return () => clearTimeout(timer);
   }, [orderData, navigate]);
 
+  // Fetch receipt number if not yet provided (trigger generates on insert)
+  useEffect(() => {
+    if (!orderData || receiptNumber) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from('orders')
+        .select('receipt_number')
+        .eq('id', orderData.orderId)
+        .maybeSingle();
+      if (!cancelled && data?.receipt_number) setReceiptNumber(data.receipt_number);
+    })();
+    return () => { cancelled = true; };
+  }, [orderData, receiptNumber]);
+
   if (!orderData) return null;
 
-  const copyOrderId = () => {
-    navigator.clipboard.writeText(orderData.orderId);
-    toast.success('Order ID copied!');
+  const copyReceipt = () => {
+    const value = receiptNumber || orderData.orderId;
+    navigator.clipboard.writeText(value);
+    toast.success(receiptNumber ? 'Receipt number copied!' : 'Order ID copied!');
   };
 
   const shortId = orderData.orderId.slice(0, 8).toUpperCase();
