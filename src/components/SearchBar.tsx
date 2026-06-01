@@ -5,12 +5,16 @@ import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { buildSearchFilter, fuzzyScore, expandQuery } from '@/lib/search-utils';
+import { Highlight } from '@/lib/highlight';
+import { useAuth } from '@/context/AuthContext';
 import {
   getRecentSearches,
   addRecentSearch,
   removeRecentSearch,
   clearRecentSearches,
   getTrendingSearches,
+  pullCloudSearchHistory,
+  clearActiveUser,
 } from '@/lib/search-history';
 
 interface ProductSuggestion {
@@ -37,6 +41,29 @@ interface SearchBarProps {
   isMobile?: boolean;
 }
 
+// ---------------- Short-term suggestion cache ----------------
+const CACHE_TTL = 60_000; // 1 minute
+const CACHE_MAX = 50;
+type CacheEntry = { ts: number; suggestions: Suggestion[]; didYouMean: string | null };
+const suggestionCache = new Map<string, CacheEntry>();
+const cacheKey = (q: string) => q.trim().toLowerCase();
+function readCache(q: string): CacheEntry | null {
+  const k = cacheKey(q);
+  const hit = suggestionCache.get(k);
+  if (!hit) return null;
+  if (Date.now() - hit.ts > CACHE_TTL) { suggestionCache.delete(k); return null; }
+  return hit;
+}
+function writeCache(q: string, entry: CacheEntry) {
+  const k = cacheKey(q);
+  if (suggestionCache.size >= CACHE_MAX) {
+    const firstKey = suggestionCache.keys().next().value;
+    if (firstKey) suggestionCache.delete(firstKey);
+  }
+  suggestionCache.set(k, entry);
+}
+function invalidateCache() { suggestionCache.clear(); }
+
 const SearchBar = ({ className, placeholder = "Search inventory...", isMobile = false }: SearchBarProps) => {
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
@@ -47,11 +74,24 @@ const SearchBar = ({ className, placeholder = "Search inventory...", isMobile = 
   const [recent, setRecent] = useState<string[]>([]);
   const [trending, setTrending] = useState<string[]>([]);
   const navigate = useNavigate();
+  const { user } = useAuth();
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
-  // Load recent + trending whenever dropdown opens
+  // Sync local history with cloud once the user is known
+  useEffect(() => {
+    if (user?.id) {
+      pullCloudSearchHistory(user.id).then(() => {
+        setRecent(getRecentSearches());
+        setTrending(getTrendingSearches());
+      });
+    } else {
+      clearActiveUser();
+    }
+  }, [user?.id]);
+
+  // Refresh idle lists when the dropdown opens
   useEffect(() => {
     if (showSuggestions) {
       setRecent(getRecentSearches());
@@ -63,6 +103,15 @@ const SearchBar = ({ className, placeholder = "Search inventory...", isMobile = 
     if (searchQuery.trim().length < 2) {
       setSuggestions([]);
       setDidYouMean(null);
+      return;
+    }
+
+    // Cache hit — instant
+    const cached = readCache(searchQuery);
+    if (cached) {
+      setSuggestions(cached.suggestions);
+      setDidYouMean(cached.didYouMean);
+      setIsLoading(false);
       return;
     }
 
@@ -106,18 +155,16 @@ const SearchBar = ({ className, placeholder = "Search inventory...", isMobile = 
         scored.slice(0, 8).forEach(prod => results.push(prod));
       }
 
-      setSuggestions(results);
-
-      // "Did you mean" — fuzzy correction when query doesn't appear directly
+      let dym: string | null = null;
       const lower = searchQuery.toLowerCase();
       if (bestName && bestScore < 100 && !bestName.toLowerCase().includes(lower)) {
-        // Pick the closest single word from the best name
         const firstWord = bestName.split(/\s+/).find(w => w.length >= 3) || bestName;
-        if (firstWord.toLowerCase() !== lower) setDidYouMean(firstWord);
-        else setDidYouMean(null);
-      } else {
-        setDidYouMean(null);
+        if (firstWord.toLowerCase() !== lower) dym = firstWord;
       }
+
+      setSuggestions(results);
+      setDidYouMean(dym);
+      writeCache(searchQuery, { ts: Date.now(), suggestions: results, didYouMean: dym });
     } catch (err) {
       console.error('Search error:', err);
       setSuggestions([]);
@@ -133,11 +180,12 @@ const SearchBar = ({ className, placeholder = "Search inventory...", isMobile = 
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [query, fetchSuggestions]);
 
-  // Real-time refetch when products change
+  // Real-time refetch when products change — also invalidate cache
   useEffect(() => {
     const channel = supabase
       .channel('products-search')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => {
+        invalidateCache();
         if (query.trim().length >= 2) fetchSuggestions(query);
       })
       .subscribe();
@@ -181,7 +229,6 @@ const SearchBar = ({ className, placeholder = "Search inventory...", isMobile = 
     }
   };
 
-  // Flat list for keyboard navigation
   const idleItems = useMemo(() => (
     [...recent.map(t => ({ kind: 'recent' as const, term: t })),
      ...trending.map(t => ({ kind: 'trending' as const, term: t }))]
@@ -263,14 +310,12 @@ const SearchBar = ({ className, placeholder = "Search inventory...", isMobile = 
 
       {showSuggestions && (showResults || showIdle) && (
         <div className="absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-lg shadow-lg z-50 max-h-[28rem] overflow-y-auto">
-          {/* Loading */}
           {isLoading && (
             <div className="flex items-center justify-center py-4">
               <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
             </div>
           )}
 
-          {/* Search results */}
           {!isLoading && showResults && (
             <>
               {expandQuery(query).length > 1 && (
@@ -288,7 +333,9 @@ const SearchBar = ({ className, placeholder = "Search inventory...", isMobile = 
                 >
                   <Sparkles className="w-3 h-3 text-primary" />
                   <span className="text-muted-foreground">Did you mean</span>
-                  <span className="font-semibold text-primary">{didYouMean}</span>
+                  <span className="font-semibold text-primary">
+                    <Highlight text={didYouMean} query={query} className="bg-primary/25 text-primary rounded-sm" />
+                  </span>
                   <span className="text-muted-foreground">?</span>
                 </button>
               )}
@@ -315,7 +362,9 @@ const SearchBar = ({ className, placeholder = "Search inventory...", isMobile = 
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm truncate">{suggestion.name}</p>
+                          <p className="font-medium text-sm truncate">
+                            <Highlight text={suggestion.name} query={query} />
+                          </p>
                           <p className="text-xs text-muted-foreground">
                             {suggestion.type === 'category' ? 'Category' : suggestion.category}
                           </p>
@@ -335,7 +384,6 @@ const SearchBar = ({ className, placeholder = "Search inventory...", isMobile = 
             </>
           )}
 
-          {/* Idle: recent + trending */}
           {!isLoading && showIdle && (
             <div className="py-1">
               {recent.length > 0 && (
@@ -347,40 +395,42 @@ const SearchBar = ({ className, placeholder = "Search inventory...", isMobile = 
                       onClick={() => { clearRecentSearches(); setRecent([]); }}
                       className="hover:text-foreground normal-case tracking-normal"
                     >
-                      Clear
+                      Clear all
                     </button>
                   </div>
                   <ul>
-                    {recent.map((term, i) => {
-                      const idx = i;
-                      return (
-                        <li key={`r-${term}`} className="group">
-                          <div
-                            className={cn(
-                              "w-full flex items-center gap-2 px-4 py-2 hover:bg-muted/50 transition-colors",
-                              selectedIndex === idx && "bg-muted",
-                            )}
+                    {recent.map((term, i) => (
+                      <li key={`r-${term}`} className="group">
+                        <div
+                          className={cn(
+                            "w-full flex items-center gap-2 px-4 py-2 hover:bg-muted/50 transition-colors",
+                            selectedIndex === i && "bg-muted",
+                          )}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => submitSearch(term)}
+                            className="flex-1 flex items-center gap-2 text-left text-sm min-w-0"
                           >
-                            <button
-                              type="button"
-                              onClick={() => submitSearch(term)}
-                              className="flex-1 flex items-center gap-2 text-left text-sm"
-                            >
-                              <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-                              <span className="truncate">{term}</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(e) => { e.stopPropagation(); removeRecentSearch(term); setRecent(getRecentSearches()); }}
-                              className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground"
-                              aria-label="Remove"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </li>
-                      );
-                    })}
+                            <Clock className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                            <span className="truncate">{term}</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeRecentSearch(term);
+                              setRecent(getRecentSearches());
+                            }}
+                            className="p-1 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors flex-shrink-0"
+                            aria-label={`Remove "${term}" from recent searches`}
+                            title="Remove"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </li>
+                    ))}
                   </ul>
                 </div>
               )}
