@@ -874,6 +874,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_search_history: {
+        Row: {
+          recent: Json
+          trending: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          recent?: Json
+          trending?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          recent?: Json
+          trending?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       vouchers: {
         Row: {
           created_at: string | null
