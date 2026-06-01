@@ -77,6 +77,7 @@ const NotificationBell = () => {
 
   if (!user) return null;
 
+  // Helper to render the trigger with aria-label
   return (
     <DropdownMenu open={isOpen} onOpenChange={handleOpen}>
       <DropdownMenuTrigger asChild>

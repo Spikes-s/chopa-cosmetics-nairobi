@@ -95,8 +95,8 @@ const Header = () => {
             <NotificationBell />
 
             {/* Cart */}
-            <Link to="/cart" className="relative">
-              <Button variant="ghost" size="icon" className="relative">
+            <Link to="/cart" className="relative" aria-label="Shopping Cart">
+              <Button variant="ghost" size="icon" className="relative" aria-label="Shopping Cart">
                 <ShoppingCart className="w-5 h-5" />
                 {totalItems > 0 && (
                   <span className="absolute -top-1 -right-1 w-5 h-5 bg-secondary text-secondary-foreground text-xs font-bold rounded-full flex items-center justify-center">
@@ -109,7 +109,7 @@ const Header = () => {
             {/* User Menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" aria-label="User Menu">
                   <User className="w-5 h-5" />
                 </Button>
               </DropdownMenuTrigger>
@@ -212,6 +212,8 @@ const Header = () => {
               size="icon"
               className="md:hidden"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Toggle Menu"
+              aria-expanded={mobileMenuOpen}
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </Button>
