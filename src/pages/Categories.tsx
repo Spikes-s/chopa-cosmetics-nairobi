@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import SEO from '@/components/SEO';
 import { supabase } from '@/integrations/supabase/client';
 import CategoryCard from '@/components/CategoryCard';
 import { Loader2 } from 'lucide-react';
@@ -44,6 +45,7 @@ const Categories = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      <SEO title={'Shop by Category | Chopa Cosmetics'} description={'Explore Chopa Cosmetics categories: skincare, haircare, makeup, hair extensions, fragrances, and more.'} />
       {/* Page Header */}
       <div className="text-center mb-12">
         <h1 className="text-4xl md:text-5xl font-display font-bold text-foreground mb-4">

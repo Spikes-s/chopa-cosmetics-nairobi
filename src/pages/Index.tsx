@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import SEO from '@/components/SEO';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import ProductCard from '@/components/ProductCard';
@@ -99,6 +100,7 @@ const Index = () => {
 
   return (
     <div>
+      <SEO title={'Chopa Cosmetics – Beauty At Your Proximity'} description={'Shop premium cosmetics, skincare, haircare, makeup and hair extensions in Kenya. Fast delivery, M-Pesa payments, and verified reviews.'} />
 
       {/* Hero Section */}
       <section className="relative min-h-[80vh] flex items-center justify-center overflow-hidden">
