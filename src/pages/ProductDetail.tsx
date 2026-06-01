@@ -9,6 +9,7 @@ import ProductReviews from '@/components/ProductReviews';
 import ProductGallery from '@/components/ProductGallery';
 import SmartRecommendations from '@/components/SmartRecommendations';
 import ProductVariantSelector from '@/components/ProductVariantSelector';
+import SEO from '@/components/SEO';
 
 interface DBProduct {
   id: string;
@@ -193,11 +194,32 @@ const ProductDetail = () => {
     ? [product.image_url, ...(product.additional_images || [])].filter(Boolean) as string[]
     : product.additional_images || undefined;
 
+  const seoTitle = `${product.name} | Chopa Cosmetics`.slice(0, 60);
+  const seoDescription = (product.description || `Buy ${product.name} from Chopa Cosmetics. Premium beauty products delivered across Kenya.`).slice(0, 160);
+  const productJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    description: product.description || undefined,
+    image: product.image_url || undefined,
+    category: product.category,
+    sku: product.id,
+    offers: {
+      "@type": "Offer",
+      price: currentPrice,
+      priceCurrency: "KES",
+      availability: product.in_stock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+      url: `https://chopacosmetics.lovable.app/product/${product.id}`,
+    },
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
+      <SEO title={seoTitle} description={seoDescription} type="product" image={product.image_url || undefined} jsonLd={productJsonLd} />
       <Button variant="ghost" onClick={() => navigate(-1)} className="mb-6">
         <ArrowLeft className="w-4 h-4 mr-2" /> Back
       </Button>
+
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
         {/* Product Image Gallery */}
