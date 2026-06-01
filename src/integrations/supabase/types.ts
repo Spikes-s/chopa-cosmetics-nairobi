@@ -1155,8 +1155,6 @@ export type Database = {
         Returns: undefined
       }
       reset_login_attempts: { Args: { _email: string }; Returns: undefined }
-      show_limit: { Args: never; Returns: number }
-      show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
       app_role: "admin" | "customer" | "super_admin"
