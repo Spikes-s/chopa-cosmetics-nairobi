@@ -232,6 +232,7 @@ const ChatWidget = () => {
       {!isOpen && (
         <button
           onClick={handleOpenChat}
+          aria-label="Open chat support"
           className="fixed bottom-6 left-6 z-[9999] w-14 h-14 rounded-full bg-red-600 text-white shadow-lg hover:bg-red-700 transition-all hover:scale-105 flex items-center justify-center"
           style={{ position: 'fixed', boxShadow: '0 0 20px rgba(220, 38, 38, 0.5)' }}
         >

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import SEO from '@/components/SEO';
 import { Link } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 import { Button } from '@/components/ui/button';
@@ -42,6 +43,7 @@ const Cart = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      <SEO title={'Your Cart | Chopa Cosmetics'} description={'Review the items in your Chopa Cosmetics shopping cart and proceed to secure M-Pesa checkout.'} />
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-display font-bold text-foreground">
           Shopping Cart

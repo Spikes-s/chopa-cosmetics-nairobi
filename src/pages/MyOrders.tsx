@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import SEO from '@/components/SEO';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -81,6 +82,7 @@ const MyOrders = () => {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-3xl">
+      <SEO title={'My Orders | Chopa Cosmetics'} description={'Track and download receipts for your Chopa Cosmetics orders.'} noindex />
       <Button variant="ghost" onClick={() => navigate(-1)} className="mb-6">
         <ArrowLeft className="w-4 h-4 mr-2" /> Back
       </Button>

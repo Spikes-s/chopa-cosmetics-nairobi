@@ -1,4 +1,5 @@
 import { Shield } from 'lucide-react';
+import SEO from '@/components/SEO';
 
 const privacyContent = `
 ## 1. Introduction
@@ -107,6 +108,7 @@ If you have questions or concerns about this Privacy Policy or our data practice
 const PrivacyPolicy = () => {
   return (
     <div className="container mx-auto px-4 py-8 pt-24 max-w-4xl">
+      <SEO title={'Privacy Policy | Chopa Cosmetics'} description={'Learn how Chopa Cosmetics collects, uses, and protects your personal information when you shop with us.'} />
       <div className="glass-card rounded-xl p-6 md:p-8">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">

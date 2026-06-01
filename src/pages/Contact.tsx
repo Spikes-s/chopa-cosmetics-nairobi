@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import SEO from '@/components/SEO';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Phone, Clock, Mail } from 'lucide-react';
 import PhoneContactDialog from '@/components/PhoneContactDialog';
@@ -15,6 +16,7 @@ const Contact = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      <SEO title={'Contact Us | Chopa Cosmetics'} description={'Reach Chopa Cosmetics in Nairobi (KAKA HOUSE, OTC) or Thika. Call 0715167179 or visit us between 7:30 AM and 9:00 PM.'} />
       <div className="text-center mb-12">
         <h1 className="text-4xl md:text-5xl font-display font-bold text-foreground mb-4">
           Contact Us

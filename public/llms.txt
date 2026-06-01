@@ -1,0 +1,18 @@
+# Chopa Cosmetics
+
+> Premium cosmetics and beauty store in Kenya. Skincare, haircare, makeup, and hair extensions delivered countrywide. Motto: "Beauty At Your Proximity".
+
+Chopa Cosmetics Limited operates a flagship store at KAKA HOUSE (OTC, Racecourse Road, Nairobi) and a Thika branch (opposite Family Bank). All prices are in Kenyan Shillings (Ksh). Payment is via M-Pesa Buy Goods (Till 4623226). Hours: 7:30 AM – 9:00 PM.
+
+## Pages
+
+- [Home](/): Featured products, categories, flash sales, and bundle deals.
+- [Shop All](/products): Full inventory with search, filters, and category browsing.
+- [Categories](/categories): Browse by product category — skincare, haircare, makeup, hair extensions.
+- [Customer Reviews](/reviews): Verified customer reviews and ratings.
+- [Contact Us](/contact): Branch addresses, phone numbers, and contact form.
+
+## Optional
+
+- [Terms & Conditions](/terms)
+- [Privacy Policy](/privacy)

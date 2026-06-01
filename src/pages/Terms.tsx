@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import SEO from '@/components/SEO';
 import { supabase } from '@/integrations/supabase/client';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -43,6 +44,7 @@ const Terms = () => {
 
   return (
     <div className="container mx-auto px-4 py-8 pt-24 max-w-4xl">
+      <SEO title={'Terms & Conditions | Chopa Cosmetics'} description={'Review the terms and conditions that govern your use of Chopa Cosmetics and your purchases.'} />
       <div className="glass-card rounded-xl p-6 md:p-8">
         <div className="prose prose-sm md:prose-base dark:prose-invert max-w-none">
           <ReactMarkdown

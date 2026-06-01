@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import SEO from '@/components/SEO';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -257,6 +258,7 @@ const Auth = ({ isModal = false, onClose }: AuthProps) => {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 pt-20">
+      <SEO title={'Sign In or Create Account | Chopa Cosmetics'} description={'Log in or create your Chopa Cosmetics account to track orders, earn cashback, and shop faster.'} noindex />
       {content}
     </div>
   );

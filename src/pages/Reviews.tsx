@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
+import SEO from '@/components/SEO';
 import { useSearchParams } from 'react-router-dom';
 import { MessageSquareQuote, ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -87,6 +88,7 @@ const Reviews = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      <SEO title={'Customer Reviews | Chopa Cosmetics'} description={'Read verified customer reviews and ratings for Chopa Cosmetics products. Share your own experience after purchase.'} />
       <div className="mb-8 space-y-2">
         <h1 className="text-3xl font-display font-bold text-foreground md:text-4xl">Customer Reviews</h1>
         <p className="text-muted-foreground">Read real customer feedback and leave your own review.</p>

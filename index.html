@@ -12,11 +12,59 @@
     <meta property="og:title" content="Chopa Cosmetics – Beauty At Your Proximity" />
     <meta property="og:description" content="Shop premium cosmetics and beauty products at Chopa Cosmetics. Quality skincare, haircare, and makeup delivered to your door." />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta property="og:url" content="https://chopacosmetics.lovable.app/" />
+    <meta property="og:image" content="https://chopacosmetics.lovable.app/og-image.jpg" />
 
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@Lovable" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta name="twitter:image" content="https://chopacosmetics.lovable.app/og-image.jpg" />
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://chopacosmetics.lovable.app/#organization",
+          "name": "Chopa Cosmetics",
+          "url": "https://chopacosmetics.lovable.app",
+          "logo": "https://chopacosmetics.lovable.app/og-image.jpg",
+          "sameAs": []
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://chopacosmetics.lovable.app/#website",
+          "url": "https://chopacosmetics.lovable.app",
+          "name": "Chopa Cosmetics",
+          "publisher": { "@id": "https://chopacosmetics.lovable.app/#organization" },
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://chopacosmetics.lovable.app/products?search={search_term_string}",
+            "query-input": "required name=search_term_string"
+          }
+        },
+        {
+          "@type": "Store",
+          "name": "Chopa Cosmetics",
+          "image": "https://chopacosmetics.lovable.app/og-image.jpg",
+          "telephone": "+254715167179",
+          "priceRange": "Ksh",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "KAKA HOUSE, Racecourse Road, OTC",
+            "addressLocality": "Nairobi",
+            "addressCountry": "KE"
+          },
+          "openingHoursSpecification": [{
+            "@type": "OpeningHoursSpecification",
+            "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],
+            "opens": "07:30",
+            "closes": "21:00"
+          }]
+        }
+      ]
+    }
+    </script>
+
 
     <!-- Google Analytics - only loads if user consented -->
     <script>

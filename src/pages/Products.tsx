@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import SEO from '@/components/SEO';
 import { useSearchParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import ProductCard from '@/components/ProductCard';
@@ -231,6 +232,7 @@ const Products = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      <SEO title={'Shop All Products | Chopa Cosmetics'} description={'Browse our full inventory of premium beauty products — skincare, haircare, makeup, and hair extensions. Filter by category and price.'} />
       <div className="mb-8">
         <Button 
           variant="ghost" 

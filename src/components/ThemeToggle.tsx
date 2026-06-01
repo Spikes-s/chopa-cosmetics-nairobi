@@ -10,6 +10,7 @@ const ThemeToggle = () => {
       variant="ghost"
       size="sm"
       onClick={toggleTheme}
+      aria-label="Toggle Theme"
       className="gap-2 text-foreground/80 hover:text-foreground"
     >
       {theme === 'dark' ? (
