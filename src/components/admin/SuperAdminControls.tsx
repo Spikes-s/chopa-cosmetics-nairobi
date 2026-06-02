@@ -26,6 +26,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import BrandingManager from './BrandingManager';
 
 interface SiteControlsProps {
   userEmail?: string;
@@ -361,6 +362,7 @@ const SuperAdminControls = ({ userEmail }: SiteControlsProps) => {
 
   return (
     <>
+      <BrandingManager />
       <Card className="border-destructive/50 bg-destructive/5">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-destructive">
