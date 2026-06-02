@@ -10,7 +10,8 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.guest-order-lookup]
-verify_jwt = false
+[functions.customer-chat-reply]
+verify_jwt = true
 
 [functions.ai-chat-reply]
 verify_jwt = true
