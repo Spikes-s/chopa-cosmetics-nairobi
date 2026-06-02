@@ -223,9 +223,9 @@ const handler = async (req: Request): Promise<Response> => {
       const authClient = createClient(supabaseUrl, supabaseAnonKey, {
         global: { headers: { Authorization: authHeader } },
       });
-      const { data: claimsData, error: claimsError } = await authClient.auth.getClaims(authHeader.replace('Bearer ', ''));
-      if (!claimsError && claimsData?.claims?.sub) {
-        verifiedUserId = claimsData.claims.sub as string;
+      const { data: userData, error: userError } = await authClient.auth.getUser();
+      if (!userError && userData?.user) {
+        verifiedUserId = userData.user.id;
       }
     }
 
