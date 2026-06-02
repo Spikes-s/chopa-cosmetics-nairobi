@@ -77,6 +77,13 @@ const ChatWidget = () => {
         message: m.message
       }));
 
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      if (!accessToken) {
+        setIsAiTyping(false);
+        return;
+      }
+
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/customer-chat-reply`,
         {
@@ -84,10 +91,10 @@ const ChatWidget = () => {
           headers: {
             'Content-Type': 'application/json',
             'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            'Authorization': `Bearer ${accessToken}`,
           },
           body: JSON.stringify({
             message: customerMessage,
-            userId: user.id,
             conversationHistory
           }),
         }
