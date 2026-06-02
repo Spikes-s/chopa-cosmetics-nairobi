@@ -44,6 +44,7 @@ import OrderSuccess from "./pages/OrderSuccess";
 import Wallet from "./pages/Wallet";
 import Reviews from "./pages/Reviews";
 import PWAInstallPrompt from "./components/PWAInstallPrompt";
+import ThemeApplier from "./components/ThemeApplier";
 
 const queryClient = new QueryClient();
 
