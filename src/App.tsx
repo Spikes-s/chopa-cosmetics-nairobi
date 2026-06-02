@@ -110,6 +110,7 @@ const AppContent = () => {
 
   return (
     <div className="min-h-screen mirage-bg">
+      <ThemeApplier />
       <ScrollToTop />
       {!isAdminRoute && <Header />}
       {!isAdminRoute && <GlobalBackButton />}
