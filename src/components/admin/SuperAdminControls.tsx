@@ -26,6 +26,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import BrandingManager from './BrandingManager';
 
 interface SiteControlsProps {
   userEmail?: string;
