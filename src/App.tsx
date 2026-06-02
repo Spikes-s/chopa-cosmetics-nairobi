@@ -48,7 +48,7 @@ import PWAInstallPrompt from "./components/PWAInstallPrompt";
 const queryClient = new QueryClient();
 
 // Session storage key for first visit
-const FIRST_VISIT_KEY = 'chopa-first-visit';
+const FIRST_VISIT_KEY = 'chopa-first-visit-v2';
 
 const AppContent = () => {
   const [showLoading, setShowLoading] = useState(false);
