@@ -130,8 +130,29 @@ serve(async (req) => {
       );
     }
 
+    // --- AUTH: Verify caller identity ---
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const authClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY") ?? "", {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: userData, error: userError } = await authClient.auth.getUser();
+    if (userError || !userData?.user) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    const userId = userData.user.id;
+
     // Parse request
-    const { message, userId, conversationHistory } = await req.json();
+    const { message, conversationHistory } = await req.json();
 
     // Validate inputs
     if (!message || typeof message !== "string") {
@@ -141,12 +162,7 @@ serve(async (req) => {
       );
     }
 
-    if (!userId || typeof userId !== "string") {
-      return new Response(
-        JSON.stringify({ error: "User ID is required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+
 
     const trimmedMessage = message.trim();
     if (trimmedMessage.length === 0) {
