@@ -353,11 +353,11 @@ const ProductDetail = () => {
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">Quantity</label>
               <div className="flex items-center gap-3">
-                <Button variant="outline" size="icon" onClick={() => setQuantity(Math.max(1, quantity - 1))}>
+                <Button variant="outline" size="icon" aria-label="Decrease quantity" onClick={() => setQuantity(Math.max(1, quantity - 1))}>
                   <Minus className="w-4 h-4" />
                 </Button>
                 <span className="w-12 text-center font-semibold text-foreground">{quantity}</span>
-                <Button variant="outline" size="icon" onClick={() => setQuantity(quantity + 1)}>
+                <Button variant="outline" size="icon" aria-label="Increase quantity" onClick={() => setQuantity(quantity + 1)}>
                   <Plus className="w-4 h-4" />
                 </Button>
                 
