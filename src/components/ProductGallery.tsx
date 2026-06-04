@@ -71,6 +71,7 @@ const ProductGallery = ({ mainImage, additionalImages, productName, productDescr
             <Button
               variant="ghost"
               size="icon"
+              aria-label="Previous image"
               className="absolute left-2 top-1/2 -translate-y-1/2 bg-background/60 backdrop-blur-sm hover:bg-background/80 h-8 w-8"
               onClick={(e) => { e.stopPropagation(); goTo(activeIndex - 1); }}
             >
@@ -79,6 +80,7 @@ const ProductGallery = ({ mainImage, additionalImages, productName, productDescr
             <Button
               variant="ghost"
               size="icon"
+              aria-label="Next image"
               className="absolute right-2 top-1/2 -translate-y-1/2 bg-background/60 backdrop-blur-sm hover:bg-background/80 h-8 w-8"
               onClick={(e) => { e.stopPropagation(); goTo(activeIndex + 1); }}
             >
@@ -93,6 +95,7 @@ const ProductGallery = ({ mainImage, additionalImages, productName, productDescr
             {allImages.map((_, i) => (
               <button
                 key={i}
+                aria-label={`Go to image ${i + 1}`}
                 onClick={(e) => { e.stopPropagation(); setActiveIndex(i); }}
                 className={`w-2 h-2 rounded-full transition-all ${i === activeIndex ? 'bg-primary w-4' : 'bg-foreground/30'}`}
               />
@@ -107,6 +110,7 @@ const ProductGallery = ({ mainImage, additionalImages, productName, productDescr
           {allImages.map((img, i) => (
             <button
               key={i}
+              aria-label={`View image ${i + 1} of ${productName}`}
               onClick={() => setActiveIndex(i)}
               className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
                 i === activeIndex ? 'border-primary ring-2 ring-primary/30' : 'border-border hover:border-primary/50'
