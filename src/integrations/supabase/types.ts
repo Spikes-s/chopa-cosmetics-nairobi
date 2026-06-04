@@ -1123,6 +1123,61 @@ export type Database = {
         }
         Relationships: []
       }
+      public_reviews: {
+        Row: {
+          created_at: string | null
+          customer_name: string | null
+          id: string | null
+          is_approved: boolean | null
+          product_id: string | null
+          rating: number | null
+          review_images: string[] | null
+          review_text: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          customer_name?: string | null
+          id?: string | null
+          is_approved?: boolean | null
+          product_id?: string | null
+          rating?: number | null
+          review_images?: string[] | null
+          review_text?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          customer_name?: string | null
+          id?: string | null
+          is_approved?: boolean | null
+          product_id?: string | null
+          rating?: number | null
+          review_images?: string[] | null
+          review_text?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_reviews_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "admin_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_reviews_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_reviews_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "public_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       admin_unlock_account: { Args: { _email: string }; Returns: Json }
