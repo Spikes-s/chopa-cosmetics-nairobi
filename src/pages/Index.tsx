@@ -118,7 +118,7 @@ const Index = () => {
               <span className="text-sm text-foreground/80">Premium Beauty Products</span>
             </div>
             
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-display font-bold mb-6 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+            <h1 className="text-5xl md:text-7xl lg:text-8xl font-display font-bold mb-6">
               <span className="gradient-text">Beauty At</span>
               <br />
               <span className="text-foreground">Your Proximity</span>
