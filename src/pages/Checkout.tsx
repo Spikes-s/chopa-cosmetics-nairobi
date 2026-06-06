@@ -49,8 +49,46 @@ const Checkout = () => {
     open: false, status: 'processing', message: ''
   });
 
+  const [couponCode, setCouponCode] = useState('');
+  const [couponState, setCouponState] = useState<{ status: 'idle' | 'checking' | 'valid' | 'invalid' | 'expired' | 'used'; discount?: number; code?: string; message?: string }>({ status: 'idle' });
+  const [validatingCoupon, setValidatingCoupon] = useState(false);
+
+  const discountAmount = couponState.status === 'valid' && couponState.discount
+    ? Math.round((totalWithWholesale * couponState.discount) / 100)
+    : 0;
   // No delivery fee displayed - paid to driver
-  const totalWithDelivery = totalWithWholesale;
+  const totalWithDelivery = Math.max(0, totalWithWholesale - discountAmount);
+
+  const checkCoupon = async () => {
+    const code = couponCode.trim();
+    if (!code) return;
+    setValidatingCoupon(true);
+    setCouponState({ status: 'checking' });
+    try {
+      const { data, error } = await supabase.rpc('validate_coupon', {
+        _code: code,
+        _email: formData.email.trim() || (user?.email ?? null),
+      });
+      if (error) throw error;
+      const res = data as any;
+      if (res?.valid) {
+        setCouponState({ status: 'valid', discount: Number(res.discount_percent), code: res.code });
+        toast.success(`Coupon applied — ${res.discount_percent}% off`);
+      } else {
+        const reason = res?.reason as string;
+        if (reason === 'expired') setCouponState({ status: 'expired', message: 'This coupon has expired.' });
+        else if (reason === 'already_used') setCouponState({ status: 'used', message: 'This coupon has already been used.' });
+        else setCouponState({ status: 'invalid', message: 'Invalid coupon code.' });
+      }
+    } catch (e: any) {
+      setCouponState({ status: 'invalid', message: e?.message || 'Could not validate coupon.' });
+    } finally {
+      setValidatingCoupon(false);
+    }
+  };
+
+  const clearCoupon = () => { setCouponCode(''); setCouponState({ status: 'idle' }); };
+
 
   if (items.length === 0) {
     navigate('/cart');
