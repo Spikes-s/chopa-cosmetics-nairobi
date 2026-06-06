@@ -171,7 +171,22 @@ const Checkout = () => {
         sessionStorage.setItem('order_tokens', JSON.stringify(existingTokens));
       }
 
+      // Redeem the coupon (best-effort; failure is non-blocking)
+      if (couponState.status === 'valid' && couponState.code) {
+        try {
+          await supabase.rpc('redeem_coupon', {
+            _code: couponState.code,
+            _email: formData.email.trim() || user?.email || '',
+            _order_id: result.order?.id || null,
+            _discount_amount: discountAmount,
+          });
+        } catch (e) {
+          console.warn('Coupon redemption failed:', e);
+        }
+      }
+
       setOrderOverlay({ open: true, status: 'success', message: 'Order placed successfully! 🎉' });
+
       
       setTimeout(() => {
         clearCart();
