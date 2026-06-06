@@ -134,11 +134,16 @@ const AdminDashboard = () => {
               <Star className="w-4 h-4" />
               <span>Reviews</span>
             </TabsTrigger>
+            <TabsTrigger value="vip" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-4">
+              <Crown className="w-4 h-4" />
+              <span>VIP Members</span>
+            </TabsTrigger>
             <TabsTrigger value="security" className="gap-2 data-[state=active]:bg-destructive data-[state=active]:text-destructive-foreground px-4">
               <ShieldCheck className="w-4 h-4" />
               <span>Security</span>
             </TabsTrigger>
           </TabsList>
+
 
           <TabsContent value="pos" className="space-y-4">
             <POSSystem />
