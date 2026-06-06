@@ -525,6 +525,46 @@ const Checkout = () => {
                     Ksh {totalWithWholesale.toLocaleString()}
                   </span>
                 </div>
+
+                {/* VIP Coupon */}
+                <div className="mb-3">
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="VIP coupon code"
+                      value={couponCode}
+                      onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); if (couponState.status !== 'idle') setCouponState({ status: 'idle' }); }}
+                      maxLength={40}
+                      className="h-9"
+                    />
+                    {couponState.status === 'valid' ? (
+                      <Button type="button" variant="outline" size="sm" onClick={clearCoupon}>Remove</Button>
+                    ) : (
+                      <Button type="button" variant="outline" size="sm" onClick={checkCoupon} disabled={validatingCoupon || !couponCode.trim()}>
+                        {validatingCoupon ? '…' : 'Apply'}
+                      </Button>
+                    )}
+                  </div>
+                  {couponState.status === 'valid' && (
+                    <p className="text-xs text-green-600 mt-1">✓ Coupon Applied — {couponState.discount}% off</p>
+                  )}
+                  {couponState.status === 'expired' && (
+                    <p className="text-xs text-destructive mt-1">✕ Coupon Expired</p>
+                  )}
+                  {couponState.status === 'invalid' && (
+                    <p className="text-xs text-destructive mt-1">✕ Invalid Coupon</p>
+                  )}
+                  {couponState.status === 'used' && (
+                    <p className="text-xs text-destructive mt-1">✕ This coupon has already been used.</p>
+                  )}
+                </div>
+
+                {discountAmount > 0 && (
+                  <div className="flex justify-between items-center mb-2 text-green-600">
+                    <span>Discount ({couponState.discount}%)</span>
+                    <span>− Ksh {discountAmount.toLocaleString()}</span>
+                  </div>
+                )}
+
                 {deliveryMethod === 'delivery' && deliveryLocation !== 'cbd' && (
                   <div className="flex items-start gap-2 p-3 rounded-lg bg-warning/10 border border-warning/30 mb-2">
                     <span className="text-lg">👉</span>
@@ -540,6 +580,7 @@ const Checkout = () => {
                   </span>
                 </div>
               </div>
+
 
               {totalWithWholesale >= 50000 && (
                 <div className="mt-4 p-3 rounded-lg bg-accent/10 border border-accent/20">
