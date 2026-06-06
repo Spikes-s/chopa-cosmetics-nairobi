@@ -895,6 +895,235 @@ export type Database = {
         }
         Relationships: []
       }
+      vip_campaign_recipients: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          email: string
+          error_message: string | null
+          id: string
+          sent_at: string | null
+          status: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          email: string
+          error_message?: string | null
+          id?: string
+          sent_at?: string | null
+          status?: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          email?: string
+          error_message?: string | null
+          id?: string
+          sent_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vip_campaign_recipients_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "vip_email_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vip_coupon_redemptions: {
+        Row: {
+          coupon_id: string
+          discount_amount: number | null
+          email: string
+          id: string
+          order_id: string | null
+          redeemed_at: string
+          user_id: string | null
+        }
+        Insert: {
+          coupon_id: string
+          discount_amount?: number | null
+          email: string
+          id?: string
+          order_id?: string | null
+          redeemed_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          coupon_id?: string
+          discount_amount?: number | null
+          email?: string
+          id?: string
+          order_id?: string | null
+          redeemed_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vip_coupon_redemptions_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "vip_coupons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vip_coupon_redemptions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vip_coupons: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string | null
+          discount_percent: number
+          expires_at: string
+          id: string
+          is_active: boolean
+          notes: string | null
+          starts_at: string
+          times_used: number
+          updated_at: string
+          usage_limit: number | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by?: string | null
+          discount_percent: number
+          expires_at?: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          starts_at?: string
+          times_used?: number
+          updated_at?: string
+          usage_limit?: number | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          discount_percent?: number
+          expires_at?: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          starts_at?: string
+          times_used?: number
+          updated_at?: string
+          usage_limit?: number | null
+        }
+        Relationships: []
+      }
+      vip_email_campaigns: {
+        Row: {
+          body_html: string
+          body_text: string | null
+          coupon_id: string | null
+          created_at: string
+          delivered_count: number
+          failed_count: number
+          id: string
+          prompt_used: string | null
+          recipient_count: number
+          sent_at: string | null
+          sent_by: string | null
+          status: string
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          body_html: string
+          body_text?: string | null
+          coupon_id?: string | null
+          created_at?: string
+          delivered_count?: number
+          failed_count?: number
+          id?: string
+          prompt_used?: string | null
+          recipient_count?: number
+          sent_at?: string | null
+          sent_by?: string | null
+          status?: string
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          body_html?: string
+          body_text?: string | null
+          coupon_id?: string | null
+          created_at?: string
+          delivered_count?: number
+          failed_count?: number
+          id?: string
+          prompt_used?: string | null
+          recipient_count?: number
+          sent_at?: string | null
+          sent_by?: string | null
+          status?: string
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vip_email_campaigns_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "vip_coupons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vip_members: {
+        Row: {
+          coupons_used_count: number
+          created_at: string
+          email: string
+          full_name: string | null
+          id: string
+          joined_at: string
+          last_email_sent_at: string | null
+          source: string | null
+          status: string
+          unsubscribe_token: string
+          updated_at: string
+        }
+        Insert: {
+          coupons_used_count?: number
+          created_at?: string
+          email: string
+          full_name?: string | null
+          id?: string
+          joined_at?: string
+          last_email_sent_at?: string | null
+          source?: string | null
+          status?: string
+          unsubscribe_token?: string
+          updated_at?: string
+        }
+        Update: {
+          coupons_used_count?: number
+          created_at?: string
+          email?: string
+          full_name?: string | null
+          id?: string
+          joined_at?: string
+          last_email_sent_at?: string | null
+          source?: string | null
+          status?: string
+          unsubscribe_token?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       vouchers: {
         Row: {
           created_at: string | null
@@ -1192,6 +1421,7 @@ export type Database = {
       }
       check_login_attempt: { Args: { _email: string }; Returns: Json }
       cleanup_old_guest_order_lookups: { Args: never; Returns: number }
+      expire_old_coupons: { Args: never; Returns: number }
       get_guest_order: {
         Args: { _order_id: string; _order_token: string }
         Returns: Database["public"]["CompositeTypes"]["guest_order_info"][]
@@ -1226,11 +1456,24 @@ export type Database = {
         Returns: undefined
       }
       record_failed_login: { Args: { _email: string }; Returns: Json }
+      redeem_coupon: {
+        Args: {
+          _code: string
+          _discount_amount: number
+          _email: string
+          _order_id: string
+        }
+        Returns: Json
+      }
       reduce_stock: {
         Args: { product_id: string; quantity_sold: number }
         Returns: undefined
       }
       reset_login_attempts: { Args: { _email: string }; Returns: undefined }
+      validate_coupon: {
+        Args: { _code: string; _email: string }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "admin" | "customer" | "super_admin"

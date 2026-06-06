@@ -4,7 +4,7 @@ import useAdminAutoLogout from '@/hooks/useAdminAutoLogout';
 import { useAuth } from '@/context/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { LogOut, Package, ShoppingBag, BarChart3, MessageSquare, Settings, Users, Home, Monitor, RotateCcw, FolderTree, UserCog, MapPin, Gift, Star, ShieldCheck } from 'lucide-react';
+import { LogOut, Package, ShoppingBag, BarChart3, MessageSquare, Settings, Users, Home, Monitor, RotateCcw, FolderTree, UserCog, MapPin, Gift, Star, ShieldCheck, Crown } from 'lucide-react';
 import ProductsManager from '@/components/admin/ProductsManager';
 import OrdersManager from '@/components/admin/OrdersManager';
 import SalesAnalytics from '@/components/admin/SalesAnalytics';
@@ -21,6 +21,7 @@ import ReviewsManager from '@/components/admin/ReviewsManager';
 import ThemeToggle from '@/components/ThemeToggle';
 import { VisitorCounter } from '@/components/admin/VisitorCounter';
 import SecurityCenter from '@/components/admin/SecurityCenter';
+import VIPMembersManager from '@/components/admin/VIPMembersManager';
 
 const AdminDashboard = () => {
   const { user, isAdmin, isLoading, signOut } = useAuth();
@@ -133,11 +134,16 @@ const AdminDashboard = () => {
               <Star className="w-4 h-4" />
               <span>Reviews</span>
             </TabsTrigger>
+            <TabsTrigger value="vip" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-4">
+              <Crown className="w-4 h-4" />
+              <span>VIP Members</span>
+            </TabsTrigger>
             <TabsTrigger value="security" className="gap-2 data-[state=active]:bg-destructive data-[state=active]:text-destructive-foreground px-4">
               <ShieldCheck className="w-4 h-4" />
               <span>Security</span>
             </TabsTrigger>
           </TabsList>
+
 
           <TabsContent value="pos" className="space-y-4">
             <POSSystem />
@@ -191,9 +197,14 @@ const AdminDashboard = () => {
             <ReviewsManager />
           </TabsContent>
 
+          <TabsContent value="vip" className="space-y-4">
+            <VIPMembersManager />
+          </TabsContent>
+
           <TabsContent value="security" className="space-y-4">
             <SecurityCenter />
           </TabsContent>
+
         </Tabs>
       </div>
     </div>

@@ -49,8 +49,46 @@ const Checkout = () => {
     open: false, status: 'processing', message: ''
   });
 
+  const [couponCode, setCouponCode] = useState('');
+  const [couponState, setCouponState] = useState<{ status: 'idle' | 'checking' | 'valid' | 'invalid' | 'expired' | 'used'; discount?: number; code?: string; message?: string }>({ status: 'idle' });
+  const [validatingCoupon, setValidatingCoupon] = useState(false);
+
+  const discountAmount = couponState.status === 'valid' && couponState.discount
+    ? Math.round((totalWithWholesale * couponState.discount) / 100)
+    : 0;
   // No delivery fee displayed - paid to driver
-  const totalWithDelivery = totalWithWholesale;
+  const totalWithDelivery = Math.max(0, totalWithWholesale - discountAmount);
+
+  const checkCoupon = async () => {
+    const code = couponCode.trim();
+    if (!code) return;
+    setValidatingCoupon(true);
+    setCouponState({ status: 'checking' });
+    try {
+      const { data, error } = await supabase.rpc('validate_coupon', {
+        _code: code,
+        _email: formData.email.trim() || (user?.email ?? null),
+      });
+      if (error) throw error;
+      const res = data as any;
+      if (res?.valid) {
+        setCouponState({ status: 'valid', discount: Number(res.discount_percent), code: res.code });
+        toast.success(`Coupon applied — ${res.discount_percent}% off`);
+      } else {
+        const reason = res?.reason as string;
+        if (reason === 'expired') setCouponState({ status: 'expired', message: 'This coupon has expired.' });
+        else if (reason === 'already_used') setCouponState({ status: 'used', message: 'This coupon has already been used.' });
+        else setCouponState({ status: 'invalid', message: 'Invalid coupon code.' });
+      }
+    } catch (e: any) {
+      setCouponState({ status: 'invalid', message: e?.message || 'Could not validate coupon.' });
+    } finally {
+      setValidatingCoupon(false);
+    }
+  };
+
+  const clearCoupon = () => { setCouponCode(''); setCouponState({ status: 'idle' }); };
+
 
   if (items.length === 0) {
     navigate('/cart');
@@ -133,7 +171,22 @@ const Checkout = () => {
         sessionStorage.setItem('order_tokens', JSON.stringify(existingTokens));
       }
 
+      // Redeem the coupon (best-effort; failure is non-blocking)
+      if (couponState.status === 'valid' && couponState.code) {
+        try {
+          await supabase.rpc('redeem_coupon', {
+            _code: couponState.code,
+            _email: formData.email.trim() || user?.email || '',
+            _order_id: result.order?.id || null,
+            _discount_amount: discountAmount,
+          });
+        } catch (e) {
+          console.warn('Coupon redemption failed:', e);
+        }
+      }
+
       setOrderOverlay({ open: true, status: 'success', message: 'Order placed successfully! 🎉' });
+
       
       setTimeout(() => {
         clearCart();
@@ -472,6 +525,46 @@ const Checkout = () => {
                     Ksh {totalWithWholesale.toLocaleString()}
                   </span>
                 </div>
+
+                {/* VIP Coupon */}
+                <div className="mb-3">
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="VIP coupon code"
+                      value={couponCode}
+                      onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); if (couponState.status !== 'idle') setCouponState({ status: 'idle' }); }}
+                      maxLength={40}
+                      className="h-9"
+                    />
+                    {couponState.status === 'valid' ? (
+                      <Button type="button" variant="outline" size="sm" onClick={clearCoupon}>Remove</Button>
+                    ) : (
+                      <Button type="button" variant="outline" size="sm" onClick={checkCoupon} disabled={validatingCoupon || !couponCode.trim()}>
+                        {validatingCoupon ? '…' : 'Apply'}
+                      </Button>
+                    )}
+                  </div>
+                  {couponState.status === 'valid' && (
+                    <p className="text-xs text-green-600 mt-1">✓ Coupon Applied — {couponState.discount}% off</p>
+                  )}
+                  {couponState.status === 'expired' && (
+                    <p className="text-xs text-destructive mt-1">✕ Coupon Expired</p>
+                  )}
+                  {couponState.status === 'invalid' && (
+                    <p className="text-xs text-destructive mt-1">✕ Invalid Coupon</p>
+                  )}
+                  {couponState.status === 'used' && (
+                    <p className="text-xs text-destructive mt-1">✕ This coupon has already been used.</p>
+                  )}
+                </div>
+
+                {discountAmount > 0 && (
+                  <div className="flex justify-between items-center mb-2 text-green-600">
+                    <span>Discount ({couponState.discount}%)</span>
+                    <span>− Ksh {discountAmount.toLocaleString()}</span>
+                  </div>
+                )}
+
                 {deliveryMethod === 'delivery' && deliveryLocation !== 'cbd' && (
                   <div className="flex items-start gap-2 p-3 rounded-lg bg-warning/10 border border-warning/30 mb-2">
                     <span className="text-lg">👉</span>
@@ -487,6 +580,7 @@ const Checkout = () => {
                   </span>
                 </div>
               </div>
+
 
               {totalWithWholesale >= 50000 && (
                 <div className="mt-4 p-3 rounded-lg bg-accent/10 border border-accent/20">

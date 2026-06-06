@@ -8,6 +8,7 @@ import CategoryCard from '@/components/CategoryCard';
 import FeaturedProducts from '@/components/FeaturedProducts';
 import FlashSales from '@/components/FlashSales';
 import BundleDeals from '@/components/BundleDeals';
+import VIPMembershipSection from '@/components/VIPMembershipSection';
 import { supabase } from '@/integrations/supabase/client';
 import { ArrowRight, Sparkles, Truck, Shield, Gift, TrendingUp, Star, Clock } from 'lucide-react';
 
@@ -228,6 +229,10 @@ const Index = () => {
 
       {/* Bundle Deals */}
       <BundleDeals />
+
+      {/* VIP Membership */}
+      <VIPMembershipSection />
+
 
       {/* Most Bought Products */}
       <section className="py-16 md:py-24 bg-card/30">

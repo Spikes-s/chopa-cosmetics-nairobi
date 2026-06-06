@@ -29,3 +29,9 @@ verify_jwt = false
 
 [functions.mpesa-query]
 verify_jwt = false
+
+[functions.vip-signup]
+verify_jwt = false
+
+[functions.vip-unsubscribe]
+verify_jwt = false
