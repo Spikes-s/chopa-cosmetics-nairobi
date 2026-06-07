@@ -10,8 +10,8 @@ const corsHeaders = {
 // Input validation regex patterns
 const KENYAN_PHONE_REGEX = /^(?:\+254|0)[17]\d{8}$/;
 // M-Pesa validation: accept full message or just transaction code
-const MPESA_CODE_REGEX = /[A-Z0-9]{10,15}/; // Extract code from message
-const MPESA_MESSAGE_MIN_LENGTH = 10;
+const MPESA_CODE_REGEX = /[A-Z0-9]{6,15}/; // Extract code from message (accept short codes too)
+const MPESA_MESSAGE_MIN_LENGTH = 6;
 
 interface OrderItem {
   id: string;
@@ -305,26 +305,33 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Calculate prices using only server-side database values
     let subtotal = 0;
-    
-    const orderItems = orderData.items.map(item => {
+    const orderItems: any[] = [];
+
+    for (const item of orderData.items) {
       const dbProduct = dbProductMap.get(item.id)!;
-      
+
       if (dbProduct.in_stock === false) {
-        throw new Error('Some items in your order are currently unavailable');
+        return new Response(
+          JSON.stringify({ success: false, error: `"${dbProduct.name}" is currently unavailable. Please remove it and try again.` }),
+          { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
       }
       if (dbProduct.stock_quantity !== null && dbProduct.stock_quantity < item.quantity) {
-        throw new Error('Some items have insufficient stock. Please adjust quantities');
+        return new Response(
+          JSON.stringify({ success: false, error: `Insufficient stock for "${dbProduct.name}". Only ${dbProduct.stock_quantity} left.` }),
+          { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
       }
 
-      const isBraid = dbProduct.category.toLowerCase().includes('braid');
+      const isBraid = (dbProduct.category || '').toLowerCase().includes('braid');
       const threshold = dbProduct.wholesale_min_qty || (isBraid ? 10 : 6);
       const isWholesale = item.quantity >= threshold && dbProduct.wholesale_price !== null && dbProduct.wholesale_price > 0;
       const unitPrice = isWholesale ? dbProduct.wholesale_price! : dbProduct.retail_price;
       const itemTotal = unitPrice * item.quantity;
-      
+
       subtotal += itemTotal;
 
-      return {
+      orderItems.push({
         id: dbProduct.id,
         name: dbProduct.name,
         quantity: item.quantity,
@@ -333,8 +340,8 @@ const handler = async (req: Request): Promise<Response> => {
         image: dbProduct.image_url,
         color: item.color,
         size: item.size,
-      };
-    });
+      });
+    }
 
     const deliveryFee = orderData.delivery_fee || 0;
     const total = subtotal + deliveryFee;
@@ -371,7 +378,7 @@ const handler = async (req: Request): Promise<Response> => {
     if (insertError) {
       console.error('Order insert error:', insertError);
       return new Response(
-        JSON.stringify({ error: 'Failed to create order' }),
+        JSON.stringify({ success: false, error: `Could not save order: ${insertError.message}` }),
         { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
@@ -379,34 +386,23 @@ const handler = async (req: Request): Promise<Response> => {
     console.log('Order created successfully:', createdOrder.id);
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
+      JSON.stringify({
+        success: true,
         order: {
           id: createdOrder.id,
           order_status: createdOrder.order_status,
           receipt_number: createdOrder.receipt_number,
           created_at: createdOrder.created_at,
         },
+        order_token: orderToken,
       }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
 
   } catch (error: any) {
-    console.error('Error in validate-order function:', error.message);
-    
-    let userMessage = 'An error occurred processing your order. Please try again';
-    const errorMsg = (error.message || '').toLowerCase();
-    
-    if (errorMsg.includes('unavailable') || errorMsg.includes('out of stock')) {
-      userMessage = 'Some items in your order are currently unavailable';
-    } else if (errorMsg.includes('insufficient stock') || errorMsg.includes('quantities')) {
-      userMessage = 'Some items have insufficient stock. Please adjust quantities';
-    } else if (errorMsg.includes('invalid order data') || errorMsg.includes('refresh')) {
-      userMessage = 'Invalid order data. Please refresh and try again';
-    }
-    
+    console.error('Error in validate-order function:', error?.message || error);
     return new Response(
-      JSON.stringify({ success: false, error: userMessage }),
+      JSON.stringify({ success: false, error: error?.message || 'An unexpected error occurred. Please try again.' }),
       { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }
