@@ -52,7 +52,7 @@ const TrackOrder = () => {
 
     setLoading(true);
     try {
-      const { data, error: rpcError } = await supabase.rpc('lookup_order_public', {
+      const { data, error: rpcError } = await (supabase.rpc as any)('lookup_order_public', {
         _query: cleanQuery,
         _phone: cleanPhone,
       });
