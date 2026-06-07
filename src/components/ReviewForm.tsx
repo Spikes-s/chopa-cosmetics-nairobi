@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Star, Camera, X } from 'lucide-react';
+import { Star, Camera, X, Heart } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
@@ -21,6 +21,7 @@ const ReviewForm = ({ productId, onReviewSubmitted }: ReviewFormProps) => {
   const [reviewText, setReviewText] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [justSubmitted, setJustSubmitted] = useState(false);
   const [images, setImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -51,13 +52,17 @@ const ReviewForm = ({ productId, onReviewSubmitted }: ReviewFormProps) => {
   const uploadImages = async (): Promise<string[]> => {
     const urls: string[] = [];
     for (const file of images) {
-      const ext = file.name.split('.').pop();
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
       const path = `reviews/${productId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-      const { error } = await supabase.storage.from('product-images').upload(path, file);
-      if (!error) {
-        const { data } = supabase.storage.from('product-images').getPublicUrl(path);
-        urls.push(data.publicUrl);
+      const { error } = await supabase.storage.from('product-images').upload(path, file, { upsert: false, contentType: file.type });
+      if (error) {
+        console.error('Review image upload failed:', error);
+        // Surface to user but don't block submission of the text review
+        toast.error('Could not upload one of your photos — submitting your review without it.');
+        continue;
       }
+      const { data } = supabase.storage.from('product-images').getPublicUrl(path);
+      urls.push(data.publicUrl);
     }
     return urls;
   };
@@ -93,7 +98,8 @@ const ReviewForm = ({ productId, onReviewSubmitted }: ReviewFormProps) => {
         reviewImages,
       });
 
-      toast.success('Review submitted successfully!');
+      toast.success('Thank you for your review ❤️');
+      setJustSubmitted(true);
       setRating(0);
       setReviewText('');
       setCustomerName('');
@@ -101,6 +107,7 @@ const ReviewForm = ({ productId, onReviewSubmitted }: ReviewFormProps) => {
       setImagePreviews([]);
       if (fileInputRef.current) fileInputRef.current.value = '';
       onReviewSubmitted();
+      setTimeout(() => setJustSubmitted(false), 2500);
     } catch (error: any) {
       console.error('Review submission error:', error);
       toast.error(error?.message || 'Failed to submit review. Please try again.');
@@ -108,6 +115,18 @@ const ReviewForm = ({ productId, onReviewSubmitted }: ReviewFormProps) => {
       setSubmitting(false);
     }
   };
+
+  if (justSubmitted) {
+    return (
+      <div className="text-center py-8 animate-fade-in">
+        <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-primary/10 flex items-center justify-center animate-scale-in">
+          <Heart className="w-8 h-8 text-primary fill-primary" />
+        </div>
+        <p className="font-display text-lg text-foreground">Thank you for your review ❤️</p>
+        <p className="text-sm text-muted-foreground mt-1">Your feedback helps the Chopa community.</p>
+      </div>
+    );
+  }
 
   if (!user) {
     return (

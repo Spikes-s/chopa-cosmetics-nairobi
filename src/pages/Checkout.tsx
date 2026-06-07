@@ -95,6 +95,27 @@ const Checkout = () => {
     return null;
   }
 
+  // Categorize errors for friendlier UI messaging
+  const categorizeError = (msg: string): { title: string; message: string } => {
+    const m = (msg || '').toLowerCase();
+    if (m.includes('network') || m.includes('failed to fetch') || m.includes('timeout')) {
+      return { title: 'Network Error', message: 'We could not reach our servers. Please check your internet connection and try again.' };
+    }
+    if (m.includes('stock') || m.includes('unavailable') || m.includes('quantities')) {
+      return { title: 'Inventory Error', message: msg || 'Some items in your cart are no longer available. Please adjust quantities and try again.' };
+    }
+    if (m.includes('mpesa') || m.includes('m-pesa') || m.includes('payment') || m.includes('transaction code')) {
+      return { title: 'Payment Error', message: msg || 'There was a problem with the payment details. Please double-check your M-Pesa transaction code.' };
+    }
+    if (m.includes('phone') || m.includes('email') || m.includes('name') || m.includes('address') || m.includes('invalid') || m.includes('required')) {
+      return { title: 'Validation Error', message: msg || 'Some details are missing or invalid. Please review the form and try again.' };
+    }
+    if (m.includes('rate limit')) {
+      return { title: 'Too Many Attempts', message: 'You have placed many orders recently. Please wait a few minutes and try again.' };
+    }
+    return { title: 'Order Failed', message: msg || 'Something went wrong. Please try again in a moment.' };
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -148,14 +169,14 @@ const Checkout = () => {
         },
       });
 
-      if (error) {
-        setOrderOverlay({ open: true, status: 'error', message: error.message || 'Failed to submit order. Please try again.' });
-        setIsSubmitting(false);
-        return;
-      }
+      // supabase-js sets `error` on non-2xx but still parses `data` when the body is JSON.
+      // Prefer the structured server message over the generic "non-2xx status code".
+      const serverMessage = (result as any)?.error || (result as any)?.message;
 
-      if (!result.success) {
-        setOrderOverlay({ open: true, status: 'error', message: result.error || 'Failed to validate order. Please try again.' });
+      if (error || !(result as any)?.success) {
+        const raw = serverMessage || error?.message || 'Failed to submit order. Please try again.';
+        const { title, message } = categorizeError(raw);
+        setOrderOverlay({ open: true, status: 'error', message: `${title}: ${message}` });
         setIsSubmitting(false);
         return;
       }
@@ -163,8 +184,8 @@ const Checkout = () => {
       // Store order token for guest order tracking
       if (result.order_token) {
         const existingTokens = JSON.parse(sessionStorage.getItem('order_tokens') || '[]');
-        existingTokens.push({ 
-          orderId: result.order.id, 
+        existingTokens.push({
+          orderId: result.order.id,
           token: result.order_token,
           createdAt: new Date().toISOString()
         });
@@ -187,7 +208,6 @@ const Checkout = () => {
 
       setOrderOverlay({ open: true, status: 'success', message: 'Order placed successfully! 🎉' });
 
-      
       setTimeout(() => {
         clearCart();
         navigate('/order-success', {
@@ -202,9 +222,10 @@ const Checkout = () => {
           },
         });
       }, 1500);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Order submission error:', err);
-      setOrderOverlay({ open: true, status: 'error', message: 'Network error. Please check your connection and try again.' });
+      const { title, message } = categorizeError(err?.message || 'Network error');
+      setOrderOverlay({ open: true, status: 'error', message: `${title}: ${message}` });
       setIsSubmitting(false);
     }
   };

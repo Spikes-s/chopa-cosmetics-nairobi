@@ -43,6 +43,7 @@ import MyOrders from "./pages/MyOrders";
 import OrderSuccess from "./pages/OrderSuccess";
 import Wallet from "./pages/Wallet";
 import Reviews from "./pages/Reviews";
+import TrackOrder from "./pages/TrackOrder";
 import PWAInstallPrompt from "./components/PWAInstallPrompt";
 import ThemeApplier from "./components/ThemeApplier";
 
@@ -131,6 +132,7 @@ const AppContent = () => {
           <Route path="/my-orders" element={<MyOrders />} />
           <Route path="/wallet" element={<Wallet />} />
           <Route path="/reviews" element={<Reviews />} />
+          <Route path="/track-order" element={<TrackOrder />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="*" element={<NotFound />} />
