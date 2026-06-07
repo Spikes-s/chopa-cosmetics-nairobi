@@ -1451,6 +1451,26 @@ export type Database = {
         }
         Returns: undefined
       }
+      lookup_order_public: {
+        Args: { _phone: string; _query: string }
+        Returns: {
+          created_at: string
+          delivery_address: string
+          delivery_fee: number
+          delivery_type: string
+          id: string
+          items: Json
+          order_status: string
+          payment_status: string
+          pickup_date: string
+          pickup_time: string
+          receipt_number: string
+          status_history: Json
+          subtotal: number
+          total: number
+          updated_at: string
+        }[]
+      }
       mark_guest_order_lookup_success: {
         Args: { _ip_address: string; _order_id: string }
         Returns: undefined
