@@ -19,7 +19,7 @@ const CategoryCard = ({ category }: CategoryCardProps) => {
   return (
     <Link
       to={`/products?category=${category.slug}`}
-      className="group relative overflow-hidden rounded-2xl aspect-[4/5] border border-border hover:border-primary/50 transition-all duration-500"
+      className="group relative overflow-hidden rounded-2xl aspect-[4/5] border border-border hover:border-primary/60 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-1 transition-all duration-300 ease-out will-change-transform"
     >
       {/* Category Image or Placeholder */}
       {hasImage ? (

@@ -133,13 +133,8 @@ const Index = () => {
             
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in" style={{ animationDelay: '0.6s' }}>
               <Button asChild variant="gradient" size="xl">
-                <Link to="/products">
-                  Shop Now <ArrowRight className="w-5 h-5 ml-2" />
-                </Link>
-              </Button>
-              <Button asChild variant="outline" size="xl">
                 <Link to="/categories">
-                  Browse Categories
+                  Browse Categories <ArrowRight className="w-5 h-5 ml-2" />
                 </Link>
               </Button>
             </div>
