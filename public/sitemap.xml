@@ -26,9 +26,29 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://chopacosmetics.lovable.app/track-order</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://chopacosmetics.lovable.app/my-orders</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
+    <loc>https://chopacosmetics.lovable.app/wallet</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
     <loc>https://chopacosmetics.lovable.app/auth</loc>
     <changefreq>yearly</changefreq>
     <priority>0.4</priority>
+  </url>
+  <url>
+    <loc>https://chopacosmetics.lovable.app/reset-password</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.2</priority>
   </url>
   <url>
     <loc>https://chopacosmetics.lovable.app/cart</loc>
