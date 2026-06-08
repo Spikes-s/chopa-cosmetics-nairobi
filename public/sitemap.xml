@@ -55,4 +55,52 @@
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
+  <url>
+    <loc>https://chopacosmetics.lovable.app/product/5a599d9d-8b97-4724-80ba-db3dfba8ecfe</loc>
+    <lastmod>2026-05-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://chopacosmetics.lovable.app/product/62cddd3e-e276-4794-a6d3-4c8bb7f6aa7f</loc>
+    <lastmod>2026-05-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://chopacosmetics.lovable.app/product/6b4b24ea-e4cf-4d41-b821-1c92a39eb55f</loc>
+    <lastmod>2026-05-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://chopacosmetics.lovable.app/product/d1eefc27-af75-4634-88b4-0eb160286392</loc>
+    <lastmod>2026-05-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://chopacosmetics.lovable.app/product/2dac4ed3-5b2c-43c6-bfb3-70f3bec73a9b</loc>
+    <lastmod>2026-05-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://chopacosmetics.lovable.app/product/33e553d6-b778-4a0b-889a-260cb99d07e8</loc>
+    <lastmod>2026-05-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://chopacosmetics.lovable.app/product/5cc848d5-14a5-4299-8ae2-cdb6987fd98a</loc>
+    <lastmod>2026-05-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://chopacosmetics.lovable.app/product/41190a66-6efe-43d0-95aa-f0d7d8a81ce0</loc>
+    <lastmod>2026-05-17</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
 </urlset>
