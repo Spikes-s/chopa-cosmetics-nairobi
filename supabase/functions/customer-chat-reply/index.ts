@@ -275,8 +275,44 @@ serve(async (req) => {
         }))
       : [];
 
+    // --- LIVE CATALOG CONTEXT ---
+    // Inject categories + products matching the customer's query keywords
+    let catalogContext = "";
+    try {
+      const [{ data: cats }, { data: branches }] = await Promise.all([
+        supabase.from("categories").select("name, subcategories").eq("is_active", true).order("display_order").limit(30),
+        supabase.from("branches").select("name, address, phone, hours").eq("is_active", true).limit(10),
+      ]);
+
+      // Extract keywords from message (words >= 3 chars, ignore stopwords)
+      const stop = new Set(["the","and","for","with","you","are","but","not","this","that","have","what","how","can","get","any","all","when","where","price","cost","want","need","please","hello","hii","hey"]);
+      const keywords = trimmedMessage.toLowerCase().split(/[^a-z0-9]+/).filter(w => w.length >= 3 && !stop.has(w)).slice(0, 6);
+
+      let matchedProducts: any[] = [];
+      if (keywords.length > 0) {
+        const orFilter = keywords.map(k => `search_tags.ilike.%${k}%,name.ilike.%${k}%`).join(",");
+        const { data: prods } = await supabase
+          .from("public_products")
+          .select("name, category, subcategory, retail_price, wholesale_price, in_stock")
+          .or(orFilter)
+          .eq("in_stock", true)
+          .limit(8);
+        matchedProducts = prods || [];
+      }
+
+      const catList = (cats || []).map(c => `- ${c.name}${Array.isArray(c.subcategories) && c.subcategories.length ? ` (${c.subcategories.slice(0,4).join(", ")})` : ""}`).join("\n");
+      const branchList = (branches || []).map(b => `- ${b.name}: ${b.address}${b.phone ? ` | ${b.phone}` : ""}${b.hours ? ` | ${b.hours}` : ""}`).join("\n");
+      const prodList = matchedProducts.length
+        ? matchedProducts.map(p => `- ${p.name} — Ksh ${p.retail_price}${p.wholesale_price ? ` (wholesale Ksh ${p.wholesale_price})` : ""} [${p.category}]`).join("\n")
+        : "(no direct matches — suggest browsing categories)";
+
+      catalogContext = `\n\n## LIVE CATALOG (use this — do NOT make up prices or stock)\n### Active categories:\n${catList || "(loading)"}\n\n### Matching products for this query:\n${prodList}\n\n### Branches:\n${branchList || "(loading)"}\n`;
+    } catch (e) {
+      console.error("Catalog context fetch failed:", e);
+    }
+
     const messages = [
-      { role: "system", content: SYSTEM_PROMPT },
+      { role: "system", content: SYSTEM_PROMPT + catalogContext },
       ...validatedHistory,
       { role: "user", content: trimmedMessage }
     ];
