@@ -120,10 +120,11 @@ const Index = () => {
             </div>
             
             <h1 className="text-5xl md:text-7xl lg:text-8xl font-display font-bold mb-6">
-              <span className="gradient-text">Beauty At</span>
+              <span className="gradient-text">Chopa Cosmetics</span>
               <br />
-              <span className="text-foreground">Your Proximity</span>
+              <span className="text-foreground">Premium Beauty &amp; Hair Extensions in Kenya</span>
             </h1>
+            <p className="sr-only">Chopa Cosmetics Limited – Premium cosmetics, skincare, haircare, makeup, and hair extensions delivered across Kenya. Beauty At Your Proximity.</p>
             
             <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 font-body animate-fade-in" style={{ animationDelay: '0.4s' }}>
               Discover premium cosmetics, hair care, and beauty essentials at Chopa Cosmetics Limited. 
