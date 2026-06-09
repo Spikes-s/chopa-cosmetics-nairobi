@@ -13,8 +13,9 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import {
-  Crown, Users, Mail, Ticket, Download, Sparkles, Send, RefreshCw, Copy,
+  Crown, Users, Mail, Ticket, Download, Sparkles, Send, RefreshCw, Copy, Check,
 } from "lucide-react";
+import VIPPlansManager from "./VIPPlansManager";
 
 interface VIPMember {
   id: string;
@@ -24,7 +25,15 @@ interface VIPMember {
   joined_at: string;
   last_email_sent_at: string | null;
   coupons_used_count: number;
+  tier?: string | null;
+  plan_id?: string | null;
+  payment_status?: "free" | "pending" | "paid" | "expired" | null;
+  paid_until?: string | null;
+  mpesa_code?: string | null;
+  phone?: string | null;
 }
+
+interface PlanLite { id: string; slug: string; name: string; duration_days: number; price_ksh: number; }
 
 interface Coupon {
   id: string;
@@ -62,6 +71,7 @@ const VIPMembersManager = () => {
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [plansLite, setPlansLite] = useState<PlanLite[]>([]);
 
   // Compose
   const [prompt, setPrompt] = useState("");
@@ -79,16 +89,18 @@ const VIPMembersManager = () => {
 
   const loadAll = async () => {
     setLoading(true);
-    const [m, c, camps, reds] = await Promise.all([
+    const [m, c, camps, reds, pl] = await Promise.all([
       supabase.from("vip_members").select("*").order("joined_at", { ascending: false }),
       supabase.from("vip_coupons").select("*").order("created_at", { ascending: false }),
       supabase.from("vip_email_campaigns").select("id", { count: "exact", head: true }).eq("status", "sent"),
       supabase.from("vip_coupon_redemptions").select("id", { count: "exact", head: true }),
+      supabase.from("vip_plans").select("id, slug, name, duration_days, price_ksh"),
     ]);
     setMembers((m.data as VIPMember[]) || []);
     setCoupons((c.data as Coupon[]) || []);
     setCampaignsSent(camps.count || 0);
     setCouponsRedeemed(reds.count || 0);
+    setPlansLite((pl.data as PlanLite[]) || []);
     setLoading(false);
   };
 
@@ -119,6 +131,31 @@ const VIPMembersManager = () => {
     toast.success("Member updated");
     loadAll();
   };
+
+  const approvePayment = async (m: VIPMember) => {
+    const plan = plansLite.find((p) => p.id === m.plan_id) || plansLite.find((p) => p.slug === m.tier);
+    if (!plan) return toast.error("Linked plan not found");
+    const paid_until = new Date(Date.now() + plan.duration_days * 86400000).toISOString();
+    const { error } = await supabase
+      .from("vip_members")
+      .update({ payment_status: "paid", paid_until, plan_id: plan.id, tier: plan.slug })
+      .eq("id", m.id);
+    if (error) return toast.error(error.message);
+    toast.success(`${m.email} activated as ${plan.name}`);
+    loadAll();
+  };
+
+  const rejectPayment = async (m: VIPMember) => {
+    if (!confirm("Reject this payment? The M-Pesa code will be cleared so the member can resubmit.")) return;
+    const { error } = await supabase
+      .from("vip_members")
+      .update({ payment_status: "free", mpesa_code: null, tier: "free", plan_id: null })
+      .eq("id", m.id);
+    if (error) return toast.error(error.message);
+    toast.success("Payment rejected");
+    loadAll();
+  };
+
 
   const exportCsv = () => {
     const rows = [
