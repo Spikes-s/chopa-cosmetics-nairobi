@@ -7,7 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Save, Image, MapPin, Phone, Mail, Clock } from 'lucide-react';
+import { Save, Image, MapPin, Phone, Mail, Clock, Crown } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import SuperAdminControls from './SuperAdminControls';
 import { useAuth } from '@/context/AuthContext';
 
@@ -33,6 +34,7 @@ const SettingsManager = () => {
     hours: '7:30 AM – 9:00 PM',
     map_url: '',
   });
+  const [vipPaidEnabled, setVipPaidEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const { toast } = useToast();
@@ -59,6 +61,7 @@ const SettingsManager = () => {
           hours: settingsMap.hours || prev.hours,
           map_url: settingsMap.map_url || prev.map_url,
         }));
+        setVipPaidEnabled((settingsMap.vip_paid_enabled || 'false').toLowerCase() === 'true');
       }
       setIsFetching(false);
     };
@@ -100,6 +103,7 @@ const SettingsManager = () => {
         saveSetting('email', settings.email),
         saveSetting('hours', settings.hours),
         saveSetting('map_url', settings.map_url),
+        saveSetting('vip_paid_enabled', vipPaidEnabled ? 'true' : 'false'),
       ]);
 
       toast({
@@ -253,7 +257,28 @@ const SettingsManager = () => {
           </div>
         </CardContent>
       </Card>
-
+      <Card className="glass-card">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Crown className="w-5 h-5 text-accent" />
+            VIP Membership Mode
+          </CardTitle>
+          <CardDescription>
+            Switch between free VIP sign-ups and paid VIP plans (M-Pesa Till 4623226).
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="font-medium">Paid VIP Plans</p>
+              <p className="text-xs text-muted-foreground">
+                When enabled, homepage shows VIP tiers and collects M-Pesa payment codes for admin verification.
+              </p>
+            </div>
+            <Switch checked={vipPaidEnabled} onCheckedChange={setVipPaidEnabled} />
+          </div>
+        </CardContent>
+      </Card>
 
 
 

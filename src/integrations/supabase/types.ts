@@ -1091,8 +1091,14 @@ export type Database = {
           id: string
           joined_at: string
           last_email_sent_at: string | null
+          mpesa_code: string | null
+          paid_until: string | null
+          payment_status: string
+          phone: string | null
+          plan_id: string | null
           source: string | null
           status: string
+          tier: string
           unsubscribe_token: string
           updated_at: string
         }
@@ -1104,8 +1110,14 @@ export type Database = {
           id?: string
           joined_at?: string
           last_email_sent_at?: string | null
+          mpesa_code?: string | null
+          paid_until?: string | null
+          payment_status?: string
+          phone?: string | null
+          plan_id?: string | null
           source?: string | null
           status?: string
+          tier?: string
           unsubscribe_token?: string
           updated_at?: string
         }
@@ -1117,9 +1129,62 @@ export type Database = {
           id?: string
           joined_at?: string
           last_email_sent_at?: string | null
+          mpesa_code?: string | null
+          paid_until?: string | null
+          payment_status?: string
+          phone?: string | null
+          plan_id?: string | null
           source?: string | null
           status?: string
+          tier?: string
           unsubscribe_token?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vip_members_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "vip_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vip_plans: {
+        Row: {
+          created_at: string
+          duration_days: number
+          id: string
+          is_active: boolean
+          name: string
+          perks: Json
+          price_ksh: number
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          duration_days: number
+          id?: string
+          is_active?: boolean
+          name: string
+          perks?: Json
+          price_ksh: number
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          duration_days?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          perks?: Json
+          price_ksh?: number
+          slug?: string
+          sort_order?: number
           updated_at?: string
         }
         Relationships: []
