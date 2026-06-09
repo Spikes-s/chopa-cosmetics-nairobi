@@ -279,8 +279,16 @@ const VIPMembersManager = () => {
       </div>
 
       <Tabs defaultValue="members">
-        <TabsList>
-          <TabsTrigger value="members">Members</TabsTrigger>
+        <TabsList className="flex-wrap h-auto">
+          <TabsTrigger value="members">
+            Members
+            {members.filter((m) => m.payment_status === "pending").length > 0 && (
+              <Badge className="ml-2 bg-amber-500 text-white">
+                {members.filter((m) => m.payment_status === "pending").length} pending
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="plans">Plans</TabsTrigger>
           <TabsTrigger value="compose">Compose Email</TabsTrigger>
           <TabsTrigger value="coupons">Coupons</TabsTrigger>
         </TabsList>
@@ -309,41 +317,80 @@ const VIPMembersManager = () => {
                   <tr>
                     <th className="p-3">Name</th>
                     <th className="p-3">Email</th>
-                    <th className="p-3">Joined</th>
-                    <th className="p-3">Last Email</th>
-                    <th className="p-3">Used</th>
+                    <th className="p-3">Tier</th>
+                    <th className="p-3">Payment</th>
+                    <th className="p-3">Paid Until</th>
                     <th className="p-3">Status</th>
+                    <th className="p-3">Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loading ? (
-                    <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">Loading…</td></tr>
+                    <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">Loading…</td></tr>
                   ) : filtered.length === 0 ? (
-                    <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">No members yet.</td></tr>
-                  ) : filtered.map((m) => (
-                    <tr key={m.id} className="border-t border-border">
-                      <td className="p-3">{m.full_name || <span className="text-muted-foreground">—</span>}</td>
-                      <td className="p-3">{m.email}</td>
-                      <td className="p-3 text-muted-foreground">{new Date(m.joined_at).toLocaleDateString()}</td>
-                      <td className="p-3 text-muted-foreground">{m.last_email_sent_at ? new Date(m.last_email_sent_at).toLocaleDateString() : "—"}</td>
-                      <td className="p-3">{m.coupons_used_count}</td>
-                      <td className="p-3">
-                        <Select value={m.status} onValueChange={(v) => updateMemberStatus(m.id, v as VIPMember["status"])}>
-                          <SelectTrigger className="h-8 w-36"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="active">Active</SelectItem>
-                            <SelectItem value="unsubscribed">Unsubscribed</SelectItem>
-                            <SelectItem value="blocked">Blocked</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </td>
-                    </tr>
-                  ))}
+                    <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">No members yet.</td></tr>
+                  ) : filtered.map((m) => {
+                    const ps = m.payment_status || "free";
+                    const tier = m.tier || "free";
+                    return (
+                      <tr key={m.id} className="border-t border-border align-top">
+                        <td className="p-3">
+                          <div>{m.full_name || <span className="text-muted-foreground">—</span>}</div>
+                          {m.phone && <div className="text-xs text-muted-foreground">{m.phone}</div>}
+                        </td>
+                        <td className="p-3">{m.email}</td>
+                        <td className="p-3">
+                          <Badge variant={tier === "free" ? "secondary" : "default"} className="capitalize">{tier}</Badge>
+                        </td>
+                        <td className="p-3">
+                          {ps === "paid" && <Badge className="bg-green-500/20 text-green-600 border-green-500/30">Paid</Badge>}
+                          {ps === "pending" && <Badge className="bg-amber-500/20 text-amber-600 border-amber-500/30">Pending</Badge>}
+                          {ps === "expired" && <Badge variant="secondary">Expired</Badge>}
+                          {ps === "free" && <Badge variant="outline">Free</Badge>}
+                          {m.mpesa_code && (
+                            <div className="text-[10px] font-mono text-muted-foreground mt-1">{m.mpesa_code}</div>
+                          )}
+                        </td>
+                        <td className="p-3 text-xs text-muted-foreground">
+                          {m.paid_until ? new Date(m.paid_until).toLocaleDateString() : "—"}
+                        </td>
+                        <td className="p-3">
+                          <Select value={m.status} onValueChange={(v) => updateMemberStatus(m.id, v as VIPMember["status"])}>
+                            <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="active">Active</SelectItem>
+                              <SelectItem value="unsubscribed">Unsubscribed</SelectItem>
+                              <SelectItem value="blocked">Blocked</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </td>
+                        <td className="p-3">
+                          {ps === "pending" ? (
+                            <div className="flex gap-1">
+                              <Button size="sm" variant="default" className="gap-1 h-8" onClick={() => approvePayment(m)}>
+                                <Check className="w-3.5 h-3.5" /> Approve
+                              </Button>
+                              <Button size="sm" variant="outline" className="h-8" onClick={() => rejectPayment(m)}>
+                                Reject
+                              </Button>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="plans" className="space-y-4">
+          <VIPPlansManager />
+        </TabsContent>
+
 
         <TabsContent value="compose" className="space-y-4">
           <Card>
