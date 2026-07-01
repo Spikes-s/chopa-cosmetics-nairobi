@@ -118,19 +118,26 @@ const Auth = ({ isModal = false, onClose }: AuthProps) => {
             variant: 'destructive',
           });
         } else {
-          if (phone) {
-            const { data: { user: newUser } } = await supabase.auth.getUser();
-            if (newUser) {
-              await supabase
-                .from('profiles')
-                .update({ phone })
-                .eq('user_id', newUser.id);
+          const { data: { user: newUser } } = await supabase.auth.getUser();
+          if (newUser) {
+            if (phone) {
+              await supabase.from('profiles').update({ phone }).eq('user_id', newUser.id);
+            }
+            // Record referral if present in URL
+            const refCode = searchParams.get('ref');
+            if (refCode) {
+              try {
+                await (supabase.rpc as any)('record_referral_signup', {
+                  _referral_code: refCode, _referred_user_id: newUser.id, _referred_email: email,
+                });
+              } catch (e) { console.warn('Referral capture failed', e); }
             }
           }
           toast({
             title: 'Account Created!',
-            description: 'Welcome to Chopa Cosmetics!',
+            description: searchParams.get('ref') ? 'Welcome! Referral applied 💎' : 'Welcome to Chopa Cosmetics!',
           });
+
           if (isModal && onClose) {
             onClose();
           } else {

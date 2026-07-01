@@ -370,6 +370,66 @@ export type Database = {
         }
         Relationships: []
       }
+      loyalty_accounts: {
+        Row: {
+          created_at: string
+          id: string
+          lifetime_earned: number
+          lifetime_redeemed: number
+          points_balance: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lifetime_earned?: number
+          lifetime_redeemed?: number
+          points_balance?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lifetime_earned?: number
+          lifetime_redeemed?: number
+          points_balance?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      loyalty_transactions: {
+        Row: {
+          created_at: string
+          id: string
+          metadata: Json | null
+          order_id: string | null
+          points_change: number
+          reason: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          order_id?: string | null
+          points_change: number
+          reason: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          order_id?: string | null
+          points_change?: number
+          reason?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       mpesa_transactions: {
         Row: {
           amount: number
@@ -721,6 +781,69 @@ export type Database = {
           terms_version?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      referral_codes: {
+        Row: {
+          code: string
+          created_at: string
+          total_referrals: number
+          total_rewards_earned: number
+          user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          total_referrals?: number
+          total_rewards_earned?: number
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          total_referrals?: number
+          total_rewards_earned?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      referrals: {
+        Row: {
+          converted_at: string | null
+          created_at: string
+          first_order_id: string | null
+          id: string
+          referral_code: string
+          referred_email: string | null
+          referred_user_id: string | null
+          referrer_user_id: string
+          reward_points: number | null
+          status: string
+        }
+        Insert: {
+          converted_at?: string | null
+          created_at?: string
+          first_order_id?: string | null
+          id?: string
+          referral_code: string
+          referred_email?: string | null
+          referred_user_id?: string | null
+          referrer_user_id: string
+          reward_points?: number | null
+          status?: string
+        }
+        Update: {
+          converted_at?: string | null
+          created_at?: string
+          first_order_id?: string | null
+          id?: string
+          referral_code?: string
+          referred_email?: string | null
+          referred_user_id?: string | null
+          referrer_user_id?: string
+          reward_points?: number | null
+          status?: string
         }
         Relationships: []
       }
@@ -1475,6 +1598,15 @@ export type Database = {
     }
     Functions: {
       admin_unlock_account: { Args: { _email: string }; Returns: Json }
+      award_loyalty_points: {
+        Args: {
+          _order_id?: string
+          _points: number
+          _reason: string
+          _user_id: string
+        }
+        Returns: Json
+      }
       check_guest_order_rate_limit: {
         Args: {
           _ip_address: string
@@ -1497,6 +1629,10 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_or_create_referral_code: {
+        Args: { _user_id: string }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1504,6 +1640,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_active_vip: { Args: { _email: string }; Returns: boolean }
       log_security_event: {
         Args: {
           _details?: Json
@@ -1541,6 +1678,14 @@ export type Database = {
         Returns: undefined
       }
       record_failed_login: { Args: { _email: string }; Returns: Json }
+      record_referral_signup: {
+        Args: {
+          _referral_code: string
+          _referred_email: string
+          _referred_user_id: string
+        }
+        Returns: Json
+      }
       redeem_coupon: {
         Args: {
           _code: string
@@ -1550,11 +1695,19 @@ export type Database = {
         }
         Returns: Json
       }
+      redeem_loyalty_points: {
+        Args: { _order_id: string; _points: number; _user_id: string }
+        Returns: Json
+      }
       reduce_stock: {
         Args: { product_id: string; quantity_sold: number }
         Returns: undefined
       }
       reset_login_attempts: { Args: { _email: string }; Returns: undefined }
+      reward_referral_on_first_order: {
+        Args: { _order_id: string; _referred_user_id: string }
+        Returns: Json
+      }
       validate_coupon: {
         Args: { _code: string; _email: string }
         Returns: Json

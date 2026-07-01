@@ -35,3 +35,7 @@ verify_jwt = false
 
 [functions.vip-unsubscribe]
 verify_jwt = false
+
+[functions.vip-expiry-check]
+verify_jwt = false
+

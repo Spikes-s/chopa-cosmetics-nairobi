@@ -8,6 +8,8 @@ import { Wallet as WalletIcon, ArrowUpRight, ArrowDownLeft, Gift, RefreshCw } fr
 import { formatDistanceToNow } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { LoyaltyAndReferralCard } from '@/components/LoyaltyAndReferralCard';
+
 
 interface WalletData {
   balance: number;
@@ -93,6 +95,10 @@ const Wallet = () => {
     <div className="container mx-auto px-4 py-8">
       <SEO title={'My Wallet | Chopa Cosmetics'} description={'View your Chopa Cosmetics wallet balance, cashback earnings, and transaction history.'} noindex />
       <h1 className="text-3xl font-display font-bold text-foreground mb-8">My Wallet</h1>
+
+      <LoyaltyAndReferralCard />
+
+
 
       {/* Balance Card */}
       <Card className="gold-glow border-accent/20 mb-8">

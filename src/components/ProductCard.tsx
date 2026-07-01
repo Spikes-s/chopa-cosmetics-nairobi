@@ -7,6 +7,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Product, isHairExtension } from '@/data/products';
 import { useCart } from '@/context/CartContext';
 import { toast } from 'sonner';
+import { useIsVIP, getDisplayPrice } from '@/lib/vip-pricing';
+import { Sparkles } from 'lucide-react';
+
 
 interface ProductCardProps {
   product: Product;
@@ -17,8 +20,11 @@ const ProductCard = ({ product, onQuickView }: ProductCardProps) => {
   const { addItem } = useCart();
   const navigate = useNavigate();
   const [imageLoaded, setImageLoaded] = useState(false);
-  
+  const { isVIP } = useIsVIP();
+  const display = getDisplayPrice(product.price, product.wholesalePrice, isVIP);
+
   const isExtension = isHairExtension(product);
+
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -118,15 +124,26 @@ const ProductCard = ({ product, onQuickView }: ProductCardProps) => {
           <h3 className="font-display font-semibold text-foreground mb-1.5 line-clamp-2 text-sm sm:text-base group-hover:text-primary transition-colors">
             {product.name}
           </h3>
-          <div className="flex items-baseline gap-2">
-            <span className="text-base sm:text-lg font-bold text-foreground">
-              Ksh {product.price.toLocaleString()}
+          <div className="flex items-baseline gap-2 flex-wrap">
+            <span className={`text-base sm:text-lg font-bold ${display.isVipPrice ? 'text-accent' : 'text-foreground'}`}>
+              Ksh {display.price.toLocaleString()}
             </span>
-            <span className="text-xs sm:text-sm text-muted-foreground line-through">
-              Ksh {Math.round(product.price * 1.2).toLocaleString()}
-            </span>
+            {display.original && (
+              <span className="text-xs sm:text-sm text-muted-foreground line-through">
+                Ksh {display.original.toLocaleString()}
+              </span>
+            )}
+            {!display.original && (
+              <span className="text-xs sm:text-sm text-muted-foreground line-through">
+                Ksh {Math.round(display.price * 1.2).toLocaleString()}
+              </span>
+            )}
           </div>
-          {product.wholesalePrice > 0 && (
+          {display.isVipPrice ? (
+            <p className="text-[10px] sm:text-xs text-accent mt-1 flex items-center gap-1 font-semibold">
+              <Sparkles className="w-3 h-3" /> VIP Price applied
+            </p>
+          ) : product.wholesalePrice > 0 && (
             <p className="text-[10px] sm:text-xs text-accent mt-1">
               Wholesale: Ksh {product.wholesalePrice.toLocaleString()}
             </p>
@@ -136,5 +153,6 @@ const ProductCard = ({ product, onQuickView }: ProductCardProps) => {
     </Card>
   );
 };
+
 
 export default ProductCard;
