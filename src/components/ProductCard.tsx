@@ -7,6 +7,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Product, isHairExtension } from '@/data/products';
 import { useCart } from '@/context/CartContext';
 import { toast } from 'sonner';
+import { useIsVIP, getDisplayPrice } from '@/lib/vip-pricing';
+import { Sparkles } from 'lucide-react';
+
 
 interface ProductCardProps {
   product: Product;
