@@ -20,8 +20,11 @@ const ProductCard = ({ product, onQuickView }: ProductCardProps) => {
   const { addItem } = useCart();
   const navigate = useNavigate();
   const [imageLoaded, setImageLoaded] = useState(false);
-  
+  const { isVIP } = useIsVIP();
+  const display = getDisplayPrice(product.price, product.wholesalePrice, isVIP);
+
   const isExtension = isHairExtension(product);
+
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
