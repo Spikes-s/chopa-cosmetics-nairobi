@@ -385,6 +385,32 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('Order created successfully:', createdOrder.id);
 
+    // Award loyalty points (1 pt per Ksh 10) & handle referrals for authenticated users
+    if (resolvedUserId) {
+      try {
+        const points = Math.floor(total / 10);
+        if (points > 0) {
+          await supabase.rpc('award_loyalty_points', {
+            _user_id: resolvedUserId, _points: points,
+            _reason: 'order_purchase', _order_id: createdOrder.id,
+          });
+        }
+        // Reward referral on user's first order
+        const { count } = await supabase
+          .from('orders')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', resolvedUserId);
+        if ((count ?? 0) <= 1) {
+          await supabase.rpc('reward_referral_on_first_order', {
+            _referred_user_id: resolvedUserId, _order_id: createdOrder.id,
+          });
+        }
+      } catch (e) {
+        console.warn('Loyalty/referral processing failed', e);
+      }
+    }
+
+
     return new Response(
       JSON.stringify({
         success: true,
