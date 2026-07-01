@@ -8,6 +8,8 @@ import { Wallet as WalletIcon, ArrowUpRight, ArrowDownLeft, Gift, RefreshCw } fr
 import { formatDistanceToNow } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { LoyaltyAndReferralCard } from '@/components/LoyaltyAndReferralCard';
+
 
 interface WalletData {
   balance: number;
