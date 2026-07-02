@@ -79,6 +79,7 @@ Deno.serve(async (req) => {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    const safe_body_html = DOMPurify.sanitize(String(body_html), SANITIZE_CONFIG);
 
     const { data: members, error: membersErr } = await supabase
       .from("vip_members")
