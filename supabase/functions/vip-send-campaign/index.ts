@@ -1,6 +1,22 @@
 // Admin-only: send an email campaign to all active VIP members via Resend
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
+// Defense-in-depth server-side sanitization. The admin UI already sanitizes
+// with DOMPurify before submitting; this strips the most dangerous vectors
+// (script tags, inline event handlers, javascript: URLs, iframes/objects)
+// in case the payload is submitted by a modified client.
+function sanitizeHtml(input: string): string {
+  let s = String(input ?? "");
+  s = s.replace(/<\s*(script|style|iframe|object|embed|link|meta|form|input|button|svg)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, "");
+  s = s.replace(/<\s*(script|style|iframe|object|embed|link|meta|form|input|button|svg)[^>]*\/?>/gi, "");
+  s = s.replace(/\son[a-z]+\s*=\s*"[^"]*"/gi, "");
+  s = s.replace(/\son[a-z]+\s*=\s*'[^']*'/gi, "");
+  s = s.replace(/\son[a-z]+\s*=\s*[^\s>]+/gi, "");
+  s = s.replace(/(href|src)\s*=\s*"(\s*javascript:|\s*data:text\/html)[^"]*"/gi, '$1="#"');
+  s = s.replace(/(href|src)\s*=\s*'(\s*javascript:|\s*data:text\/html)[^']*'/gi, "$1='#'");
+  return s;
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -73,6 +89,7 @@ Deno.serve(async (req) => {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    const safe_body_html = sanitizeHtml(body_html);
 
     const { data: members, error: membersErr } = await supabase
       .from("vip_members")
@@ -88,7 +105,7 @@ Deno.serve(async (req) => {
     const { data: campaign } = await supabase
       .from("vip_email_campaigns")
       .insert({
-        subject, body_html, body_text, prompt_used, coupon_id: coupon_id || null,
+        subject, body_html: safe_body_html, body_text, prompt_used, coupon_id: coupon_id || null,
         sent_by: user.id, status: "sending", recipient_count: members?.length || 0,
       })
       .select("id").single();
@@ -97,7 +114,7 @@ Deno.serve(async (req) => {
     let delivered = 0, failed = 0;
 
     for (const m of members || []) {
-      const html = wrapHtml(body_html, `${baseUnsub}${m.unsubscribe_token}`);
+      const html = wrapHtml(safe_body_html, `${baseUnsub}${m.unsubscribe_token}`);
       try {
         const resp = await fetch("https://api.resend.com/emails", {
           method: "POST",

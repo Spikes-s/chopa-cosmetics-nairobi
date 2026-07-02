@@ -100,12 +100,6 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://chopacosmetics.lovable.app/product/2dac4ed3-5b2c-43c6-bfb3-70f3bec73a9b</loc>
-    <lastmod>2026-05-05</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
     <loc>https://chopacosmetics.lovable.app/product/33e553d6-b778-4a0b-889a-260cb99d07e8</loc>
     <lastmod>2026-05-05</lastmod>
     <changefreq>weekly</changefreq>
@@ -120,6 +114,18 @@
   <url>
     <loc>https://chopacosmetics.lovable.app/product/41190a66-6efe-43d0-95aa-f0d7d8a81ce0</loc>
     <lastmod>2026-05-17</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://chopacosmetics.lovable.app/product/2dac4ed3-5b2c-43c6-bfb3-70f3bec73a9b</loc>
+    <lastmod>2026-06-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://chopacosmetics.lovable.app/product/d4d1fb59-f52b-4215-a6e7-db4454bdbe71</loc>
+    <lastmod>2026-06-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>

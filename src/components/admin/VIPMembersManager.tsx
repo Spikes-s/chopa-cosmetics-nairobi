@@ -15,7 +15,15 @@ import { toast } from "sonner";
 import {
   Crown, Users, Mail, Ticket, Download, Sparkles, Send, RefreshCw, Copy, Check,
 } from "lucide-react";
+import DOMPurify from "dompurify";
 import VIPPlansManager from "./VIPPlansManager";
+
+const SANITIZE_CONFIG = {
+  ALLOWED_TAGS: ["p", "h1", "h2", "h3", "a", "b", "strong", "i", "em", "br", "ul", "ol", "li", "img", "span", "div"],
+  ALLOWED_ATTR: ["href", "src", "alt", "title", "style", "target", "rel"],
+  ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto):|[^a-z]|[a-z+.-]+(?:[^a-z+.\-:]|$))/i,
+};
+const sanitizeEmailHtml = (html: string) => DOMPurify.sanitize(html, SANITIZE_CONFIG);
 
 interface VIPMember {
   id: string;
@@ -223,7 +231,7 @@ const VIPMembersManager = () => {
       });
       if (error) throw error;
       setSubject(data.subject);
-      setBodyHtml(data.body_html);
+      setBodyHtml(sanitizeEmailHtml(data.body_html || ""));
       setBodyText(data.body_text);
       toast.success("Email drafted ✨");
     } catch (e: any) {
@@ -238,9 +246,10 @@ const VIPMembersManager = () => {
     if (!confirm(`Send this email to ${stats.active} active VIP members?`)) return;
     setSending(true);
     try {
+      const cleanHtml = sanitizeEmailHtml(bodyHtml);
       const { data, error } = await supabase.functions.invoke("vip-send-campaign", {
         body: {
-          subject, body_html: bodyHtml, body_text: bodyText,
+          subject, body_html: cleanHtml, body_text: bodyText,
           prompt_used: prompt, coupon_id: attachCoupon,
         },
       });
@@ -444,7 +453,7 @@ const VIPMembersManager = () => {
               {bodyHtml && (
                 <div>
                   <Label>Preview</Label>
-                  <div className="rounded-lg border border-border bg-card p-4" dangerouslySetInnerHTML={{ __html: bodyHtml }} />
+                  <div className="rounded-lg border border-border bg-card p-4" dangerouslySetInnerHTML={{ __html: sanitizeEmailHtml(bodyHtml) }} />
                 </div>
               )}
             </CardContent>
