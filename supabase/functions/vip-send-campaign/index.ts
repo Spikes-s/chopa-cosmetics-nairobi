@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
     const { data: campaign } = await supabase
       .from("vip_email_campaigns")
       .insert({
-        subject, body_html, body_text, prompt_used, coupon_id: coupon_id || null,
+        subject, body_html: safe_body_html, body_text, prompt_used, coupon_id: coupon_id || null,
         sent_by: user.id, status: "sending", recipient_count: members?.length || 0,
       })
       .select("id").single();
