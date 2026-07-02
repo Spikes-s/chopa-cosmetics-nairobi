@@ -15,7 +15,15 @@ import { toast } from "sonner";
 import {
   Crown, Users, Mail, Ticket, Download, Sparkles, Send, RefreshCw, Copy, Check,
 } from "lucide-react";
+import DOMPurify from "dompurify";
 import VIPPlansManager from "./VIPPlansManager";
+
+const SANITIZE_CONFIG = {
+  ALLOWED_TAGS: ["p", "h1", "h2", "h3", "a", "b", "strong", "i", "em", "br", "ul", "ol", "li", "img", "span", "div"],
+  ALLOWED_ATTR: ["href", "src", "alt", "title", "style", "target", "rel"],
+  ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto):|[^a-z]|[a-z+.-]+(?:[^a-z+.\-:]|$))/i,
+};
+const sanitizeEmailHtml = (html: string) => DOMPurify.sanitize(html, SANITIZE_CONFIG);
 
 interface VIPMember {
   id: string;
