@@ -453,7 +453,7 @@ const VIPMembersManager = () => {
               {bodyHtml && (
                 <div>
                   <Label>Preview</Label>
-                  <div className="rounded-lg border border-border bg-card p-4" dangerouslySetInnerHTML={{ __html: bodyHtml }} />
+                  <div className="rounded-lg border border-border bg-card p-4" dangerouslySetInnerHTML={{ __html: sanitizeEmailHtml(bodyHtml) }} />
                 </div>
               )}
             </CardContent>
