@@ -104,7 +104,7 @@ Deno.serve(async (req) => {
     let delivered = 0, failed = 0;
 
     for (const m of members || []) {
-      const html = wrapHtml(body_html, `${baseUnsub}${m.unsubscribe_token}`);
+      const html = wrapHtml(safe_body_html, `${baseUnsub}${m.unsubscribe_token}`);
       try {
         const resp = await fetch("https://api.resend.com/emails", {
           method: "POST",
