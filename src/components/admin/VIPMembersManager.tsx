@@ -231,7 +231,7 @@ const VIPMembersManager = () => {
       });
       if (error) throw error;
       setSubject(data.subject);
-      setBodyHtml(data.body_html);
+      setBodyHtml(sanitizeEmailHtml(data.body_html || ""));
       setBodyText(data.body_text);
       toast.success("Email drafted ✨");
     } catch (e: any) {
