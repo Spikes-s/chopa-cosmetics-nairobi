@@ -21,8 +21,40 @@ async function sendEmail(to: string, subject: string, html: string) {
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
   const url = Deno.env.get("SUPABASE_URL")!;
   const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const cronSecret = Deno.env.get("CRON_SECRET");
+
+  // Auth: require either a matching CRON_SECRET header (for scheduled invocations)
+  // or an authenticated admin/super_admin user.
+  const providedSecret = req.headers.get("x-cron-secret");
+  let authorized = false;
+
+  if (cronSecret && providedSecret && providedSecret === cronSecret) {
+    authorized = true;
+  } else {
+    const authHeader = req.headers.get("authorization");
+    if (authHeader?.startsWith("Bearer ")) {
+      const userClient = createClient(url, Deno.env.get("SUPABASE_ANON_KEY")!, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: { user } } = await userClient.auth.getUser();
+      if (user) {
+        const { data: isAdmin } = await userClient.rpc("has_role", { _user_id: user.id, _role: "admin" });
+        const { data: isSuper } = await userClient.rpc("has_role", { _user_id: user.id, _role: "super_admin" });
+        if (isAdmin || isSuper) authorized = true;
+      }
+    }
+  }
+
+  if (!authorized) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   const supabase = createClient(url, key);
   const now = new Date();
   const in7Days = new Date(Date.now() + 7 * 86400000).toISOString();
