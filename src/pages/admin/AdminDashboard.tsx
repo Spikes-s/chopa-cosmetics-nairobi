@@ -22,6 +22,7 @@ import ThemeToggle from '@/components/ThemeToggle';
 import { VisitorCounter } from '@/components/admin/VisitorCounter';
 import SecurityCenter from '@/components/admin/SecurityCenter';
 import VIPMembersManager from '@/components/admin/VIPMembersManager';
+import LoyaltyRatesManager from '@/components/admin/LoyaltyRatesManager';
 
 const AdminDashboard = () => {
   const { user, isAdmin, isLoading, signOut } = useAuth();
