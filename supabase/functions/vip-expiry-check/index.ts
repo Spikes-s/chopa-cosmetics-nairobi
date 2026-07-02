@@ -25,13 +25,14 @@ serve(async (req) => {
   const url = Deno.env.get("SUPABASE_URL")!;
   const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const cronSecret = Deno.env.get("CRON_SECRET");
+  const cronInvokeToken = Deno.env.get("CRON_INVOKE_TOKEN");
 
-  // Auth: require either a matching CRON_SECRET header (for scheduled invocations)
+  // Auth: require either a matching cron token header (scheduled invocations)
   // or an authenticated admin/super_admin user.
   const providedSecret = req.headers.get("x-cron-secret");
   let authorized = false;
 
-  if (cronSecret && providedSecret && providedSecret === cronSecret) {
+  if (providedSecret && ((cronInvokeToken && providedSecret === cronInvokeToken) || (cronSecret && providedSecret === cronSecret))) {
     authorized = true;
   } else {
     const authHeader = req.headers.get("authorization");
