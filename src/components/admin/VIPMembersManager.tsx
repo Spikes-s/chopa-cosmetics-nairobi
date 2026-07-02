@@ -246,9 +246,10 @@ const VIPMembersManager = () => {
     if (!confirm(`Send this email to ${stats.active} active VIP members?`)) return;
     setSending(true);
     try {
+      const cleanHtml = sanitizeEmailHtml(bodyHtml);
       const { data, error } = await supabase.functions.invoke("vip-send-campaign", {
         body: {
-          subject, body_html: bodyHtml, body_text: bodyText,
+          subject, body_html: cleanHtml, body_text: bodyText,
           prompt_used: prompt, coupon_id: attachCoupon,
         },
       });
