@@ -4,7 +4,7 @@ import useAdminAutoLogout from '@/hooks/useAdminAutoLogout';
 import { useAuth } from '@/context/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { LogOut, Package, ShoppingBag, BarChart3, MessageSquare, Settings, Users, Home, Monitor, RotateCcw, FolderTree, UserCog, MapPin, Gift, Star, ShieldCheck, Crown } from 'lucide-react';
+import { LogOut, Package, ShoppingBag, BarChart3, MessageSquare, Settings, Users, Home, Monitor, RotateCcw, FolderTree, UserCog, MapPin, Gift, Star, ShieldCheck, Crown, Sparkles } from 'lucide-react';
 import ProductsManager from '@/components/admin/ProductsManager';
 import OrdersManager from '@/components/admin/OrdersManager';
 import SalesAnalytics from '@/components/admin/SalesAnalytics';
@@ -22,6 +22,7 @@ import ThemeToggle from '@/components/ThemeToggle';
 import { VisitorCounter } from '@/components/admin/VisitorCounter';
 import SecurityCenter from '@/components/admin/SecurityCenter';
 import VIPMembersManager from '@/components/admin/VIPMembersManager';
+import LoyaltyRatesManager from '@/components/admin/LoyaltyRatesManager';
 
 const AdminDashboard = () => {
   const { user, isAdmin, isLoading, signOut } = useAuth();
@@ -138,6 +139,10 @@ const AdminDashboard = () => {
               <Crown className="w-4 h-4" />
               <span>VIP Members</span>
             </TabsTrigger>
+            <TabsTrigger value="loyalty" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-4">
+              <Sparkles className="w-4 h-4" />
+              <span>Loyalty</span>
+            </TabsTrigger>
             <TabsTrigger value="security" className="gap-2 data-[state=active]:bg-destructive data-[state=active]:text-destructive-foreground px-4">
               <ShieldCheck className="w-4 h-4" />
               <span>Security</span>
@@ -201,9 +206,14 @@ const AdminDashboard = () => {
             <VIPMembersManager />
           </TabsContent>
 
+          <TabsContent value="loyalty" className="space-y-4">
+            <LoyaltyRatesManager />
+          </TabsContent>
+
           <TabsContent value="security" className="space-y-4">
             <SecurityCenter />
           </TabsContent>
+
 
         </Tabs>
       </div>

@@ -265,13 +265,20 @@ const SecurityCenter = () => {
           </SelectContent>
         </Select>
         <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="w-[160px]"><SelectValue placeholder="Event Type" /></SelectTrigger>
+          <SelectTrigger className="w-[180px]"><SelectValue placeholder="Event Type" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Types</SelectItem>
             <SelectItem value="login_failed">Failed Login</SelectItem>
             <SelectItem value="login_success">Login Success</SelectItem>
-            <SelectItem value="role_change">Role Change</SelectItem>
+            <SelectItem value="account_unlocked">Account Unlocked</SelectItem>
+            <SelectItem value="role_assigned">Role Assigned</SelectItem>
+            <SelectItem value="role_changed">Role Changed</SelectItem>
+            <SelectItem value="role_revoked">Role Revoked</SelectItem>
             <SelectItem value="password_change">Password Change</SelectItem>
+            <SelectItem value="order_status_changed">Order Status Change</SelectItem>
+            <SelectItem value="price_changed">Price Change</SelectItem>
+            <SelectItem value="vip_member_changed">VIP Member Change</SelectItem>
+            <SelectItem value="coupon_created">Coupon Created</SelectItem>
             <SelectItem value="admin_action">Admin Action</SelectItem>
           </SelectContent>
         </Select>

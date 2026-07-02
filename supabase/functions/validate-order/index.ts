@@ -385,10 +385,13 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('Order created successfully:', createdOrder.id);
 
-    // Award loyalty points (1 pt per Ksh 10) & handle referrals for authenticated users
+    // Award loyalty points & handle referrals for authenticated users (rates from site_settings)
     if (resolvedUserId) {
       try {
-        const points = Math.floor(total / 10);
+        const { data: earnSetting } = await supabase
+          .from('site_settings').select('value').eq('key', 'loyalty_earn_ksh_per_point').maybeSingle();
+        const kshPerPoint = Math.max(1, parseInt((earnSetting as any)?.value || '10', 10) || 10);
+        const points = Math.floor(total / kshPerPoint);
         if (points > 0) {
           await supabase.rpc('award_loyalty_points', {
             _user_id: resolvedUserId, _points: points,
