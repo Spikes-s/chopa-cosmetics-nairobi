@@ -206,9 +206,14 @@ const AdminDashboard = () => {
             <VIPMembersManager />
           </TabsContent>
 
+          <TabsContent value="loyalty" className="space-y-4">
+            <LoyaltyRatesManager />
+          </TabsContent>
+
           <TabsContent value="security" className="space-y-4">
             <SecurityCenter />
           </TabsContent>
+
 
         </Tabs>
       </div>
