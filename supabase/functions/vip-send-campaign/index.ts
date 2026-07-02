@@ -1,5 +1,11 @@
 // Admin-only: send an email campaign to all active VIP members via Resend
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import DOMPurify from "https://esm.sh/isomorphic-dompurify@2.16.0";
+
+const SANITIZE_CONFIG = {
+  ALLOWED_TAGS: ["p", "h1", "h2", "h3", "a", "b", "strong", "i", "em", "br", "ul", "ol", "li", "img", "span", "div"],
+  ALLOWED_ATTR: ["href", "src", "alt", "title", "style", "target", "rel"],
+};
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
