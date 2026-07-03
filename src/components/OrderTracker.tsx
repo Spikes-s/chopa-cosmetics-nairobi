@@ -18,7 +18,7 @@ const statusMap: Record<string, number> = {};
 ORDER_STEPS.forEach((s, i) => { statusMap[s.key] = i; });
 
 const OrderTracker = ({ currentStatus, statusHistory }: OrderTrackerProps) => {
-  const normalizedStatus = currentStatus.toLowerCase().replace(/\s+/g, '_');
+  const normalizedStatus = (currentStatus ?? 'pending').toLowerCase().replace(/\s+/g, '_');
   const currentStepIndex = statusMap[normalizedStatus] ?? -1;
   const isCancelled = normalizedStatus === 'cancelled';
 
