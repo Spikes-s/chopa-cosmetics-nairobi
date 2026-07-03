@@ -40,7 +40,7 @@ const OrderTracker = ({ currentStatus, statusHistory }: OrderTrackerProps) => {
 
         // Find timestamp from history
         const historyEntry = statusHistory?.find(
-          h => h.status.toLowerCase().replace(/\s+/g, '_') === step.key
+          h => h?.status && h.status.toLowerCase().replace(/\s+/g, '_') === step.key
         );
 
         return (
