@@ -273,27 +273,48 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Try to fetch product prices from database
-    const productIds = orderData.items.map(item => item.id);
+    // Cart items may have composite ids like "<uuid>-<color>-<variant>" for
+    // variant-specific rows. Extract the leading UUID to look up the product.
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+    const extractProductId = (rawId: string): string | null => {
+      const m = rawId.match(UUID_RE);
+      return m ? m[0].toLowerCase() : null;
+    };
+
+    const resolvedProductIds: string[] = [];
+    for (const item of orderData.items) {
+      const pid = extractProductId(item.id);
+      if (!pid) {
+        console.error('Item has no valid product UUID prefix:', item.id, item.name);
+        return new Response(
+          JSON.stringify({ error: `"${item.name || 'An item'}" is invalid. Please remove it and re-add from the product page.` }),
+          { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+      resolvedProductIds.push(pid);
+    }
+
+    const uniqueProductIds = Array.from(new Set(resolvedProductIds));
     const { data: dbProducts, error: productsError } = await supabase
       .from('products')
       .select('id, name, retail_price, wholesale_price, wholesale_min_qty, category, image_url, in_stock, stock_quantity')
-      .in('id', productIds);
+      .in('id', uniqueProductIds);
 
     if (productsError) {
       console.error('Products fetch error:', productsError);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Could not verify items. Please try again in a moment.' }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
     }
 
-    // Create a map of database products for quick lookup
     const dbProductMap = new Map<string, Product>();
-    if (dbProducts) {
-      dbProducts.forEach((p: Product) => dbProductMap.set(p.id, p));
-    }
+    (dbProducts || []).forEach((p: Product) => dbProductMap.set(p.id.toLowerCase(), p));
 
-    console.log(`Found ${dbProductMap.size} products in database out of ${productIds.length} requested`);
+    console.log(`Found ${dbProductMap.size} products in database out of ${uniqueProductIds.length} unique requested`);
 
-    // Reject any items not found in the database — never trust client prices
-    const missingItems = orderData.items.filter(item => !dbProductMap.has(item.id));
+    // Reject any items whose resolved product isn't in the database
+    const missingItems = orderData.items.filter((_, i) => !dbProductMap.has(resolvedProductIds[i]));
     if (missingItems.length > 0) {
       const missingNames = missingItems.map(i => i.name || i.id).join(', ');
       console.error('Items not found in database:', missingNames);
@@ -307,8 +328,9 @@ const handler = async (req: Request): Promise<Response> => {
     let subtotal = 0;
     const orderItems: any[] = [];
 
-    for (const item of orderData.items) {
-      const dbProduct = dbProductMap.get(item.id)!;
+    for (let i = 0; i < orderData.items.length; i++) {
+      const item = orderData.items[i];
+      const dbProduct = dbProductMap.get(resolvedProductIds[i])!;
 
       if (dbProduct.in_stock === false) {
         return new Response(
@@ -333,11 +355,12 @@ const handler = async (req: Request): Promise<Response> => {
 
       orderItems.push({
         id: dbProduct.id,
+        cart_id: item.id,
         name: dbProduct.name,
         quantity: item.quantity,
         price: unitPrice,
         priceType: isWholesale ? 'wholesale' : 'retail',
-        image: dbProduct.image_url,
+        image: item.image || dbProduct.image_url,
         color: item.color,
         size: item.size,
       });
