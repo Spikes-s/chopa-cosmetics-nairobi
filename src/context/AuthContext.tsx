@@ -7,11 +7,13 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   isAdmin: boolean;
+  isSuperAdmin: boolean;
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
+
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -19,6 +21,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   const checkAdminRole = async () => {
@@ -30,6 +33,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return false;
     }
   };
+
+  const checkSuperAdminRole = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .eq('role', 'super_admin')
+        .maybeSingle();
+      if (error) return false;
+      return !!data;
+    } catch {
+      return false;
+    }
+  };
+
 
   const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutes
   const ACTIVITY_KEY = 'chopa_last_activity';
@@ -71,17 +90,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(session?.user ?? null);
         
         if (session?.user) {
+          const userId = session.user.id;
           setTimeout(() => {
             checkAdminRole().then(setIsAdmin);
+            checkSuperAdminRole(userId).then(setIsSuperAdmin);
           }, 0);
           resetInactivityTimer();
         } else {
           setIsAdmin(false);
+          setIsSuperAdmin(false);
           if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
         }
         setIsLoading(false);
       }
     );
+
 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -89,6 +112,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(session?.user ?? null);
       
       if (session?.user) {
+        const userId = session.user.id;
         // Check if user was away too long
         if (checkSessionExpiry()) {
           toast.info('Session expired due to inactivity');
@@ -97,10 +121,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           return;
         }
         checkAdminRole().then(setIsAdmin);
+        checkSuperAdminRole(userId).then(setIsSuperAdmin);
         resetInactivityTimer();
       }
       setIsLoading(false);
     });
+
 
     // Activity tracking — throttled to once per 60s
     let lastTracked = Date.now();
@@ -187,14 +213,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signOut = async () => {
     await supabase.auth.signOut();
     setIsAdmin(false);
+    setIsSuperAdmin(false);
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, isAdmin, isLoading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, session, isAdmin, isSuperAdmin, isLoading, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );
 };
+
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
