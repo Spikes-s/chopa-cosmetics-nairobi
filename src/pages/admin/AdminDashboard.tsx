@@ -25,7 +25,7 @@ import VIPMembersManager from '@/components/admin/VIPMembersManager';
 import LoyaltyRatesManager from '@/components/admin/LoyaltyRatesManager';
 
 const AdminDashboard = () => {
-  const { user, isAdmin, isLoading, signOut } = useAuth();
+  const { user, isAdmin, isSuperAdmin, isLoading, signOut } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard');
   useAdminAutoLogout();
@@ -143,11 +143,14 @@ const AdminDashboard = () => {
               <Sparkles className="w-4 h-4" />
               <span>Loyalty</span>
             </TabsTrigger>
-            <TabsTrigger value="security" className="gap-2 data-[state=active]:bg-destructive data-[state=active]:text-destructive-foreground px-4">
-              <ShieldCheck className="w-4 h-4" />
-              <span>Security</span>
-            </TabsTrigger>
+            {isSuperAdmin && (
+              <TabsTrigger value="security" className="gap-2 data-[state=active]:bg-destructive data-[state=active]:text-destructive-foreground px-4">
+                <ShieldCheck className="w-4 h-4" />
+                <span>Security</span>
+              </TabsTrigger>
+            )}
           </TabsList>
+
 
 
           <TabsContent value="pos" className="space-y-4">
@@ -210,9 +213,12 @@ const AdminDashboard = () => {
             <LoyaltyRatesManager />
           </TabsContent>
 
-          <TabsContent value="security" className="space-y-4">
-            <SecurityCenter />
-          </TabsContent>
+          {isSuperAdmin && (
+            <TabsContent value="security" className="space-y-4">
+              <SecurityCenter />
+            </TabsContent>
+          )}
+
 
 
         </Tabs>
