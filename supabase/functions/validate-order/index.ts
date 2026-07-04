@@ -503,6 +503,9 @@ const handler = async (req: Request): Promise<Response> => {
           created_at: createdOrder.created_at,
         },
         order_token: orderToken,
+        wallet_used: walletUsed,
+        amount_due: total,
+
       }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
