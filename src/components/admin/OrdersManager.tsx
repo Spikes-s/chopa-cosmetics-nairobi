@@ -17,6 +17,7 @@ import { toast as sonnerToast } from 'sonner';
 
 interface Order {
   id: string;
+  user_id: string | null;
   customer_name: string;
   customer_phone: string;
   customer_email: string | null;
@@ -43,7 +44,9 @@ const OrdersManager = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [newOrderIds, setNewOrderIds] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState('active');
+  const [paymentDialog, setPaymentDialog] = useState<{ order: Order | null; targetStatus: string; amount: string; saving: boolean }>({ order: null, targetStatus: 'paid', amount: '', saving: false });
   const { toast } = useToast();
+
 
   // Search/filter state for completed orders
   const [searchQuery, setSearchQuery] = useState('');
