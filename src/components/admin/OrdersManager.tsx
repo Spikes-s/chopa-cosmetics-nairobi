@@ -116,20 +116,44 @@ const OrdersManager = () => {
     };
   }, []);
 
-  const updateOrderStatus = async (orderId: string, field: 'payment_status' | 'order_status', value: string) => {
+  const updateOrderStatus = async (
+    orderId: string,
+    field: 'payment_status' | 'order_status',
+    value: string,
+    opts?: { amountPaid?: number }
+  ) => {
     // Get current order to update status history
     const currentOrder = orders.find(o => o.id === orderId);
     const statusHistory = Array.isArray(currentOrder?.status_history) ? currentOrder.status_history : [];
-    
-    const newHistoryEntry = {
+
+    // If marking as paid/confirmed and no amount provided, open dialog
+    if (
+      field === 'payment_status' &&
+      (value === 'paid' || value === 'confirmed') &&
+      opts?.amountPaid === undefined &&
+      currentOrder
+    ) {
+      setPaymentDialog({
+        order: currentOrder,
+        targetStatus: value,
+        amount: String(currentOrder.total),
+        saving: false,
+      });
+      return;
+    }
+
+    const newHistoryEntry: any = {
       field,
       value,
       timestamp: new Date().toISOString(),
     };
+    if (opts?.amountPaid !== undefined) {
+      newHistoryEntry.amount_paid = opts.amountPaid;
+    }
 
     const { error } = await supabase
       .from('orders')
-      .update({ 
+      .update({
         [field]: value,
         status_history: [...statusHistory, newHistoryEntry]
       })
@@ -141,51 +165,125 @@ const OrdersManager = () => {
         description: 'Failed to update order',
         variant: 'destructive',
       });
-    } else {
-      toast({
-        title: 'Success',
-        description: 'Order updated successfully',
-      });
+      return false;
+    }
 
-      // Send email notification for relevant status changes
-      if (currentOrder?.customer_email) {
-        let emailType: string | null = null;
-        
-        if (field === 'payment_status' && value === 'confirmed') {
-          emailType = 'payment_confirmed';
-        } else if (field === 'order_status' && (value === 'ready_for_pickup' || value === 'out_for_delivery')) {
-          emailType = 'order_ready';
-        } else if (field === 'order_status' && value === 'completed') {
-          emailType = 'order_completed';
-        }
+    toast({
+      title: 'Success',
+      description: 'Order updated successfully',
+    });
 
-        if (emailType) {
-          try {
-            await supabase.functions.invoke('send-order-email', {
-              body: {
-                customerName: currentOrder.customer_name,
-                customerEmail: currentOrder.customer_email,
-                orderId: currentOrder.id,
-                items: Array.isArray(currentOrder.items) ? currentOrder.items : [],
-                total: currentOrder.total,
-                deliveryType: currentOrder.delivery_type,
-                emailType,
-              },
-            });
-          } catch (emailError) {
-            console.error('Email notification error:', emailError);
-          }
-        }
+    // Send email notification for relevant status changes
+    if (currentOrder?.customer_email) {
+      let emailType: string | null = null;
+
+      if (field === 'payment_status' && value === 'confirmed') {
+        emailType = 'payment_confirmed';
+      } else if (field === 'order_status' && (value === 'ready_for_pickup' || value === 'out_for_delivery')) {
+        emailType = 'order_ready';
+      } else if (field === 'order_status' && value === 'completed') {
+        emailType = 'order_completed';
       }
 
-      // Clear new status when interacted with
-      setNewOrderIds(prev => {
-        const next = new Set(prev);
-        next.delete(orderId);
-        return next;
+      if (emailType) {
+        try {
+          await supabase.functions.invoke('send-order-email', {
+            body: {
+              customerName: currentOrder.customer_name,
+              customerEmail: currentOrder.customer_email,
+              orderId: currentOrder.id,
+              items: Array.isArray(currentOrder.items) ? currentOrder.items : [],
+              total: currentOrder.total,
+              deliveryType: currentOrder.delivery_type,
+              emailType,
+            },
+          });
+        } catch (emailError) {
+          console.error('Email notification error:', emailError);
+        }
+      }
+    }
+
+    // Clear new status when interacted with
+    setNewOrderIds(prev => {
+      const next = new Set(prev);
+      next.delete(orderId);
+      return next;
+    });
+    return true;
+  };
+
+  const creditOverpaymentToWallet = async (order: Order, overpayment: number) => {
+    if (!order.user_id || overpayment <= 0) return;
+
+    // Fetch or create wallet
+    const { data: existing } = await supabase
+      .from('customer_wallets')
+      .select('id, balance, total_earned')
+      .eq('user_id', order.user_id)
+      .maybeSingle();
+
+    if (existing) {
+      await supabase
+        .from('customer_wallets')
+        .update({
+          balance: Number(existing.balance) + overpayment,
+          total_earned: Number(existing.total_earned) + overpayment,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', existing.id);
+    } else {
+      await supabase.from('customer_wallets').insert({
+        user_id: order.user_id,
+        balance: overpayment,
+        total_earned: overpayment,
+        total_spent: 0,
       });
     }
+
+    await supabase.from('wallet_transactions').insert({
+      user_id: order.user_id,
+      amount: overpayment,
+      type: 'topup',
+      description: `Overpayment from order ${order.receipt_number || order.id.slice(0, 8)}`,
+      order_id: order.id,
+    });
   };
+
+  const confirmPaymentAmount = async () => {
+    const order = paymentDialog.order;
+    if (!order) return;
+    const amount = parseFloat(paymentDialog.amount);
+    if (isNaN(amount) || amount < 0) {
+      toast({ title: 'Invalid amount', description: 'Enter a valid amount', variant: 'destructive' });
+      return;
+    }
+    setPaymentDialog(prev => ({ ...prev, saving: true }));
+    try {
+      const ok = await updateOrderStatus(order.id, 'payment_status', paymentDialog.targetStatus, { amountPaid: amount });
+      if (!ok) {
+        setPaymentDialog(prev => ({ ...prev, saving: false }));
+        return;
+      }
+
+      const overpayment = amount - Number(order.total);
+      if (overpayment > 0 && order.user_id) {
+        await creditOverpaymentToWallet(order, overpayment);
+        sonnerToast.success(`Ksh ${overpayment.toLocaleString()} credited to customer's wallet`);
+      } else if (overpayment > 0) {
+        sonnerToast.info(`Overpayment of Ksh ${overpayment.toLocaleString()} noted (guest order — no wallet).`);
+      } else if (overpayment < 0) {
+        sonnerToast.warning(`Underpayment: Ksh ${Math.abs(overpayment).toLocaleString()} still owed`);
+      }
+
+      setPaymentDialog({ order: null, targetStatus: 'paid', amount: '', saving: false });
+    } catch (e: any) {
+      toast({ title: 'Error', description: e?.message || 'Failed to record payment', variant: 'destructive' });
+      setPaymentDialog(prev => ({ ...prev, saving: false }));
+    }
+  };
+
+
 
   const setReward = async (orderId: string, rewardType: string) => {
     const { error } = await supabase
