@@ -781,8 +781,95 @@ const OrdersManager = () => {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Amount Paid Dialog */}
+      <Dialog
+        open={!!paymentDialog.order}
+        onOpenChange={(open) => {
+          if (!open && !paymentDialog.saving) {
+            setPaymentDialog({ order: null, targetStatus: 'paid', amount: '', saving: false });
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <WalletIcon className="w-5 h-5 text-accent" />
+              Record Payment Amount
+            </DialogTitle>
+            <DialogDescription>
+              Enter the amount actually paid. Overpayments are credited to the customer's wallet in real time.
+            </DialogDescription>
+          </DialogHeader>
+
+          {paymentDialog.order && (
+            <div className="space-y-4">
+              <div className="rounded-lg border border-border p-3 space-y-1 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Customer</span>
+                  <span className="font-medium">{paymentDialog.order.customer_name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Order Total</span>
+                  <span className="font-semibold">Ksh {Number(paymentDialog.order.total).toLocaleString()}</span>
+                </div>
+                {!paymentDialog.order.user_id && (
+                  <p className="text-xs text-yellow-500 pt-1">Guest order — overpayment cannot be credited to a wallet.</p>
+                )}
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="amount-paid">Amount Paid (Ksh)</Label>
+                <Input
+                  id="amount-paid"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={paymentDialog.amount}
+                  onChange={(e) => setPaymentDialog(prev => ({ ...prev, amount: e.target.value }))}
+                  autoFocus
+                />
+                {(() => {
+                  const amt = parseFloat(paymentDialog.amount);
+                  if (isNaN(amt) || !paymentDialog.order) return null;
+                  const diff = amt - Number(paymentDialog.order.total);
+                  if (diff > 0) {
+                    return (
+                      <p className="text-xs text-green-500">
+                        +Ksh {diff.toLocaleString()} will be credited to wallet
+                      </p>
+                    );
+                  }
+                  if (diff < 0) {
+                    return (
+                      <p className="text-xs text-yellow-500">
+                        Underpayment: Ksh {Math.abs(diff).toLocaleString()} still owed
+                      </p>
+                    );
+                  }
+                  return <p className="text-xs text-muted-foreground">Exact amount — no wallet change</p>;
+                })()}
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => setPaymentDialog({ order: null, targetStatus: 'paid', amount: '', saving: false })}
+              disabled={paymentDialog.saving}
+            >
+              Cancel
+            </Button>
+            <Button onClick={confirmPaymentAmount} disabled={paymentDialog.saving}>
+              {paymentDialog.saving ? 'Saving...' : 'Confirm Payment'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
+
 };
 
 export default OrdersManager;
