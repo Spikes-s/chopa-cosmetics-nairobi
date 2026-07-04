@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
@@ -9,11 +9,12 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { Check, Truck, MapPin, FileText } from 'lucide-react';
+import { Check, Truck, MapPin, FileText, Wallet as WalletIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { LoadingButton } from '@/components/ui/loading-button';
 import ProcessingOverlay from '@/components/ProcessingOverlay';
 import DeliveryLocationSelect from '@/components/DeliveryLocationSelect';
+
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -53,11 +54,26 @@ const Checkout = () => {
   const [couponState, setCouponState] = useState<{ status: 'idle' | 'checking' | 'valid' | 'invalid' | 'expired' | 'used'; discount?: number; code?: string; message?: string }>({ status: 'idle' });
   const [validatingCoupon, setValidatingCoupon] = useState(false);
 
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [applyWallet, setApplyWallet] = useState(true);
+
+  useEffect(() => {
+    if (!user) { setWalletBalance(0); return; }
+    supabase
+      .from('customer_wallets')
+      .select('balance')
+      .eq('user_id', user.id)
+      .maybeSingle()
+      .then(({ data }) => setWalletBalance(Number(data?.balance || 0)));
+  }, [user]);
+
   const discountAmount = couponState.status === 'valid' && couponState.discount
     ? Math.round((totalWithWholesale * couponState.discount) / 100)
     : 0;
-  // No delivery fee displayed - paid to driver
-  const totalWithDelivery = Math.max(0, totalWithWholesale - discountAmount);
+  const grossTotal = Math.max(0, totalWithWholesale - discountAmount);
+  const walletApplied = applyWallet ? Math.min(walletBalance, grossTotal) : 0;
+  const totalWithDelivery = Math.max(0, grossTotal - walletApplied);
+
 
   const checkCoupon = async () => {
     const code = couponCode.trim();
@@ -166,8 +182,10 @@ const Checkout = () => {
           delivery_fee: 0,
           pickup_date: deliveryMethod === 'pickup' ? formData.pickupDate : undefined,
           pickup_time: deliveryMethod === 'pickup' ? formData.pickupTime : undefined,
+          apply_wallet: applyWallet && user != null,
         },
       });
+
 
       // supabase-js sets `error` on non-2xx but still parses `data` when the body is JSON.
       // Prefer the structured server message over the generic "non-2xx status code".
@@ -594,8 +612,36 @@ const Checkout = () => {
                     </p>
                   </div>
                 )}
+
+                {user && walletBalance > 0 && (
+                  <div className="mt-2 mb-2 p-3 rounded-lg bg-accent/10 border border-accent/20">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2 text-sm">
+                        <WalletIcon className="w-4 h-4 text-accent" />
+                        <span className="text-foreground">Wallet Balance</span>
+                      </div>
+                      <span className="text-sm font-semibold text-foreground">Ksh {walletBalance.toLocaleString()}</span>
+                    </div>
+                    <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={applyWallet}
+                        onChange={(e) => setApplyWallet(e.target.checked)}
+                        className="rounded"
+                      />
+                      <span>Apply wallet balance to this order</span>
+                    </label>
+                    {applyWallet && walletApplied > 0 && (
+                      <div className="flex justify-between text-xs text-green-600 mt-2">
+                        <span>Wallet Applied</span>
+                        <span>− Ksh {walletApplied.toLocaleString()}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div className="flex justify-between items-center pt-4 border-t border-border">
-                  <span className="text-lg font-semibold text-foreground">Total</span>
+                  <span className="text-lg font-semibold text-foreground">Amount Due</span>
                   <span className="text-2xl font-bold gradient-text">
                     Ksh {totalWithDelivery.toLocaleString()}
                   </span>
@@ -614,6 +660,7 @@ const Checkout = () => {
           </Card>
         </div>
       </div>
+
 
       <ProcessingOverlay
         isOpen={orderOverlay.open}

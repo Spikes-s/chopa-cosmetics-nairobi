@@ -367,7 +367,28 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const deliveryFee = orderData.delivery_fee || 0;
-    const total = subtotal + deliveryFee;
+    const grossTotal = subtotal + deliveryFee;
+
+    // Apply wallet balance auto-deduction for authenticated users
+    let walletUsed = 0;
+    let walletBalanceBefore = 0;
+    let walletRowId: string | null = null;
+    const applyWallet = (body as any).apply_wallet !== false; // default true
+
+    if (resolvedUserId && applyWallet && grossTotal > 0) {
+      const { data: walletRow } = await supabase
+        .from('customer_wallets')
+        .select('id, balance, total_spent')
+        .eq('user_id', resolvedUserId)
+        .maybeSingle();
+      if (walletRow && Number(walletRow.balance) > 0) {
+        walletBalanceBefore = Number(walletRow.balance);
+        walletUsed = Math.min(walletBalanceBefore, grossTotal);
+        walletRowId = walletRow.id as string;
+      }
+    }
+
+    const total = Math.max(0, grossTotal - walletUsed);
 
     // Generate order token for guest order tracking
     const orderToken = crypto.randomUUID();
@@ -385,11 +406,13 @@ const handler = async (req: Request): Promise<Response> => {
         subtotal: subtotal,
         delivery_fee: deliveryFee,
         total: total,
+        discount_amount: walletUsed,
+        discount_type: walletUsed > 0 ? 'wallet' : null,
         delivery_type: orderData.delivery_type,
         delivery_address: orderData.delivery_address || null,
         pickup_date: orderData.pickup_date || null,
         pickup_time: orderData.pickup_time || null,
-        payment_status: 'pending',
+        payment_status: total === 0 && walletUsed > 0 ? 'paid' : 'pending',
         order_status: 'pending',
         mpesa_code: orderData.mpesa_code,
         order_token: orderToken,
@@ -406,7 +429,40 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Deduct wallet balance & log transaction (best-effort — order already saved)
+    if (walletUsed > 0 && walletRowId && resolvedUserId) {
+      try {
+        const { data: freshWallet } = await supabase
+          .from('customer_wallets')
+          .select('balance, total_spent')
+          .eq('id', walletRowId)
+          .maybeSingle();
+        const currentBal = Number(freshWallet?.balance ?? walletBalanceBefore);
+        const applied = Math.min(currentBal, walletUsed);
+        if (applied > 0) {
+          await supabase
+            .from('customer_wallets')
+            .update({
+              balance: currentBal - applied,
+              total_spent: Number(freshWallet?.total_spent ?? 0) + applied,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', walletRowId);
+          await supabase.from('wallet_transactions').insert({
+            user_id: resolvedUserId,
+            amount: applied,
+            type: 'spend',
+            description: `Applied to order ${createdOrder.receipt_number || createdOrder.id.slice(0, 8)}`,
+            order_id: createdOrder.id,
+          });
+        }
+      } catch (walletErr) {
+        console.warn('Wallet deduction failed:', walletErr);
+      }
+    }
+
     console.log('Order created successfully:', createdOrder.id);
+
 
     // Award loyalty points & handle referrals for authenticated users (rates from site_settings)
     if (resolvedUserId) {
@@ -447,6 +503,9 @@ const handler = async (req: Request): Promise<Response> => {
           created_at: createdOrder.created_at,
         },
         order_token: orderToken,
+        wallet_used: walletUsed,
+        amount_due: total,
+
       }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );

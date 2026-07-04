@@ -7,14 +7,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
-import { Package, Phone, MapPin, Clock, Gift, Bell, CheckCircle, Archive, Search, X, Printer, FileDown } from 'lucide-react';
+import { Package, Phone, MapPin, Clock, Gift, Bell, CheckCircle, Archive, Search, X, Printer, FileDown, Wallet as WalletIcon } from 'lucide-react';
 import { printReceipt, downloadReceiptPDF } from '@/lib/receipt';
 import { toast as sonnerToast } from 'sonner';
 
+
 interface Order {
   id: string;
+  user_id: string | null;
   customer_name: string;
   customer_phone: string;
   customer_email: string | null;
@@ -41,7 +44,9 @@ const OrdersManager = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [newOrderIds, setNewOrderIds] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState('active');
+  const [paymentDialog, setPaymentDialog] = useState<{ order: Order | null; targetStatus: string; amount: string; saving: boolean }>({ order: null, targetStatus: 'paid', amount: '', saving: false });
   const { toast } = useToast();
+
 
   // Search/filter state for completed orders
   const [searchQuery, setSearchQuery] = useState('');
@@ -111,20 +116,44 @@ const OrdersManager = () => {
     };
   }, []);
 
-  const updateOrderStatus = async (orderId: string, field: 'payment_status' | 'order_status', value: string) => {
+  const updateOrderStatus = async (
+    orderId: string,
+    field: 'payment_status' | 'order_status',
+    value: string,
+    opts?: { amountPaid?: number }
+  ) => {
     // Get current order to update status history
     const currentOrder = orders.find(o => o.id === orderId);
     const statusHistory = Array.isArray(currentOrder?.status_history) ? currentOrder.status_history : [];
-    
-    const newHistoryEntry = {
+
+    // If marking as paid/confirmed and no amount provided, open dialog
+    if (
+      field === 'payment_status' &&
+      (value === 'paid' || value === 'confirmed') &&
+      opts?.amountPaid === undefined &&
+      currentOrder
+    ) {
+      setPaymentDialog({
+        order: currentOrder,
+        targetStatus: value,
+        amount: String(currentOrder.total),
+        saving: false,
+      });
+      return;
+    }
+
+    const newHistoryEntry: any = {
       field,
       value,
       timestamp: new Date().toISOString(),
     };
+    if (opts?.amountPaid !== undefined) {
+      newHistoryEntry.amount_paid = opts.amountPaid;
+    }
 
     const { error } = await supabase
       .from('orders')
-      .update({ 
+      .update({
         [field]: value,
         status_history: [...statusHistory, newHistoryEntry]
       })
@@ -136,51 +165,125 @@ const OrdersManager = () => {
         description: 'Failed to update order',
         variant: 'destructive',
       });
-    } else {
-      toast({
-        title: 'Success',
-        description: 'Order updated successfully',
-      });
+      return false;
+    }
 
-      // Send email notification for relevant status changes
-      if (currentOrder?.customer_email) {
-        let emailType: string | null = null;
-        
-        if (field === 'payment_status' && value === 'confirmed') {
-          emailType = 'payment_confirmed';
-        } else if (field === 'order_status' && (value === 'ready_for_pickup' || value === 'out_for_delivery')) {
-          emailType = 'order_ready';
-        } else if (field === 'order_status' && value === 'completed') {
-          emailType = 'order_completed';
-        }
+    toast({
+      title: 'Success',
+      description: 'Order updated successfully',
+    });
 
-        if (emailType) {
-          try {
-            await supabase.functions.invoke('send-order-email', {
-              body: {
-                customerName: currentOrder.customer_name,
-                customerEmail: currentOrder.customer_email,
-                orderId: currentOrder.id,
-                items: Array.isArray(currentOrder.items) ? currentOrder.items : [],
-                total: currentOrder.total,
-                deliveryType: currentOrder.delivery_type,
-                emailType,
-              },
-            });
-          } catch (emailError) {
-            console.error('Email notification error:', emailError);
-          }
-        }
+    // Send email notification for relevant status changes
+    if (currentOrder?.customer_email) {
+      let emailType: string | null = null;
+
+      if (field === 'payment_status' && value === 'confirmed') {
+        emailType = 'payment_confirmed';
+      } else if (field === 'order_status' && (value === 'ready_for_pickup' || value === 'out_for_delivery')) {
+        emailType = 'order_ready';
+      } else if (field === 'order_status' && value === 'completed') {
+        emailType = 'order_completed';
       }
 
-      // Clear new status when interacted with
-      setNewOrderIds(prev => {
-        const next = new Set(prev);
-        next.delete(orderId);
-        return next;
+      if (emailType) {
+        try {
+          await supabase.functions.invoke('send-order-email', {
+            body: {
+              customerName: currentOrder.customer_name,
+              customerEmail: currentOrder.customer_email,
+              orderId: currentOrder.id,
+              items: Array.isArray(currentOrder.items) ? currentOrder.items : [],
+              total: currentOrder.total,
+              deliveryType: currentOrder.delivery_type,
+              emailType,
+            },
+          });
+        } catch (emailError) {
+          console.error('Email notification error:', emailError);
+        }
+      }
+    }
+
+    // Clear new status when interacted with
+    setNewOrderIds(prev => {
+      const next = new Set(prev);
+      next.delete(orderId);
+      return next;
+    });
+    return true;
+  };
+
+  const creditOverpaymentToWallet = async (order: Order, overpayment: number) => {
+    if (!order.user_id || overpayment <= 0) return;
+
+    // Fetch or create wallet
+    const { data: existing } = await supabase
+      .from('customer_wallets')
+      .select('id, balance, total_earned')
+      .eq('user_id', order.user_id)
+      .maybeSingle();
+
+    if (existing) {
+      await supabase
+        .from('customer_wallets')
+        .update({
+          balance: Number(existing.balance) + overpayment,
+          total_earned: Number(existing.total_earned) + overpayment,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', existing.id);
+    } else {
+      await supabase.from('customer_wallets').insert({
+        user_id: order.user_id,
+        balance: overpayment,
+        total_earned: overpayment,
+        total_spent: 0,
       });
     }
+
+    await supabase.from('wallet_transactions').insert({
+      user_id: order.user_id,
+      amount: overpayment,
+      type: 'topup',
+      description: `Overpayment from order ${order.receipt_number || order.id.slice(0, 8)}`,
+      order_id: order.id,
+    });
   };
+
+  const confirmPaymentAmount = async () => {
+    const order = paymentDialog.order;
+    if (!order) return;
+    const amount = parseFloat(paymentDialog.amount);
+    if (isNaN(amount) || amount < 0) {
+      toast({ title: 'Invalid amount', description: 'Enter a valid amount', variant: 'destructive' });
+      return;
+    }
+    setPaymentDialog(prev => ({ ...prev, saving: true }));
+    try {
+      const ok = await updateOrderStatus(order.id, 'payment_status', paymentDialog.targetStatus, { amountPaid: amount });
+      if (!ok) {
+        setPaymentDialog(prev => ({ ...prev, saving: false }));
+        return;
+      }
+
+      const overpayment = amount - Number(order.total);
+      if (overpayment > 0 && order.user_id) {
+        await creditOverpaymentToWallet(order, overpayment);
+        sonnerToast.success(`Ksh ${overpayment.toLocaleString()} credited to customer's wallet`);
+      } else if (overpayment > 0) {
+        sonnerToast.info(`Overpayment of Ksh ${overpayment.toLocaleString()} noted (guest order — no wallet).`);
+      } else if (overpayment < 0) {
+        sonnerToast.warning(`Underpayment: Ksh ${Math.abs(overpayment).toLocaleString()} still owed`);
+      }
+
+      setPaymentDialog({ order: null, targetStatus: 'paid', amount: '', saving: false });
+    } catch (e: any) {
+      toast({ title: 'Error', description: e?.message || 'Failed to record payment', variant: 'destructive' });
+      setPaymentDialog(prev => ({ ...prev, saving: false }));
+    }
+  };
+
+
 
   const setReward = async (orderId: string, rewardType: string) => {
     const { error } = await supabase
@@ -678,8 +781,95 @@ const OrdersManager = () => {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Amount Paid Dialog */}
+      <Dialog
+        open={!!paymentDialog.order}
+        onOpenChange={(open) => {
+          if (!open && !paymentDialog.saving) {
+            setPaymentDialog({ order: null, targetStatus: 'paid', amount: '', saving: false });
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <WalletIcon className="w-5 h-5 text-accent" />
+              Record Payment Amount
+            </DialogTitle>
+            <DialogDescription>
+              Enter the amount actually paid. Overpayments are credited to the customer's wallet in real time.
+            </DialogDescription>
+          </DialogHeader>
+
+          {paymentDialog.order && (
+            <div className="space-y-4">
+              <div className="rounded-lg border border-border p-3 space-y-1 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Customer</span>
+                  <span className="font-medium">{paymentDialog.order.customer_name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Order Total</span>
+                  <span className="font-semibold">Ksh {Number(paymentDialog.order.total).toLocaleString()}</span>
+                </div>
+                {!paymentDialog.order.user_id && (
+                  <p className="text-xs text-yellow-500 pt-1">Guest order — overpayment cannot be credited to a wallet.</p>
+                )}
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="amount-paid">Amount Paid (Ksh)</Label>
+                <Input
+                  id="amount-paid"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={paymentDialog.amount}
+                  onChange={(e) => setPaymentDialog(prev => ({ ...prev, amount: e.target.value }))}
+                  autoFocus
+                />
+                {(() => {
+                  const amt = parseFloat(paymentDialog.amount);
+                  if (isNaN(amt) || !paymentDialog.order) return null;
+                  const diff = amt - Number(paymentDialog.order.total);
+                  if (diff > 0) {
+                    return (
+                      <p className="text-xs text-green-500">
+                        +Ksh {diff.toLocaleString()} will be credited to wallet
+                      </p>
+                    );
+                  }
+                  if (diff < 0) {
+                    return (
+                      <p className="text-xs text-yellow-500">
+                        Underpayment: Ksh {Math.abs(diff).toLocaleString()} still owed
+                      </p>
+                    );
+                  }
+                  return <p className="text-xs text-muted-foreground">Exact amount — no wallet change</p>;
+                })()}
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => setPaymentDialog({ order: null, targetStatus: 'paid', amount: '', saving: false })}
+              disabled={paymentDialog.saving}
+            >
+              Cancel
+            </Button>
+            <Button onClick={confirmPaymentAmount} disabled={paymentDialog.saving}>
+              {paymentDialog.saving ? 'Saving...' : 'Confirm Payment'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
+
 };
 
 export default OrdersManager;
