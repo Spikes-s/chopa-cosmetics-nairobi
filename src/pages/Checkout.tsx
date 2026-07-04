@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
@@ -9,11 +9,12 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { Check, Truck, MapPin, FileText } from 'lucide-react';
+import { Check, Truck, MapPin, FileText, Wallet as WalletIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { LoadingButton } from '@/components/ui/loading-button';
 import ProcessingOverlay from '@/components/ProcessingOverlay';
 import DeliveryLocationSelect from '@/components/DeliveryLocationSelect';
+
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -53,11 +54,26 @@ const Checkout = () => {
   const [couponState, setCouponState] = useState<{ status: 'idle' | 'checking' | 'valid' | 'invalid' | 'expired' | 'used'; discount?: number; code?: string; message?: string }>({ status: 'idle' });
   const [validatingCoupon, setValidatingCoupon] = useState(false);
 
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [applyWallet, setApplyWallet] = useState(true);
+
+  useEffect(() => {
+    if (!user) { setWalletBalance(0); return; }
+    supabase
+      .from('customer_wallets')
+      .select('balance')
+      .eq('user_id', user.id)
+      .maybeSingle()
+      .then(({ data }) => setWalletBalance(Number(data?.balance || 0)));
+  }, [user]);
+
   const discountAmount = couponState.status === 'valid' && couponState.discount
     ? Math.round((totalWithWholesale * couponState.discount) / 100)
     : 0;
-  // No delivery fee displayed - paid to driver
-  const totalWithDelivery = Math.max(0, totalWithWholesale - discountAmount);
+  const grossTotal = Math.max(0, totalWithWholesale - discountAmount);
+  const walletApplied = applyWallet ? Math.min(walletBalance, grossTotal) : 0;
+  const totalWithDelivery = Math.max(0, grossTotal - walletApplied);
+
 
   const checkCoupon = async () => {
     const code = couponCode.trim();
