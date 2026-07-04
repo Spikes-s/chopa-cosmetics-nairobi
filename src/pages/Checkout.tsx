@@ -182,8 +182,10 @@ const Checkout = () => {
           delivery_fee: 0,
           pickup_date: deliveryMethod === 'pickup' ? formData.pickupDate : undefined,
           pickup_time: deliveryMethod === 'pickup' ? formData.pickupTime : undefined,
+          apply_wallet: applyWallet && user != null,
         },
       });
+
 
       // supabase-js sets `error` on non-2xx but still parses `data` when the body is JSON.
       // Prefer the structured server message over the generic "non-2xx status code".
@@ -610,8 +612,36 @@ const Checkout = () => {
                     </p>
                   </div>
                 )}
+
+                {user && walletBalance > 0 && (
+                  <div className="mt-2 mb-2 p-3 rounded-lg bg-accent/10 border border-accent/20">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2 text-sm">
+                        <WalletIcon className="w-4 h-4 text-accent" />
+                        <span className="text-foreground">Wallet Balance</span>
+                      </div>
+                      <span className="text-sm font-semibold text-foreground">Ksh {walletBalance.toLocaleString()}</span>
+                    </div>
+                    <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={applyWallet}
+                        onChange={(e) => setApplyWallet(e.target.checked)}
+                        className="rounded"
+                      />
+                      <span>Apply wallet balance to this order</span>
+                    </label>
+                    {applyWallet && walletApplied > 0 && (
+                      <div className="flex justify-between text-xs text-green-600 mt-2">
+                        <span>Wallet Applied</span>
+                        <span>− Ksh {walletApplied.toLocaleString()}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div className="flex justify-between items-center pt-4 border-t border-border">
-                  <span className="text-lg font-semibold text-foreground">Total</span>
+                  <span className="text-lg font-semibold text-foreground">Amount Due</span>
                   <span className="text-2xl font-bold gradient-text">
                     Ksh {totalWithDelivery.toLocaleString()}
                   </span>
@@ -630,6 +660,7 @@ const Checkout = () => {
           </Card>
         </div>
       </div>
+
 
       <ProcessingOverlay
         isOpen={orderOverlay.open}
