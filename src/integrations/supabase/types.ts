@@ -979,6 +979,36 @@ export type Database = {
         }
         Relationships: []
       }
+      social_links: {
+        Row: {
+          created_at: string
+          handle_or_url: string
+          id: string
+          is_active: boolean
+          platform: Database["public"]["Enums"]["social_platform"]
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          handle_or_url: string
+          id?: string
+          is_active?: boolean
+          platform: Database["public"]["Enums"]["social_platform"]
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          handle_or_url?: string
+          id?: string
+          is_active?: boolean
+          platform?: Database["public"]["Enums"]["social_platform"]
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -1397,6 +1427,42 @@ export type Database = {
         }
         Relationships: []
       }
+      website_links: {
+        Row: {
+          color: string | null
+          created_at: string
+          icon: string | null
+          id: string
+          is_active: boolean
+          label: string
+          sort_order: number
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          label: string
+          sort_order?: number
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          label?: string
+          sort_order?: number
+          updated_at?: string
+          url?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       admin_products: {
@@ -1715,6 +1781,20 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "customer" | "super_admin"
+      social_platform:
+        | "facebook"
+        | "instagram"
+        | "tiktok"
+        | "whatsapp"
+        | "telegram"
+        | "youtube"
+        | "pinterest"
+        | "linkedin"
+        | "x"
+        | "threads"
+        | "website"
+        | "phone"
+        | "email"
     }
     CompositeTypes: {
       guest_order_info: {
@@ -1855,6 +1935,21 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "customer", "super_admin"],
+      social_platform: [
+        "facebook",
+        "instagram",
+        "tiktok",
+        "whatsapp",
+        "telegram",
+        "youtube",
+        "pinterest",
+        "linkedin",
+        "x",
+        "threads",
+        "website",
+        "phone",
+        "email",
+      ],
     },
   },
 } as const
