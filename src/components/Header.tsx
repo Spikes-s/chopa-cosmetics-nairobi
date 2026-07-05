@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, User, Menu, X, LogOut, KeyRound, ChevronRight, Loader2, Package, Wallet } from 'lucide-react';
+import { ShoppingCart, User, Menu, X, LogOut, KeyRound, ChevronRight, Package, Wallet } from 'lucide-react';
+import { onCartPulse } from '@/lib/cartPulse';
+
 import ChangePasswordDialog from '@/components/ChangePasswordDialog';
 import { Button } from '@/components/ui/button';
 import {
@@ -32,10 +34,25 @@ const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [pulse, setPulse] = useState(false);
+  const pulseTimer = useRef<number | null>(null);
   const { totalItems } = useCart();
   const { user, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  useEffect(() => {
+    const off = onCartPulse(() => {
+      if (pulseTimer.current) window.clearTimeout(pulseTimer.current);
+      setPulse(true);
+      pulseTimer.current = window.setTimeout(() => setPulse(false), 900);
+    });
+    return () => {
+      off();
+      if (pulseTimer.current) window.clearTimeout(pulseTimer.current);
+    };
+  }, []);
+
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -96,7 +113,7 @@ const Header = () => {
 
             {/* Cart */}
             <Link to="/cart" className="relative" aria-label="Shopping Cart">
-              <Button variant="ghost" size="icon" className="relative" aria-label="Shopping Cart">
+              <Button variant="ghost" size="icon" className={`relative ${pulse ? 'animate-cart-pulse' : ''}`} aria-label="Shopping Cart">
                 <ShoppingCart className="w-5 h-5" />
                 {totalItems > 0 && (
                   <span className="absolute -top-1 -right-1 w-5 h-5 bg-secondary text-secondary-foreground text-xs font-bold rounded-full flex items-center justify-center">
@@ -105,6 +122,7 @@ const Header = () => {
                 )}
               </Button>
             </Link>
+
 
             {/* User Menu */}
             <DropdownMenu>
