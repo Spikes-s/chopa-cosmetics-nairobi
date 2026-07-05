@@ -163,37 +163,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signIn = async (email: string, password: string) => {
     const cleanEmail = email.trim().toLowerCase();
 
-    // 1. Check if account is currently locked
+    // All lockout tracking now happens server-side in the `auth-login` edge
+    // function using service_role, so the RPCs cannot be weaponized from the
+    // client to lock other users out.
     try {
-      const { data: lockData } = await (supabase.rpc as any)('check_login_attempt', { _email: cleanEmail });
-      const lock = lockData as { locked?: boolean; remaining_seconds?: number } | null;
-      if (lock?.locked) {
-        const mins = Math.ceil((lock.remaining_seconds || 0) / 60);
-        return { error: new Error(`Account temporarily locked due to too many failed attempts. Try again in ${mins} minute${mins === 1 ? '' : 's'}.`) };
+      const { data, error } = await supabase.functions.invoke('auth-login', {
+        body: { email: cleanEmail, password },
+      });
+
+      if (error || !data || (data as any).error) {
+        const msg = (data as any)?.error || error?.message || 'Invalid login credentials';
+        return { error: new Error(msg) };
       }
-    } catch (e) {
-      console.warn('Lockout check failed', e);
+
+      const { access_token, refresh_token } = data as { access_token: string; refresh_token: string };
+      const { error: setErr } = await supabase.auth.setSession({ access_token, refresh_token });
+      if (setErr) return { error: setErr as Error };
+      return { error: null };
+    } catch (e: any) {
+      return { error: new Error(e?.message || 'Login failed. Please try again.') };
     }
-
-    // 2. Attempt sign-in
-    const { error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
-
-    // 3. Record outcome
-    try {
-      if (error) {
-        const { data: failData } = await (supabase.rpc as any)('record_failed_login', { _email: cleanEmail });
-        const fail = failData as { locked?: boolean; failed_count?: number } | null;
-        if (fail?.locked) {
-          return { error: new Error('Too many failed attempts — account locked for 15 minutes for your protection.') };
-        }
-      } else {
-        await (supabase.rpc as any)('reset_login_attempts', { _email: cleanEmail });
-      }
-    } catch (e) {
-      console.warn('Login attempt logging failed', e);
-    }
-
-    return { error: error as Error | null };
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
