@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
-import { ShoppingCart, Plus, Minus, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { ShoppingCart, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { QuantityInput } from '@/components/ui/quantity-input';
 import { useCart } from '@/context/CartContext';
 import { Product } from '@/data/products';
 import { toast } from 'sonner';
@@ -45,12 +46,8 @@ const GlobalAddToCart = ({ product, onClose }: GlobalAddToCartProps) => {
       image: product.image,
       category: product.category,
     });
-
-    toast.success('Item successfully added to cart', {
-      position: 'top-center',
-      duration: 3000,
-    });
     onClose();
+    // No toast — the header cart icon pulses via CartContext.
   };
 
   return (
@@ -70,33 +67,20 @@ const GlobalAddToCart = ({ product, onClose }: GlobalAddToCartProps) => {
         </div>
 
         {!isBraid && (
-          <div className="flex items-center justify-center gap-4 my-4">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setQuantity(Math.max(1, quantity - 1))}
-            >
-              <Minus className="w-4 h-4" />
-            </Button>
-            <span className="text-xl font-bold w-12 text-center">{quantity}</span>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setQuantity(quantity + 1)}
-            >
-              <Plus className="w-4 h-4" />
-            </Button>
+          <div className="flex items-center justify-center my-4">
+            <QuantityInput value={quantity} onChange={setQuantity} size="lg" />
           </div>
         )}
 
         <Button
           size="lg"
-          className="w-full bg-green-600 hover:bg-green-700 text-white"
+          className="w-full"
+          variant="gradient"
           onClick={handleAddToCart}
           disabled={product.inStock === false}
         >
           <ShoppingCart className="w-5 h-5 mr-2" />
-          {isBraid ? 'Select Options' : `Add to Cart - Ksh ${(product.price * quantity).toLocaleString()}`}
+          {isBraid ? 'Select Options' : `Add to Cart · Ksh ${(product.price * quantity).toLocaleString()}`}
         </Button>
       </div>
     </div>
@@ -104,3 +88,4 @@ const GlobalAddToCart = ({ product, onClose }: GlobalAddToCartProps) => {
 };
 
 export default GlobalAddToCart;
+

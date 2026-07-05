@@ -49,9 +49,9 @@ const ProductCard = ({ product, onQuickView }: ProductCardProps) => {
       image: product.image,
       category: product.category,
     });
-    
-    toast.success(`${product.name} added to cart!`);
+    // No toast — CartContext emits a pulse the header cart icon listens for.
   };
+
 
   const handleQuickView = (e: React.MouseEvent) => {
     e.preventDefault();
