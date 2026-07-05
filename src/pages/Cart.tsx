@@ -1,15 +1,14 @@
-import { useState } from 'react';
 import SEO from '@/components/SEO';
 import { Link } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Trash2, Minus, Plus, ShoppingBag, ArrowRight } from 'lucide-react';
-import DeliveryLocationSelect from '@/components/DeliveryLocationSelect';
+import { Trash2, ShoppingBag, ArrowRight } from 'lucide-react';
+import { QuantityInput } from '@/components/ui/quantity-input';
 
 const Cart = () => {
   const { items, removeItem, updateQuantity, totalWithWholesale, clearCart, getItemWholesaleThreshold } = useCart();
-  const [deliveryLocation, setDeliveryLocation] = useState('cbd');
+
 
   if (items.length === 0) {
     return (
@@ -103,29 +102,13 @@ const Cart = () => {
 
                       {/* Quantity Controls */}
                       <div className="flex items-center justify-between mt-3">
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            aria-label="Decrease quantity"
-                            className="w-8 h-8"
-                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                          >
-                            <Minus className="w-3 h-3" />
-                          </Button>
-                          <span className="w-8 text-center font-semibold">
-                            {item.quantity}
-                          </span>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            aria-label="Increase quantity"
-                            className="w-8 h-8"
-                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                          >
-                            <Plus className="w-3 h-3" />
-                          </Button>
-                        </div>
+                        <QuantityInput
+                          value={item.quantity}
+                          onChange={(q) => updateQuantity(item.id, q)}
+                          min={1}
+                          max={999}
+                          size="sm"
+                        />
 
                         <Button
                           variant="ghost"
@@ -137,6 +120,7 @@ const Cart = () => {
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
+
 
                       {!isWholesale && (
                         <p className="text-xs text-muted-foreground mt-2">
@@ -171,20 +155,14 @@ const Cart = () => {
                   <span>Items ({items.reduce((sum, item) => sum + item.quantity, 0)})</span>
                   <span>Ksh {totalWithWholesale.toLocaleString()}</span>
                 </div>
-                
-                <div className="border-t border-border pt-4">
-                  <p className="text-sm font-medium text-foreground mb-2">Select Delivery Area</p>
-                  <DeliveryLocationSelect 
-                    value={deliveryLocation} 
-                    onChange={setDeliveryLocation}
-                    hidePrice
-                  />
-                </div>
+                <p className="text-xs text-muted-foreground">
+                  Delivery fee is calculated at checkout based on your location.
+                </p>
               </div>
 
               <div className="border-t border-border pt-4 mb-6">
                 <div className="flex justify-between items-center">
-                  <span className="text-lg font-semibold text-foreground">Total</span>
+                  <span className="text-lg font-semibold text-foreground">Subtotal</span>
                   <span className="text-2xl font-bold gradient-text">
                     Ksh {totalWithWholesale.toLocaleString()}
                   </span>
@@ -197,6 +175,7 @@ const Cart = () => {
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Link>
               </Button>
+
 
               {/* Payment Info */}
               <div className="mt-6 p-4 rounded-lg bg-muted/50">

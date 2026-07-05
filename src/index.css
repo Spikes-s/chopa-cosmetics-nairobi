@@ -513,6 +513,17 @@
   animation: fade-in 0.3s ease-out;
 }
 
+/* Cart-icon pulse: brief scale + glow when an item is added to cart. */
+@keyframes cart-pulse {
+  0%   { transform: scale(1);    box-shadow: 0 0 0 0 hsl(var(--primary) / 0.55); }
+  30%  { transform: scale(1.18); box-shadow: 0 0 0 6px hsl(var(--primary) / 0.35); }
+  60%  { transform: scale(0.95); box-shadow: 0 0 0 12px hsl(var(--primary) / 0);   }
+  100% { transform: scale(1);    box-shadow: 0 0 0 0  hsl(var(--primary) / 0);     }
+}
+.animate-cart-pulse {
+  animation: cart-pulse 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 
 /* Print styles for POS receipts */
 @media print {

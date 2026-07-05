@@ -4,12 +4,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/context/CartContext';
 import { toast } from 'sonner';
-import { ShoppingCart, Minus, Plus, ArrowLeft, Check, AlertCircle } from 'lucide-react';
+import { ShoppingCart, ArrowLeft, Check, AlertCircle } from 'lucide-react';
+import { QuantityInput } from '@/components/ui/quantity-input';
 import ProductReviews from '@/components/ProductReviews';
 import ProductGallery from '@/components/ProductGallery';
 import SmartRecommendations from '@/components/SmartRecommendations';
 import ProductVariantSelector from '@/components/ProductVariantSelector';
 import SEO from '@/components/SEO';
+
 
 interface DBProduct {
   id: string;
@@ -184,9 +186,9 @@ const ProductDetail = () => {
       image: resolvedImage || product.image_url || '/placeholder.svg',
       category: product.category,
     });
-    
-    toast.success(`${product.name} added to cart!`);
+    // No toast — the header cart icon pulses via CartContext.
   };
+
 
   // Build gallery images - resolved variant image takes priority
   const galleryMainImage = resolvedImage || product.image_url || '/placeholder.svg';
@@ -352,22 +354,22 @@ const ProductDetail = () => {
             {/* Quantity */}
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">Quantity</label>
-              <div className="flex items-center gap-3">
-                <Button variant="outline" size="icon" aria-label="Decrease quantity" onClick={() => setQuantity(Math.max(1, quantity - 1))}>
-                  <Minus className="w-4 h-4" />
-                </Button>
-                <span className="w-12 text-center font-semibold text-foreground">{quantity}</span>
-                <Button variant="outline" size="icon" aria-label="Increase quantity" onClick={() => setQuantity(quantity + 1)}>
-                  <Plus className="w-4 h-4" />
-                </Button>
-                
+              <div className="flex items-center gap-3 flex-wrap">
+                <QuantityInput
+                  value={quantity}
+                  onChange={setQuantity}
+                  min={1}
+                  max={999}
+                  size="lg"
+                />
                 {product.wholesale_price && quantity < wholesaleThreshold && (
-                  <span className="text-sm text-muted-foreground ml-4">
+                  <span className="text-sm text-muted-foreground">
                     Add {wholesaleThreshold - quantity} more for wholesale price
                   </span>
                 )}
               </div>
             </div>
+
           </div>
 
           {/* Total */}

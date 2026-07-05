@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { emitCartPulse } from '@/lib/cartPulse';
 
 interface CartItem {
   id: string;
@@ -28,8 +29,6 @@ interface CartContextType {
   getItemWholesaleThreshold: (item: CartItem) => number;
   addViewedProduct: (productId: string) => void;
   lastViewedProducts: string[];
-  showCartNotification: boolean;
-  hideCartNotification: () => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -39,11 +38,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [items, setItems] = useState<CartItem[]>([]);
   const [lastViewedProducts, setLastViewedProducts] = useState<string[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [showCartNotification, setShowCartNotification] = useState(false);
 
-  const hideCartNotification = useCallback(() => {
-    setShowCartNotification(false);
-  }, []);
 
   // Save cart to database for logged-in users
   const saveCartToDatabase = useCallback(async (cartItems: CartItem[], viewedProducts: string[]) => {
@@ -149,10 +144,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
       return [...prev, newItem];
     });
-    
-    // Trigger notification
-    setShowCartNotification(true);
+
+    // Signal the cart icon to briefly pulse — no popup, no toast.
+    emitCartPulse();
   };
+
 
   const removeItem = (id: string) => {
     setItems((prev) => prev.filter((item) => item.id !== id));
@@ -215,14 +211,13 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         getItemWholesaleThreshold,
         addViewedProduct,
         lastViewedProducts,
-        showCartNotification,
-        hideCartNotification,
       }}
     >
       {children}
     </CartContext.Provider>
   );
 };
+
 
 export const useCart = () => {
   const context = useContext(CartContext);

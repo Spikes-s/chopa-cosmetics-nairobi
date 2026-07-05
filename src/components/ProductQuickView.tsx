@@ -37,9 +37,10 @@ const ProductQuickView = ({ product, isOpen, onClose }: ProductQuickViewProps) =
       image: product.image,
       category: product.category,
     });
-
-    toast.success(`${product.name} added to cart!`);
+    onClose();
+    // No toast — the header cart icon pulses via CartContext.
   };
+
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
