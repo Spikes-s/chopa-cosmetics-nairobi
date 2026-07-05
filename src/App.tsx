@@ -16,7 +16,7 @@ import GlobalBackButton from "@/components/GlobalBackButton";
 import Footer from "@/components/Footer";
 import ChatWidget from "@/components/ChatWidget";
 import FloatingCartButton from "@/components/FloatingCartButton";
-import CartNotification from "@/components/CartNotification";
+// CartNotification removed — cart adds now trigger a subtle icon pulse instead.
 import TermsAcceptanceModal from "@/components/TermsAcceptanceModal";
 import AuthModal from "@/components/AuthModal";
 import MaintenanceScreen from "@/components/MaintenanceScreen";
@@ -58,7 +58,7 @@ const AppContent = () => {
   const location = useLocation();
   const { needsAcceptance, isLoading: termsLoading, markAsAccepted } = useTermsAcceptance();
   const { isBlocked, isLoading: siteStatusLoading } = useSiteStatus();
-  const { showCartNotification, hideCartNotification } = useCart();
+  useCart(); // keeps CartProvider engaged on route changes
   const { user } = useAuth();
   // Track page visits
   usePageVisit();
@@ -140,9 +140,8 @@ const AppContent = () => {
       {!isAdminRoute && <Footer />}
       {!isAdminRoute && <ChatWidget />}
       {!isAdminRoute && <FloatingCartButton />}
-      
-      {/* Cart notification banner */}
-      <CartNotification show={showCartNotification} onClose={hideCartNotification} />
+
+
       
       {/* Auth modal - shown after intro animation */}
       {!isAuthPage && !isAdminRoute && (
