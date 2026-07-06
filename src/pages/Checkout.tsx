@@ -417,6 +417,8 @@ const Checkout = () => {
             </Card>
 
             {/* Payment - Manual Only */}
+            {/* Payment - Manual Only (skipped when wallet covers full total) */}
+            {!walletCoversAll && (
             <Card variant="gradient">
               <CardHeader>
                 <CardTitle className="text-xl flex items-center gap-2">
