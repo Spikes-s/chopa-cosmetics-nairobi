@@ -179,7 +179,7 @@ const Checkout = () => {
           customer_phone: formData.phone.trim(),
           customer_email: formData.email.trim() || undefined,
           items: orderItems,
-          mpesa_code: formData.mpesaCode.trim(),
+          mpesa_code: walletCoversAll ? 'WALLET' : formData.mpesaCode.trim(),
           delivery_type: deliveryMethod,
           delivery_address: deliveryMethod === 'delivery' ? `${deliveryLocation} - ${formData.address}` : undefined,
           delivery_fee: 0,
