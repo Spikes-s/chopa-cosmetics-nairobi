@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { LoadingButton } from '@/components/ui/loading-button';
 import ProcessingOverlay from '@/components/ProcessingOverlay';
 import DeliveryLocationSelect from '@/components/DeliveryLocationSelect';
+import { findLocation } from '@/data/deliveryLocations';
 
 
 const Checkout = () => {
@@ -132,17 +133,20 @@ const Checkout = () => {
     return { title: 'Order Failed', message: msg || 'Something went wrong. Please try again in a moment.' };
   };
 
+  const walletCoversAll = totalWithDelivery === 0 && walletApplied > 0;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!hasPaid) {
-      toast.error('Please confirm your payment before submitting');
-      return;
-    }
-
-    if (!formData.mpesaCode.trim()) {
-      toast.error('Please enter your M-Pesa transaction code');
-      return;
+    if (!walletCoversAll) {
+      if (!hasPaid) {
+        toast.error('Please confirm your payment before submitting');
+        return;
+      }
+      if (!formData.mpesaCode.trim()) {
+        toast.error('Please enter your M-Pesa transaction code');
+        return;
+      }
     }
 
     // Client-side phone validation (Kenyan format)
@@ -176,9 +180,9 @@ const Checkout = () => {
           customer_phone: formData.phone.trim(),
           customer_email: formData.email.trim() || undefined,
           items: orderItems,
-          mpesa_code: formData.mpesaCode.trim(),
+          mpesa_code: walletCoversAll ? 'WALLET' : formData.mpesaCode.trim(),
           delivery_type: deliveryMethod,
-          delivery_address: deliveryMethod === 'delivery' ? `${deliveryLocation} - ${formData.address}` : undefined,
+          delivery_address: deliveryMethod === 'delivery' ? `${findLocation(deliveryLocation)?.name || deliveryLocation} - ${formData.address}` : undefined,
           delivery_fee: 0,
           pickup_date: deliveryMethod === 'pickup' ? formData.pickupDate : undefined,
           pickup_time: deliveryMethod === 'pickup' ? formData.pickupTime : undefined,
@@ -413,6 +417,8 @@ const Checkout = () => {
             </Card>
 
             {/* Payment - Manual Only */}
+            {/* Payment - Manual Only (skipped when wallet covers full total) */}
+            {!walletCoversAll && (
             <Card variant="gradient">
               <CardHeader>
                 <CardTitle className="text-xl flex items-center gap-2">
@@ -512,20 +518,34 @@ const Checkout = () => {
                 </Button>
               </CardContent>
             </Card>
+            )}
+
+            {walletCoversAll && (
+              <Card variant="gradient">
+                <CardContent className="p-6 text-center">
+                  <WalletIcon className="w-10 h-10 mx-auto text-accent mb-2" />
+                  <h3 className="text-lg font-semibold text-foreground mb-1">Fully Covered by Wallet</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Your wallet balance covers this entire order — no M-Pesa payment required.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
 
             <LoadingButton
               type="submit"
               variant="gradient"
               size="xl"
               className="w-full"
-              disabled={!hasPaid}
+              disabled={!walletCoversAll && !hasPaid}
               loading={isSubmitting}
               loadingText="Placing your order…"
             >
-              Submit Order
+              {walletCoversAll ? 'Place Order (Wallet)' : 'Submit Order'}
             </LoadingButton>
           </form>
         </div>
+
 
         {/* Order Summary */}
         <div className="lg:col-span-1">
@@ -604,7 +624,7 @@ const Checkout = () => {
                   </div>
                 )}
 
-                {deliveryMethod === 'delivery' && deliveryLocation !== 'cbd' && (
+                {deliveryMethod === 'delivery' && (findLocation(deliveryLocation)?.price ?? 1) > 0 && (
                   <div className="flex items-start gap-2 p-3 rounded-lg bg-warning/10 border border-warning/30 mb-2">
                     <span className="text-lg">👉</span>
                     <p className="text-sm font-medium text-warning">
