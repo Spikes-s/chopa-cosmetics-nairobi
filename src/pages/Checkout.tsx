@@ -518,20 +518,34 @@ const Checkout = () => {
                 </Button>
               </CardContent>
             </Card>
+            )}
+
+            {walletCoversAll && (
+              <Card variant="gradient">
+                <CardContent className="p-6 text-center">
+                  <WalletIcon className="w-10 h-10 mx-auto text-accent mb-2" />
+                  <h3 className="text-lg font-semibold text-foreground mb-1">Fully Covered by Wallet</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Your wallet balance covers this entire order — no M-Pesa payment required.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
 
             <LoadingButton
               type="submit"
               variant="gradient"
               size="xl"
               className="w-full"
-              disabled={!hasPaid}
+              disabled={!walletCoversAll && !hasPaid}
               loading={isSubmitting}
               loadingText="Placing your order…"
             >
-              Submit Order
+              {walletCoversAll ? 'Place Order (Wallet)' : 'Submit Order'}
             </LoadingButton>
           </form>
         </div>
+
 
         {/* Order Summary */}
         <div className="lg:col-span-1">
