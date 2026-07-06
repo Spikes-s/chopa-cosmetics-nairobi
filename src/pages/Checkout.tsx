@@ -608,7 +608,7 @@ const Checkout = () => {
                   </div>
                 )}
 
-                {deliveryMethod === 'delivery' && deliveryLocation !== 'cbd' && (
+                {deliveryMethod === 'delivery' && (findLocation(deliveryLocation)?.price ?? 1) > 0 && (
                   <div className="flex items-start gap-2 p-3 rounded-lg bg-warning/10 border border-warning/30 mb-2">
                     <span className="text-lg">👉</span>
                     <p className="text-sm font-medium text-warning">
