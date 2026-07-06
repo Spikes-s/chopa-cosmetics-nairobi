@@ -168,6 +168,35 @@ const Footer = () => {
           </div>
         </div>
 
+        {/* Website links + Social icons */}
+        {(webLinks.length > 0 || socials.length > 0) && (
+          <div className="border-t border-border mt-8 pt-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            {webLinks.length > 0 && (
+              <div className="flex flex-wrap gap-x-4 gap-y-2">
+                {webLinks.map((l) => (
+                  <a key={l.id} href={l.url} target="_blank" rel="noopener noreferrer"
+                     className="text-sm text-muted-foreground hover:text-primary transition-colors inline-flex items-center gap-1">
+                    <ExternalLink className="w-3.5 h-3.5" /> {l.label}
+                  </a>
+                ))}
+              </div>
+            )}
+            {socials.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {socials.map((s) => {
+                  const Icon = socialIcon(s.platform);
+                  return (
+                    <a key={s.id} href={buildSocialUrl(s.platform, s.handle_or_url)} target="_blank" rel="noopener noreferrer"
+                       aria-label={s.platform}
+                       className="p-2 rounded-full border border-border text-muted-foreground hover:text-primary hover:border-primary transition-colors">
+                      <Icon className="w-4 h-4" />
+                    </a>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Bottom Bar */}
         <div className="border-t border-border mt-8 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
@@ -178,6 +207,7 @@ const Footer = () => {
             Prices in Kenyan Shillings (Ksh)
           </p>
         </div>
+
       </div>
     </footer>
   );
