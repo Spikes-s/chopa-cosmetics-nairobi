@@ -1,35 +1,70 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Phone, MapPin, Clock, ExternalLink } from 'lucide-react';
+import { Phone, MapPin, Clock, ExternalLink, Facebook, Instagram, Youtube, MessageCircle, Send, Mail, Globe, Linkedin } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 
+type SocialRow = { id: string; platform: string; handle_or_url: string };
+type WebLinkRow = { id: string; label: string; url: string };
+
+const socialIcon = (platform: string) => {
+  switch (platform) {
+    case 'facebook': return Facebook;
+    case 'instagram': return Instagram;
+    case 'youtube': return Youtube;
+    case 'whatsapp': return MessageCircle;
+    case 'telegram': return Send;
+    case 'email': return Mail;
+    case 'phone': return Phone;
+    case 'linkedin': return Linkedin;
+    default: return Globe;
+  }
+};
+
+const buildSocialUrl = (platform: string, value: string): string => {
+  const v = value.trim();
+  if (/^https?:\/\//i.test(v)) return v;
+  const handle = v.replace(/^@/, '');
+  switch (platform) {
+    case 'facebook': return `https://facebook.com/${handle}`;
+    case 'instagram': return `https://instagram.com/${handle}`;
+    case 'tiktok': return `https://tiktok.com/@${handle}`;
+    case 'youtube': return `https://youtube.com/@${handle}`;
+    case 'twitter':
+    case 'x': return `https://x.com/${handle}`;
+    case 'threads': return `https://threads.net/@${handle}`;
+    case 'pinterest': return `https://pinterest.com/${handle}`;
+    case 'linkedin': return `https://linkedin.com/in/${handle}`;
+    case 'whatsapp': return `https://wa.me/${handle.replace(/\D/g, '')}`;
+    case 'telegram': return `https://t.me/${handle}`;
+    case 'email': return `mailto:${handle}`;
+    case 'phone': return `tel:${handle}`;
+    default: return v;
+  }
+};
+
 const Footer = () => {
   const [mapLocation, setMapLocation] = useState<string | null>(null);
-
+  const [socials, setSocials] = useState<SocialRow[]>([]);
+  const [webLinks, setWebLinks] = useState<WebLinkRow[]>([]);
 
   useEffect(() => {
-    const fetchMapLocation = async () => {
-      const { data } = await supabase
-        .from('site_settings')
-        .select('value')
-        .eq('key', 'map_location')
-        .single();
-      
-      if (data?.value) {
-        setMapLocation(data.value);
-      }
+    const fetchAll = async () => {
+      const [{ data: mapData }, { data: sData }, { data: wData }] = await Promise.all([
+        supabase.from('site_settings').select('value').eq('key', 'map_location').maybeSingle(),
+        supabase.from('social_links').select('id, platform, handle_or_url').eq('is_active', true).order('sort_order'),
+        supabase.from('website_links').select('id, label, url').eq('is_active', true).order('sort_order'),
+      ]);
+      if (mapData?.value) setMapLocation(mapData.value);
+      setSocials((sData as SocialRow[]) || []);
+      setWebLinks((wData as WebLinkRow[]) || []);
     };
-    fetchMapLocation();
+    fetchAll();
   }, []);
 
   const handleOpenMap = () => {
-    if (mapLocation) {
-      window.open(mapLocation, '_blank');
-    } else {
-      // Default Google Maps location for Nairobi CBD
-      window.open('https://maps.google.com/?q=Nairobi+CBD+Kenya', '_blank');
-    }
+    if (mapLocation) window.open(mapLocation, '_blank');
+    else window.open('https://maps.google.com/?q=Nairobi+CBD+Kenya', '_blank');
   };
 
   return (
