@@ -182,7 +182,7 @@ const Checkout = () => {
           items: orderItems,
           mpesa_code: walletCoversAll ? 'WALLET' : formData.mpesaCode.trim(),
           delivery_type: deliveryMethod,
-          delivery_address: deliveryMethod === 'delivery' ? `${deliveryLocation} - ${formData.address}` : undefined,
+          delivery_address: deliveryMethod === 'delivery' ? `${findLocation(deliveryLocation)?.name || deliveryLocation} - ${formData.address}` : undefined,
           delivery_fee: 0,
           pickup_date: deliveryMethod === 'pickup' ? formData.pickupDate : undefined,
           pickup_time: deliveryMethod === 'pickup' ? formData.pickupTime : undefined,
