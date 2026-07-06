@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { LoadingButton } from '@/components/ui/loading-button';
 import ProcessingOverlay from '@/components/ProcessingOverlay';
 import DeliveryLocationSelect from '@/components/DeliveryLocationSelect';
+import { findLocation } from '@/data/deliveryLocations';
 
 
 const Checkout = () => {
