@@ -132,17 +132,20 @@ const Checkout = () => {
     return { title: 'Order Failed', message: msg || 'Something went wrong. Please try again in a moment.' };
   };
 
+  const walletCoversAll = totalWithDelivery === 0 && walletApplied > 0;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!hasPaid) {
-      toast.error('Please confirm your payment before submitting');
-      return;
-    }
-
-    if (!formData.mpesaCode.trim()) {
-      toast.error('Please enter your M-Pesa transaction code');
-      return;
+    if (!walletCoversAll) {
+      if (!hasPaid) {
+        toast.error('Please confirm your payment before submitting');
+        return;
+      }
+      if (!formData.mpesaCode.trim()) {
+        toast.error('Please enter your M-Pesa transaction code');
+        return;
+      }
     }
 
     // Client-side phone validation (Kenyan format)
