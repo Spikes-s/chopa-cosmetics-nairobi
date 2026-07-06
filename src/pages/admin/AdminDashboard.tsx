@@ -23,6 +23,8 @@ import { VisitorCounter } from '@/components/admin/VisitorCounter';
 import SecurityCenter from '@/components/admin/SecurityCenter';
 import VIPMembersManager from '@/components/admin/VIPMembersManager';
 import LoyaltyRatesManager from '@/components/admin/LoyaltyRatesManager';
+import WebsiteLinksManager from '@/components/admin/WebsiteLinksManager';
+import SocialLinksManager from '@/components/admin/SocialLinksManager';
 
 const AdminDashboard = () => {
   const { user, isAdmin, isSuperAdmin, isLoading, signOut } = useAuth();
