@@ -223,6 +223,15 @@ const AdminDashboard = () => {
             <LoyaltyRatesManager />
           </TabsContent>
 
+          <TabsContent value="weblinks" className="space-y-4">
+            <WebsiteLinksManager />
+          </TabsContent>
+
+          <TabsContent value="social" className="space-y-4">
+            <SocialLinksManager />
+          </TabsContent>
+
+
           {isSuperAdmin && (
             <TabsContent value="security" className="space-y-4">
               <SecurityCenter />
