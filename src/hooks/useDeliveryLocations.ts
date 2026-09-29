@@ -7,6 +7,29 @@ import {
 
 export type { DeliveryLocation };
 
+export interface DeliveryQuote {
+  /** Location name shown to the customer. */
+  name: string;
+  region: string;
+  /** Standard fee for the location. */
+  baseFee: number;
+  /** Fee after any waiver. */
+  fee: number;
+  waiverApplied: boolean;
+  /** Amount still needed to unlock the waiver (0 if none / already met). */
+  amountToWaiver: number;
+  waiverThreshold: number | null;
+  waiverFee: number;
+  /** True when the location is unknown or its fee is missing — fee arranged with driver. */
+  isFallback: boolean;
+  warning?: string;
+}
+
+const safeNum = (v: unknown): number | null => {
+  const n = Number(v);
+  return Number.isFinite(n) && n >= 0 ? n : null;
+};
+
 /**
  * Live delivery locations + admin-managed prices.
  * Falls back to the bundled baseline list if the table is unreachable,
@@ -15,33 +38,43 @@ export type { DeliveryLocation };
 export const useDeliveryLocations = () => {
   const [locations, setLocations] = useState<DeliveryLocation[]>(FALLBACK_LOCATIONS);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('delivery_locations')
-      .select('code, name, region, price, is_active, display_order')
-      .eq('is_active', true)
-      .order('display_order', { ascending: true })
-      .order('name', { ascending: true });
+    try {
+      const { data, error } = await supabase
+        .from('delivery_locations')
+        .select('code, name, region, price, is_active, display_order, waiver_threshold, waiver_fee')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true })
+        .order('name', { ascending: true });
 
-    if (!error && data && data.length > 0) {
-      setLocations(
-        data.map((row) => ({
-          id: row.code,
-          name: row.name,
-          region: row.region || '',
-          price: Number(row.price) || 0,
-        })),
-      );
+      if (error) throw error;
+      if (data && data.length > 0) {
+        setLocations(
+          data.map((row) => ({
+            id: row.code,
+            name: row.name || row.code,
+            region: row.region || '',
+            price: safeNum(row.price) ?? NaN,
+            waiverThreshold: safeNum(row.waiver_threshold),
+            waiverFee: safeNum(row.waiver_fee) ?? 0,
+          })),
+        );
+      }
+      setLoadError(null);
+    } catch (e) {
+      console.warn('Delivery locations unavailable, using baseline list', e);
+      setLoadError('Live delivery prices are unavailable — showing standard rates.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  // Keep prices in sync when an admin edits them
   useEffect(() => {
     const channel = supabase
       .channel('delivery-locations-sync')
@@ -54,6 +87,38 @@ export const useDeliveryLocations = () => {
 
   const find = useCallback(
     (id: string) => locations.find((l) => l.id === id),
+    [locations],
+  );
+
+  /** Never throws: always returns a usable quote. */
+  const quote = useCallback(
+    (id: string, subtotal: number): DeliveryQuote => {
+      const loc = id ? locations.find((l) => l.id === id) : undefined;
+      if (!loc) {
+        return {
+          name: id || 'Not selected', region: '', baseFee: 0, fee: 0, waiverApplied: false,
+          amountToWaiver: 0, waiverThreshold: null, waiverFee: 0, isFallback: true,
+          warning: id ? 'This location isn’t on our list — the fee will be agreed with the driver.' : 'Choose a delivery location.',
+        };
+      }
+      if (!Number.isFinite(loc.price)) {
+        return {
+          name: loc.name, region: loc.region, baseFee: 0, fee: 0, waiverApplied: false,
+          amountToWaiver: 0, waiverThreshold: null, waiverFee: 0, isFallback: true,
+          warning: 'No fee is set for this location yet — the fee will be agreed with the driver.',
+        };
+      }
+      const threshold = loc.waiverThreshold ?? null;
+      const waiverFee = Math.min(loc.waiverFee ?? 0, loc.price);
+      const met = threshold !== null && subtotal >= threshold;
+      return {
+        name: loc.name, region: loc.region, baseFee: loc.price,
+        fee: met ? waiverFee : loc.price,
+        waiverApplied: met && waiverFee < loc.price,
+        amountToWaiver: threshold !== null && !met && waiverFee < loc.price ? Math.max(0, threshold - subtotal) : 0,
+        waiverThreshold: threshold, waiverFee, isFallback: false,
+      };
+    },
     [locations],
   );
 
@@ -75,7 +140,10 @@ export const useDeliveryLocations = () => {
     [locations],
   );
 
-  return useMemo(() => ({ locations, loading, find, search, reload: load }), [locations, loading, find, search, load]);
+  return useMemo(
+    () => ({ locations, loading, loadError, find, quote, search, reload: load }),
+    [locations, loading, loadError, find, quote, search, load],
+  );
 };
 
 export default useDeliveryLocations;
