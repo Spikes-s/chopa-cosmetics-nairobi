@@ -328,6 +328,39 @@ export type Database = {
         }
         Relationships: []
       }
+      delivery_location_audit: {
+        Row: {
+          action: string
+          changed_by: string | null
+          changed_by_email: string | null
+          created_at: string
+          id: string
+          location_id: string | null
+          new_values: Json | null
+          old_values: Json | null
+        }
+        Insert: {
+          action: string
+          changed_by?: string | null
+          changed_by_email?: string | null
+          created_at?: string
+          id?: string
+          location_id?: string | null
+          new_values?: Json | null
+          old_values?: Json | null
+        }
+        Update: {
+          action?: string
+          changed_by?: string | null
+          changed_by_email?: string | null
+          created_at?: string
+          id?: string
+          location_id?: string | null
+          new_values?: Json | null
+          old_values?: Json | null
+        }
+        Relationships: []
+      }
       delivery_locations: {
         Row: {
           code: string
@@ -339,6 +372,8 @@ export type Database = {
           price: number
           region: string
           updated_at: string
+          waiver_fee: number
+          waiver_threshold: number | null
         }
         Insert: {
           code: string
@@ -350,6 +385,8 @@ export type Database = {
           price?: number
           region?: string
           updated_at?: string
+          waiver_fee?: number
+          waiver_threshold?: number | null
         }
         Update: {
           code?: string
@@ -361,6 +398,8 @@ export type Database = {
           price?: number
           region?: string
           updated_at?: string
+          waiver_fee?: number
+          waiver_threshold?: number | null
         }
         Relationships: []
       }
