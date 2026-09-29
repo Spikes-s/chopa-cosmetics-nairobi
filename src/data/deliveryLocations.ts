@@ -3,6 +3,10 @@ export interface DeliveryLocation {
   name: string;
   region: string;
   price: number;
+  /** Order subtotal (Ksh) at/above which the waiver fee applies. null = no waiver. */
+  waiverThreshold?: number | null;
+  /** Fee charged once threshold is met (0 = free delivery). */
+  waiverFee?: number;
 }
 
 /**
