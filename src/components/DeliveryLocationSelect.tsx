@@ -89,7 +89,7 @@ const DeliveryLocationSelect = ({ value, onChange }: DeliveryLocationSelectProps
                   </div>
                 </div>
                 <span className="text-xs font-semibold text-accent shrink-0">
-                  {loc.price === 0 ? 'Free' : `Ksh ${loc.price}`}
+                  {!Number.isFinite(loc.price) ? 'Ask driver' : loc.price === 0 ? 'Free' : `Ksh ${loc.price}`}
                 </span>
               </button>
             ))}
@@ -120,7 +120,7 @@ const DeliveryLocationSelect = ({ value, onChange }: DeliveryLocationSelectProps
             </p>
             {knownSelected && (
               <p className="text-xs text-muted-foreground">
-                {knownSelected.region} · {knownSelected.price === 0 ? 'Free delivery' : `Ksh ${knownSelected.price}`}
+                {knownSelected.region} · {!Number.isFinite(knownSelected.price) ? 'Fee arranged with driver' : knownSelected.price === 0 ? 'Free delivery' : `Ksh ${knownSelected.price}`}
               </p>
             )}
             {!knownSelected && (
