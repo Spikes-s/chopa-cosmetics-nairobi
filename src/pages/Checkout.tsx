@@ -21,7 +21,7 @@ const Checkout = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { items, totalWithWholesale, clearCart } = useCart();
-  const { find: findLocation } = useDeliveryLocations();
+  const { find: findLocation, quote: quoteDelivery, loadError: deliveryLoadError } = useDeliveryLocations();
 
   const [deliveryMethod, setDeliveryMethod] = useState<'delivery' | 'pickup'>('delivery');
   const [deliveryLocation, setDeliveryLocation] = useState('cbd');
@@ -76,6 +76,7 @@ const Checkout = () => {
   const grossTotal = Math.max(0, totalWithWholesale - discountAmount);
   const walletApplied = applyWallet ? Math.min(walletBalance, grossTotal) : 0;
   const totalWithDelivery = Math.max(0, grossTotal - walletApplied);
+  const deliveryQuote = quoteDelivery(deliveryLocation, grossTotal);
 
 
   const checkCoupon = async () => {
@@ -626,12 +627,41 @@ const Checkout = () => {
                   </div>
                 )}
 
-                {deliveryMethod === 'delivery' && (findLocation(deliveryLocation)?.price ?? 1) > 0 && (
-                  <div className="flex items-start gap-2 p-3 rounded-lg bg-warning/10 border border-warning/30 mb-2">
-                    <span className="text-lg">👉</span>
-                    <p className="text-sm font-medium text-warning">
-                      Delivery fee will be paid directly to the driver upon delivery.
-                    </p>
+                {deliveryMethod === 'delivery' && (
+                  <div className="p-3 rounded-lg bg-muted/40 border border-border mb-2 space-y-1.5" aria-label="Delivery fee breakdown">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Delivery</p>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Location</span>
+                      <span className="font-medium text-foreground text-right">{deliveryQuote.name}</span>
+                    </div>
+                    {deliveryQuote.region && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Region</span>
+                        <span className="text-foreground">{deliveryQuote.region}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Delivery fee</span>
+                      <span className="font-semibold text-foreground">
+                        {deliveryQuote.isFallback
+                          ? 'Agreed with driver'
+                          : deliveryQuote.waiverApplied
+                            ? (<><s className="text-muted-foreground mr-1">Ksh {deliveryQuote.baseFee.toLocaleString()}</s>{deliveryQuote.fee === 0 ? 'Free' : `Ksh ${deliveryQuote.fee.toLocaleString()}`}</>)
+                            : deliveryQuote.fee === 0 ? 'Free' : `Ksh ${deliveryQuote.fee.toLocaleString()}`}
+                      </span>
+                    </div>
+                    {deliveryQuote.waiverApplied && (
+                      <p className="text-xs text-green-600">✓ Order over Ksh {deliveryQuote.waiverThreshold?.toLocaleString()} — {deliveryQuote.fee === 0 ? 'free delivery' : 'reduced delivery fee'} unlocked</p>
+                    )}
+                    {deliveryQuote.amountToWaiver > 0 && (
+                      <p className="text-xs text-accent">Add Ksh {deliveryQuote.amountToWaiver.toLocaleString()} more for {deliveryQuote.waiverFee === 0 ? 'free delivery' : `delivery at Ksh ${deliveryQuote.waiverFee.toLocaleString()}`}</p>
+                    )}
+                    {(deliveryQuote.warning || deliveryLoadError) && (
+                      <p className="text-xs text-warning">{deliveryQuote.warning || deliveryLoadError}</p>
+                    )}
+                    {deliveryQuote.fee > 0 && (
+                      <p className="text-xs text-warning">👉 Delivery fee is paid directly to the driver upon delivery.</p>
+                    )}
                   </div>
                 )}
 

@@ -17,7 +17,13 @@ interface LocationRow {
   price: number;
   is_active: boolean;
   display_order: number;
+  waiver_threshold: number | null;
+  waiver_fee: number;
 }
+
+type Draft = { price: string; name: string; region: string; threshold: string; waiverFee: string };
+const toDraft = (r: LocationRow): Draft => ({ price: String(r.price), name: r.name, region: r.region, threshold: r.waiver_threshold === null ? '' : String(r.waiver_threshold), waiverFee: String(r.waiver_fee) });
+const normalize = (r: any): LocationRow => ({ ...r, price: Number(r.price) || 0, region: r.region || '', waiver_threshold: r.waiver_threshold === null || r.waiver_threshold === undefined ? null : Number(r.waiver_threshold), waiver_fee: Number(r.waiver_fee) || 0 });
 
 const slugify = (value: string) =>
   value
@@ -29,7 +35,7 @@ const slugify = (value: string) =>
 const DeliveryLocationsManager = () => {
   const { toast } = useToast();
   const [rows, setRows] = useState<LocationRow[]>([]);
-  const [drafts, setDrafts] = useState<Record<string, { price: string; name: string; region: string }>>({});
+  const [drafts, setDrafts] = useState<Record<string, Draft>>({});
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [query, setQuery] = useState('');
@@ -40,18 +46,18 @@ const DeliveryLocationsManager = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('delivery_locations')
-      .select('id, code, name, region, price, is_active, display_order')
+      .select('id, code, name, region, price, is_active, display_order, waiver_threshold, waiver_fee')
       .order('display_order', { ascending: true })
       .order('name', { ascending: true });
 
     if (error) {
       toast({ title: 'Error', description: 'Could not load delivery locations', variant: 'destructive' });
     } else {
-      const list = (data || []).map((r) => ({ ...r, price: Number(r.price) || 0, region: r.region || '' }));
+      const list = (data || []).map(normalize);
       setRows(list);
       setDrafts(
         Object.fromEntries(
-          list.map((r) => [r.id, { price: String(r.price), name: r.name, region: r.region }]),
+          list.map((r) => [r.id, toDraft(r)]),
         ),
       );
     }
@@ -74,7 +80,9 @@ const DeliveryLocationsManager = () => {
     return (
       draft.name.trim() !== row.name ||
       draft.region.trim() !== row.region ||
-      Number(draft.price) !== row.price
+      Number(draft.price) !== row.price ||
+      (draft.threshold.trim() === '' ? null : Number(draft.threshold)) !== row.waiver_threshold ||
+      Number(draft.waiverFee || '0') !== row.waiver_fee
     );
   };
 
@@ -91,10 +99,20 @@ const DeliveryLocationsManager = () => {
       return;
     }
 
+    const waiver_threshold = draft.threshold.trim() === '' ? null : Number(draft.threshold);
+    const waiver_fee = Number(draft.waiverFee || '0');
+    if (waiver_threshold !== null && (!Number.isFinite(waiver_threshold) || waiver_threshold < 0)) {
+      toast({ title: 'Invalid threshold', description: 'Enter a valid order amount or leave blank.', variant: 'destructive' });
+      return;
+    }
+    if (!Number.isFinite(waiver_fee) || waiver_fee < 0 || waiver_fee > price) {
+      toast({ title: 'Invalid waiver fee', description: 'Waiver fee must be between 0 and the normal fee.', variant: 'destructive' });
+      return;
+    }
     setSavingId(row.id);
     const { error } = await supabase
       .from('delivery_locations')
-      .update({ name: draft.name.trim(), region: draft.region.trim(), price })
+      .update({ name: draft.name.trim(), region: draft.region.trim(), price, waiver_threshold, waiver_fee })
       .eq('id', row.id);
     setSavingId(null);
 
@@ -103,7 +121,7 @@ const DeliveryLocationsManager = () => {
       return;
     }
     setRows((prev) =>
-      prev.map((r) => (r.id === row.id ? { ...r, name: draft.name.trim(), region: draft.region.trim(), price } : r)),
+      prev.map((r) => (r.id === row.id ? { ...r, name: draft.name.trim(), region: draft.region.trim(), price, waiver_threshold, waiver_fee } : r)),
     );
     toast({ title: 'Saved', description: `${draft.name.trim()} — Ksh ${price.toLocaleString()}` });
   };
@@ -150,7 +168,7 @@ const DeliveryLocationsManager = () => {
         price,
         display_order: (rows[rows.length - 1]?.display_order ?? 0) + 1,
       })
-      .select('id, code, name, region, price, is_active, display_order')
+      .select('id, code, name, region, price, is_active, display_order, waiver_threshold, waiver_fee')
       .maybeSingle();
     setAdding(false);
 
@@ -163,9 +181,9 @@ const DeliveryLocationsManager = () => {
       return;
     }
 
-    const row = { ...data, price: Number(data.price) || 0, region: data.region || '' };
+    const row = normalize(data);
     setRows((prev) => [...prev, row]);
-    setDrafts((prev) => ({ ...prev, [row.id]: { price: String(row.price), name: row.name, region: row.region } }));
+    setDrafts((prev) => ({ ...prev, [row.id]: toDraft(row) }));
     setNewLocation({ name: '', region: '', price: '' });
     toast({ title: 'Location added', description: `${row.name} — Ksh ${row.price.toLocaleString()}` });
   };
@@ -258,11 +276,11 @@ const DeliveryLocationsManager = () => {
             </p>
             <div className="space-y-2 max-h-[32rem] overflow-y-auto pr-1">
               {filtered.map((row) => {
-                const draft = drafts[row.id] || { price: String(row.price), name: row.name, region: row.region };
+                const draft = drafts[row.id] || toDraft(row);
                 return (
                   <div
                     key={row.id}
-                    className="grid gap-3 rounded-lg border border-border p-3 md:grid-cols-[1.2fr_1fr_0.7fr_auto_auto]"
+                    className="grid gap-3 rounded-lg border border-border p-3 md:grid-cols-[1.2fr_1fr_0.7fr_0.8fr_0.7fr_auto_auto]"
                   >
                     <div className="space-y-1">
                       <Label className="text-xs text-muted-foreground">Name</Label>
@@ -294,6 +312,29 @@ const DeliveryLocationsManager = () => {
                           setDrafts((prev) => ({ ...prev, [row.id]: { ...draft, price: e.target.value } }))
                         }
                         aria-label={`Delivery price for ${row.name}`}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Waive if order ≥ (Ksh)</Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        placeholder="No waiver"
+                        value={draft.threshold}
+                        onChange={(e) => setDrafts((prev) => ({ ...prev, [row.id]: { ...draft, threshold: e.target.value } }))}
+                        aria-label={`Waiver threshold for ${row.name}`}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Fee then (Ksh)</Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        placeholder="0 = free"
+                        value={draft.waiverFee}
+                        onChange={(e) => setDrafts((prev) => ({ ...prev, [row.id]: { ...draft, waiverFee: e.target.value } }))}
+                        aria-label={`Reduced fee for ${row.name}`}
+                        disabled={draft.threshold.trim() === ''}
                       />
                     </div>
 

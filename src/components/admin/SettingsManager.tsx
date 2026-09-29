@@ -11,6 +11,7 @@ import { Save, Image, MapPin, Phone, Mail, Clock, Crown } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import SuperAdminControls from './SuperAdminControls';
 import DeliveryLocationsManager from './DeliveryLocationsManager';
+import DeliveryAuditLog from './DeliveryAuditLog';
 import { useAuth } from '@/context/AuthContext';
 
 
@@ -283,6 +284,7 @@ const SettingsManager = () => {
       </Card>
 
       <DeliveryLocationsManager />
+      <DeliveryAuditLog />
 
 
 
