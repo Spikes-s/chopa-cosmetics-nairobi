@@ -267,9 +267,10 @@ const handler = async (req: Request): Promise<Response> => {
     if (rateLimitError) {
       console.error('Rate limit check error:', rateLimitError);
     } else if (recentOrders && recentOrders.length >= 5) {
+      // Generic response so the endpoint can't be used to probe order history by phone
       return new Response(
-        JSON.stringify({ error: 'Rate limit exceeded. Maximum 5 orders per hour.' }),
-        { status: 429, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        JSON.stringify({ error: 'We could not place your order right now. Please try again later or contact us.' }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
