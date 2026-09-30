@@ -84,7 +84,8 @@ const ReviewForm = ({ productId, onReviewSubmitted }: ReviewFormProps) => {
         continue;
       }
       const ext = ALLOWED_IMAGE_TYPES[safeType];
-      const path = `reviews/${productId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      if (!user) break;
+      const path = `reviews/${user.id}/${productId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
       const { error } = await supabase.storage.from('product-images').upload(path, file, { upsert: false, contentType: safeType });
       if (error) {
         console.error('Review image upload failed:', error);

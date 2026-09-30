@@ -34,12 +34,12 @@ Deno.serve(async (req) => {
     // 1. Lockout check (service_role only after hardening)
     const { data: lockData } = await admin.rpc("check_login_attempt", { _email: email });
     const lock = lockData as { locked?: boolean; remaining_seconds?: number } | null;
+    const GENERIC = "Invalid login credentials. If you've had several failed attempts, please wait 15 minutes and try again.";
     if (lock?.locked) {
-      const mins = Math.ceil((lock.remaining_seconds || 0) / 60);
-      return new Response(JSON.stringify({
-        error: `Account temporarily locked due to too many failed attempts. Try again in ${mins} minute${mins === 1 ? '' : 's'}.`,
-        locked: true,
-      }), { status: 423, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      // Same response as a wrong password so lockout state can't be probed.
+      return new Response(JSON.stringify({ error: GENERIC }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // 2. Real credential check via anon client (does not persist)
@@ -48,12 +48,9 @@ Deno.serve(async (req) => {
 
     if (signInError || !signInData?.session) {
       // 3a. Real failure — bump counter server-side
-      const { data: failData } = await admin.rpc("record_failed_login", { _email: email });
-      const fail = failData as { locked?: boolean } | null;
-      const msg = fail?.locked
-        ? "Too many failed attempts — account locked for 15 minutes for your protection."
-        : "Invalid login credentials";
-      return new Response(JSON.stringify({ error: msg, locked: !!fail?.locked }), {
+      await admin.rpc("record_failed_login", { _email: email });
+      const msg = GENERIC;
+      return new Response(JSON.stringify({ error: msg }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

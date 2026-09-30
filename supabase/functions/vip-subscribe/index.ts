@@ -75,7 +75,7 @@ Deno.serve(async (req) => {
 
     const { data: existing } = await supabase
       .from("vip_members")
-      .select("id, payment_status, tier")
+      .select("id")
       .eq("email", email)
       .maybeSingle();
 
@@ -91,13 +91,21 @@ Deno.serve(async (req) => {
     };
 
     if (existing) {
-      if (existing.payment_status === "paid") {
+      // Only the verified owner of this email may change an existing membership.
+      let callerEmail: string | null = null;
+      const authHeader = req.headers.get("authorization");
+      if (authHeader?.startsWith("Bearer ")) {
+        const { data: u } = await supabase.auth.getUser(authHeader.slice(7));
+        callerEmail = u?.user?.email?.toLowerCase() ?? null;
+      }
+      if (callerEmail !== email) {
         return new Response(JSON.stringify({
           success: false, already: true,
-          message: `You are already a ${existing.tier?.toUpperCase()} VIP member.`,
+          message: "This email is already registered for VIP. Please sign in with this email to upgrade, or contact us.",
         }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
-      const { error } = await supabase.from("vip_members").update(patch).eq("id", existing.id);
+      const { error } = await supabase.from("vip_members")
+        .update(patch).eq("id", existing.id).neq("payment_status", "paid");
       if (error) throw error;
     } else {
       const { error } = await supabase.from("vip_members").insert({ email, ...patch });

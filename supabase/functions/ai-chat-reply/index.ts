@@ -151,9 +151,9 @@ serve(async (req) => {
     }
 
     // Validate conversation history (max 50 messages to prevent excessive context)
-    const validatedHistory = Array.isArray(conversationHistory) 
-      ? conversationHistory.slice(-50) 
-      : [];
+    const validatedHistory = (Array.isArray(conversationHistory) ? conversationHistory.slice(-50) : [])
+      .filter((m: any) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
+      .map((m: any) => ({ role: m.role as "user" | "assistant", content: String(m.content).slice(0, 2000) }));
 
     const messages = [
       { role: "system", content: SYSTEM_PROMPT },

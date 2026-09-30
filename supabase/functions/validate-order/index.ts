@@ -267,9 +267,10 @@ const handler = async (req: Request): Promise<Response> => {
     if (rateLimitError) {
       console.error('Rate limit check error:', rateLimitError);
     } else if (recentOrders && recentOrders.length >= 5) {
+      // Generic response so the endpoint can't be used to probe order history by phone
       return new Response(
-        JSON.stringify({ error: 'Rate limit exceeded. Maximum 5 orders per hour.' }),
-        { status: 429, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        JSON.stringify({ error: 'We could not place your order right now. Please try again later or contact us.' }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
@@ -464,33 +465,8 @@ const handler = async (req: Request): Promise<Response> => {
     console.log('Order created successfully:', createdOrder.id);
 
 
-    // Award loyalty points & handle referrals for authenticated users (rates from site_settings)
-    if (resolvedUserId) {
-      try {
-        const { data: earnSetting } = await supabase
-          .from('site_settings').select('value').eq('key', 'loyalty_earn_ksh_per_point').maybeSingle();
-        const kshPerPoint = Math.max(1, parseInt((earnSetting as any)?.value || '10', 10) || 10);
-        const points = Math.floor(total / kshPerPoint);
-        if (points > 0) {
-          await supabase.rpc('award_loyalty_points', {
-            _user_id: resolvedUserId, _points: points,
-            _reason: 'order_purchase', _order_id: createdOrder.id,
-          });
-        }
-        // Reward referral on user's first order
-        const { count } = await supabase
-          .from('orders')
-          .select('id', { count: 'exact', head: true })
-          .eq('user_id', resolvedUserId);
-        if ((count ?? 0) <= 1) {
-          await supabase.rpc('reward_referral_on_first_order', {
-            _referred_user_id: resolvedUserId, _order_id: createdOrder.id,
-          });
-        }
-      } catch (e) {
-        console.warn('Loyalty/referral processing failed', e);
-      }
-    }
+    // Loyalty points and referral rewards are granted by a database trigger
+    // only once the order's payment is confirmed (never at order creation).
 
 
     return new Response(

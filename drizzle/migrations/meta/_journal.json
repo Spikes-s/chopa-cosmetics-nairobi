@@ -15,6 +15,20 @@
       "when": 1790749355277,
       "tag": "0001_page_visit_sessions",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790750317462,
+      "tag": "0002_bind_review_uploads_to_owner",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790750343993,
+      "tag": "0003_award_loyalty_on_paid",
+      "breakpoints": true
     }
   ]
 }
