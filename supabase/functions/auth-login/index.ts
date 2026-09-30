@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
       // 3a. Real failure — bump counter server-side
       await admin.rpc("record_failed_login", { _email: email });
       const msg = GENERIC;
-      return new Response(JSON.stringify({ error: msg, locked: !!fail?.locked }), {
+      return new Response(JSON.stringify({ error: msg }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
