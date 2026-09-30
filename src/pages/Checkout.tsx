@@ -82,7 +82,7 @@ const Checkout = () => {
   const deliveryDone = deliveryMethod === 'pickup'
     ? !!formData.pickupDate && !!formData.pickupTime
     : !!deliveryLocation && !!formData.address.trim();
-  const paymentDone = walletCoversAll || hasPaid;
+  const paymentDone = (totalWithDelivery === 0 && walletApplied > 0) || hasPaid;
   const steps = [
     { label: 'Details', done: contactDone },
     { label: 'Delivery', done: deliveryDone },
