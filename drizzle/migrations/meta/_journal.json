@@ -8,6 +8,13 @@
       "when": 1790677222885,
       "tag": "0000_delivery_waivers_and_audit",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790749355277,
+      "tag": "0001_page_visit_sessions",
+      "breakpoints": true
     }
   ]
 }

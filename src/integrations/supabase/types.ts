@@ -660,24 +660,30 @@ export type Database = {
       page_visits: {
         Row: {
           id: string
+          last_seen_at: string | null
           page_path: string
           referrer: string | null
+          session_id: string | null
           user_agent: string | null
           visited_at: string
           visitor_id: string | null
         }
         Insert: {
           id?: string
+          last_seen_at?: string | null
           page_path?: string
           referrer?: string | null
+          session_id?: string | null
           user_agent?: string | null
           visited_at?: string
           visitor_id?: string | null
         }
         Update: {
           id?: string
+          last_seen_at?: string | null
           page_path?: string
           referrer?: string | null
+          session_id?: string | null
           user_agent?: string | null
           visited_at?: string
           visitor_id?: string | null
@@ -1848,6 +1854,10 @@ export type Database = {
       reward_referral_on_first_order: {
         Args: { _order_id: string; _referred_user_id: string }
         Returns: Json
+      }
+      touch_page_visit: {
+        Args: { _id: string; _visitor_id: string }
+        Returns: undefined
       }
       validate_coupon: {
         Args: { _code: string; _email: string }

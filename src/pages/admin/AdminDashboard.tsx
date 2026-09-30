@@ -8,6 +8,7 @@ import { LogOut, Package, ShoppingBag, BarChart3, MessageSquare, Settings, Users
 import ProductsManager from '@/components/admin/ProductsManager';
 import OrdersManager from '@/components/admin/OrdersManager';
 import SalesAnalytics from '@/components/admin/SalesAnalytics';
+import VisitorAnalytics from '@/components/admin/VisitorAnalytics';
 import MessagesManager from '@/components/admin/MessagesManager';
 import SettingsManager from '@/components/admin/SettingsManager';
 import UsersManager from '@/components/admin/UsersManager';
@@ -168,6 +169,7 @@ const AdminDashboard = () => {
           </TabsContent>
 
           <TabsContent value="dashboard" className="space-y-4">
+            <VisitorAnalytics />
             <SalesAnalytics />
           </TabsContent>
 
