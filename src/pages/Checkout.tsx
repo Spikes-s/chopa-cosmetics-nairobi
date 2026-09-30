@@ -78,6 +78,22 @@ const Checkout = () => {
   const totalWithDelivery = Math.max(0, grossTotal - walletApplied);
   const deliveryQuote = quoteDelivery(deliveryLocation, grossTotal);
 
+  const contactDone = !!formData.name.trim() && !!formData.phone.trim();
+  const deliveryDone = deliveryMethod === 'pickup'
+    ? !!formData.pickupDate && !!formData.pickupTime
+    : !!deliveryLocation && !!formData.address.trim();
+  const paymentDone = walletCoversAll || hasPaid;
+  const steps = [
+    { label: 'Details', done: contactDone },
+    { label: 'Delivery', done: deliveryDone },
+    { label: 'Payment', done: paymentDone },
+  ];
+  const currentStep = !contactDone ? 0 : !deliveryDone ? 1 : 2;
+  const goToPayment = () => {
+    document.getElementById('checkout-payment')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+
 
   const checkCoupon = async () => {
     const code = couponCode.trim();
@@ -257,9 +273,25 @@ const Checkout = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-display font-bold text-foreground mb-8">
+      <h1 className="text-3xl font-display font-bold text-foreground mb-4">
         Checkout
       </h1>
+
+      <ol className="flex items-center gap-2 mb-6 text-xs sm:text-sm" aria-label="Checkout progress">
+        {steps.map((s, i) => {
+          const active = i === currentStep;
+          const done = s.done;
+          return (
+            <li key={s.label} className="flex items-center gap-2 flex-1">
+              <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-xs font-bold ${done ? 'bg-primary text-primary-foreground border-primary' : active ? 'border-primary text-primary' : 'border-border text-muted-foreground'}`}>
+                {done ? '✓' : i + 1}
+              </span>
+              <span className={`${active || done ? 'text-foreground font-medium' : 'text-muted-foreground'} truncate`}>{s.label}</span>
+              {i < steps.length - 1 && <span className="h-px flex-1 bg-border" />}
+            </li>
+          );
+        })}
+      </ol>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Checkout Form */}
@@ -421,6 +453,7 @@ const Checkout = () => {
 
             {/* Payment - Manual Only */}
             {/* Payment - Manual Only (skipped when wallet covers full total) */}
+            <div id="checkout-payment" className="scroll-mt-24" />
             {!walletCoversAll && (
             <Card variant="gradient">
               <CardHeader>
@@ -547,6 +580,32 @@ const Checkout = () => {
               {walletCoversAll ? 'Place Order (Wallet)' : 'Submit Order'}
             </LoadingButton>
           </form>
+
+          {/* Mobile sticky bar: fee breakdown + jump to payment */}
+          <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-border bg-background/95 backdrop-blur px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>Items</span><span>Ksh {totalWithDelivery.toLocaleString()}</span>
+            </div>
+            {deliveryMethod === 'delivery' && (
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span className="truncate mr-2">Delivery{deliveryLocation ? ` · ${deliveryQuote.name}` : ''} (pay driver)</span>
+                <span>
+                  {!deliveryLocation ? 'Choose location' : deliveryQuote.isFallback ? 'Agreed with driver' : deliveryQuote.fee === 0 ? 'Free' : `Ksh ${deliveryQuote.fee.toLocaleString()}`}
+                </span>
+              </div>
+            )}
+            <div className="flex items-center justify-between gap-3 mt-2">
+              <div>
+                <p className="text-xs text-muted-foreground">Pay now</p>
+                <p className="text-lg font-bold text-foreground">Ksh {totalWithDelivery.toLocaleString()}</p>
+              </div>
+              <Button type="button" variant="gradient" onClick={goToPayment} className="flex-1 max-w-[200px]">
+                {walletCoversAll ? 'Review & place' : 'Go to payment'}
+              </Button>
+            </div>
+          </div>
+          <div className="lg:hidden h-32" aria-hidden />
+
         </div>
 
 
